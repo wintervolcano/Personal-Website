@@ -35,7 +35,7 @@ const GALLERY_ITEMS: GalleryItem[] = [
         id: "g-3",
         src: "/gallery/with-paulo-sardinia.png",
         title: "A selfie with Paulo Freire near Sardinia Radio Telescope",
-        description: "With rolling with legends out here.",
+        description: "We rolling with legends out here.",
     },
     {
         id: "g-4",

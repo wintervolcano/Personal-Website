@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "framer-motion": "^12.23.26",
+        "katex": "^0.16.11",
         "lucide-react": "^0.562.0",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",

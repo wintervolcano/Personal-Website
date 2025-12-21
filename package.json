@@ -2,7 +2,8 @@
     "scripts": {
         "trapum:build": "node scripts/build-trapum-pulsars.mjs --trapum ./trapum.org --out ./src/data/trapum_pulsars.json --outImages ./public/trapum/discoveries",
         "dev": "vite",
-        "build": "npm run trapum:build && vite build"
+        "build": "vite build",
+        "build:trapum": "npm run trapum:build && npm run build"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.1.18",

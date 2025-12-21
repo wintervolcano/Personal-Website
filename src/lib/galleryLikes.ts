@@ -5,7 +5,7 @@ export type GalleryLikeSnapshot = {
 };
 
 // Fetch like counts for a set of gallery IDs.
-// This assumes you expose an API at /api/gallery-likes that accepts
+// This assumes you expose an API at /api that accepts
 // ?ids=id1,id2,… and returns an array of { id, likes, likedByMe }.
 export async function fetchGalleryLikes(
   ids: string[]
@@ -13,7 +13,7 @@ export async function fetchGalleryLikes(
   if (!ids.length) return {};
   try {
     const params = new URLSearchParams({ ids: ids.join(",") });
-    const res = await fetch(`/api/gallery-likes?${params.toString()}`, {
+    const res = await fetch(`/api?${params.toString()}`, {
       method: "GET",
       credentials: "include",
     });
@@ -34,14 +34,15 @@ export async function fetchGalleryLikes(
 }
 
 // Toggle a like for a single image.
-// Expects a backend at /api/gallery-likes/:id that increments/decrements
+// Expects a backend at /api/id?id=<id> that increments/decrements
 // and returns the updated { id, likes, likedByMe }.
 export async function toggleGalleryLike(
   id: string,
   nextLiked: boolean
 ): Promise<GalleryLikeSnapshot | null> {
   try {
-    const res = await fetch(`/api/gallery-likes/${encodeURIComponent(id)}`, {
+    const params = new URLSearchParams({ id });
+    const res = await fetch(`/api/id?${params.toString()}`, {
       method: nextLiked ? "POST" : "DELETE",
       credentials: "include",
     });

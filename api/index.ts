@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const keys = ids.map((id) => `gallery:likes:${id}`);
-    const values = (await kv.mget<number | null>(...keys)) || [];
+    const values = ((await kv.mget(...keys)) || []) as Array<number | null>;
 
     const payload = ids.map((id, idx) => ({
         id,

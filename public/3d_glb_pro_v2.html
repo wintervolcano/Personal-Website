@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Globular Clusters & Pulsars | 3D Explorer v2 Pro</title>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg0: #060708;
+      --bg1: #0a0b0d;
+      --glass: rgba(18, 20, 22, .70);
+      --glass2: rgba(18, 20, 22, .55);
+      --border: rgba(255, 255, 255, .10);
+      --border2: rgba(255, 255, 255, .06);
+      --text: rgba(255, 255, 255, .92);
+      --muted: rgba(255, 255, 255, .60);
+      --accent: #984aff;
+      --accent2: #f9a8d4;
+      --ok: #7CFFB2;
+      --warn: #FFD36E;
+      --shadow: 0 26px 90px rgba(0, 0, 0, .62);
+      --glow: 0 0 0 1px rgba(255, 255, 255, .08) inset;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      background:
+        radial-gradient(900px 700px at 50% 30%, rgba(255, 255, 255, .04), transparent 60%),
+        radial-gradient(700px 520px at 50% 65%, rgba(255, 255, 255, .02), transparent 62%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0
+    }
+
+    /* grid + noise overlay */
+    #ui-layer::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, .042) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, .042) 1px, transparent 1px);
+      background-size: 46px 46px;
+      opacity: .35;
+      pointer-events: none;
+      mask-image: radial-gradient(640px 640px at 50% 45%, rgba(0, 0, 0, 1), rgba(0, 0, 0, .20), transparent 72%);
+    }
+
+    #ui-layer::after {
+      content: "";
+      position: fixed;
+      inset: -40px;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      opacity: .10;
+      pointer-events: none;
+      mix-blend-mode: soft-light;
+    }
+
+    #ui-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none
+    }
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow), var(--glow);
+    }
+
+    /* Scale bar at top */
+    #scale-bar {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #scale-label {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 2px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    /* Topbar */
+    #topbar {
+      position: absolute;
+      left: 50%;
+      top: 30px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      pointer-events: auto;
+      background: var(--glass);
+      backdrop-filter: blur(10px) saturate(120%);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .55), var(--glow);
+      z-index: 50;
+    }
+
+    #search {
+      width: min(560px, 62vw);
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: rgba(255, 255, 255, .04);
+      color: var(--text);
+      outline: none;
+    }
+
+    #search::placeholder {
+      color: rgba(255, 255, 255, .40)
+    }
+
+    .btn {
+      cursor: pointer;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: rgba(255, 255, 255, .04);
+      color: rgba(255, 255, 255, .86);
+      letter-spacing: .10em;
+      font-size: .80rem;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      pointer-events: auto;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, .08);
+      border-color: rgba(255, 255, 255, .16)
+    }
+
+    .btn:active {
+      transform: translateY(0px);
+      background: rgba(255, 255, 255, 0.029);
+      border-color: var(--border2);
+    }
+
+    .btn.primary {
+      background: rgba(210, 49, 255, 0.12);
+      border-color: rgba(210, 49, 255, 0.436)
+    }
+
+    .btn.ok {
+      background: rgba(124, 255, 178, .12);
+      border-color: rgba(124, 255, 178, .22)
+    }
+
+    .btn.warn {
+      background: rgba(255, 211, 110, .12);
+      border-color: rgba(255, 211, 110, .22)
+    }
+
+    /* Info button */
+    #btn-info {
+      position: absolute;
+      bottom: 20px;
+      right: 18px;
+      width: 37px;
+      height: 37px;
+      border-radius: 12px;
+      border: 1px solid var(--border2);
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .86);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      z-index: 50;
+    }
+
+    #btn-info:hover {
+      background: rgba(255, 255, 255, .10)
+    }
+
+    #status {
+      position: absolute;
+      right: 60px;
+      bottom: 18px;
+      font-size: .78rem;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .18);
+      backdrop-filter: blur(10px) saturate(120%);
+      color: rgba(255, 255, 255, .72);
+      max-width: min(520px, 44vw);
+      pointer-events: none;
+      line-height: 1.35;
+      white-space: pre-line;
+      box-shadow: var(--glow);
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      pointer-events: auto;
+      align-items: center;
+    }
+
+    .sliderWrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(10, 12, 18, .42);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--glow);
+      pointer-events: auto;
+    }
+
+    .sliderWrap label {
+      font-size: .74rem;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .70);
+      user-select: none;
+    }
+
+    .sliderWrap input[type="range"] {
+      width: 160px;
+    }
+
+    /* Main panel */
+    #panel {
+      position: absolute;
+      top: 100px;
+      right: 18px;
+      width: 420px;
+      bottom: 70px;
+      max-width: min(420px, 92vw);
+      max-height: calc(100vh - 110px);
+      border-radius: 22px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity .16s ease, transform .16s ease;
+      pointer-events: auto;
+      box-shadow: var(--shadow), var(--glow);
+      display: none;
+      z-index: 30;
+    }
+
+    #panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+      display: block;
+    }
+
+    #panel header {
+      padding: 14px 14px 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      border-bottom: 1px solid rgba(255, 255, 255, .10);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(0, 0, 0, .10));
+    }
+
+    #panel h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -.02em;
+      color: var(--accent);
+      font-weight: 880;
+    }
+
+    #panel .sub {
+      margin-top: 4px;
+      color: rgba(255, 255, 255, .62);
+      font-size: .78rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    #close {
+      cursor: pointer;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .80);
+      display: grid;
+      place-items: center;
+      transition: background .12s ease, transform .12s ease;
+    }
+
+    #close:hover {
+      background: rgba(255, 255, 255, .10);
+      transform: translateY(-1px);
+    }
+
+    #close:active {
+      transform: translateY(0px);
+    }
+
+    #panel .body {
+      padding: 14px;
+      overflow: auto;
+      max-height: calc(100vh - 100px - 64px);
+      background: rgba(12, 14, 22, .40);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .thumb {
+      width: 132px;
+      height: 132px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(0, 0, 0, .22);
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, .50);
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(1.06) contrast(1.06)
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .86);
+      font-size: .72rem;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .06) inset;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .box {
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .14);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset;
+    }
+
+    .box.wide {
+      grid-column: 1 / -1;
+    }
+
+    .k {
+      font-size: .70rem;
+      color: rgba(255, 255, 255, .58);
+      margin-bottom: 4px;
+      letter-spacing: .10em;
+      text-transform: uppercase
+    }
+
+    .v {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-weight: 800
+    }
+
+    .pulsars {
+      margin-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, .10);
+      padding-top: 12px;
+    }
+
+    .phead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: rgba(255, 255, 255, .68);
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .plist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .psr {
+      border: 1px solid rgba(242, 167, 216, .18);
+      background: rgba(242, 167, 216, .07);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .04) inset;
+    }
+
+    .psrTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline
+    }
+
+    .psrName {
+      font-weight: 900
+    }
+
+    .psrP {
+      color: var(--accent2);
+      font-weight: 900
+    }
+
+    .psrGrid {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .72);
+    }
+
+    .psrGrid div {
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .12)
+    }
+
+    /* Drawer (Tools) */
+    #drawer {
+      position: absolute;
+      top: 100px;
+      left: 18px;
+      width: 420px;
+      bottom: 70px;
+      max-width: min(420px, 92vw);
+      max-height: calc(100vh - 110px);
+      border-radius: 22px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity .16s ease, transform .16s ease;
+      pointer-events: auto;
+      box-shadow: var(--shadow), var(--glow);
+      display: none;
+      z-index: 40;
+    }
+
+    #drawer.visible {
+      opacity: 1;
+      transform: translateY(0);
+      display: block;
+    }
+
+    #drawer header {
+      padding: 14px 14px 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      border-bottom: 1px solid rgba(255, 255, 255, .10);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(0, 0, 0, .10));
+    }
+
+    #drawer h3 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -.02em;
+      color: var(--accent);
+      font-weight: 880;
+    }
+
+    #drawer .body {
+      padding: 14px;
+      overflow: auto;
+      max-height: calc(100vh - 100px - 64px);
+      background: rgba(12, 14, 22, .40);
+    }
+
+    /* Info modal */
+    #info-modal {
+      position: absolute;
+      top: 51%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 22px;
+      overflow: auto;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+      transition: opacity .16s ease, transform .16s ease;
+      pointer-events: auto;
+      box-shadow: var(--shadow), var(--glow);
+      display: none;
+      z-index: 100;
+    }
+
+    #info-modal.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      display: block;
+    }
+
+    #info-modal .body {
+      padding: 20px;
+      overflow: auto;
+      background: rgba(12, 14, 22, .40);
+    }
+
+    #info-modal h3 {
+      margin: 0 0 12px 0;
+      color: var(--accent);
+      font-size: 1.2rem;
+    }
+
+    #info-modal p {
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, .8);
+    }
+
+    #info-modal ul {
+      margin: 0 0 12px 0;
+      padding-left: 20px;
+      color: rgba(255, 255, 255, .8);
+    }
+
+    #info-modal li {
+      margin-bottom: 6px;
+    }
+
+    #info-modal .close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .80);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Drawer content styles */
+    .sectTitle {
+      margin: 16px 0 8px;
+      font-size: .75rem;
+      letter-spacing: .12em;
+      color: rgba(255, 255, 255, .65);
+      text-transform: uppercase;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .row>* {
+      flex: 1
+    }
+
+    .field {
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .08);
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      font-size: .68rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .55)
+    }
+
+    .field input,
+    .field select {
+      margin-top: 8px;
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .25);
+      color: rgba(255, 255, 255, .90);
+      outline: none;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .field small {
+      display: block;
+      margin-top: 8px;
+      color: rgba(255, 255, 255, .58);
+      font-size: .75rem
+    }
+
+    .mini {
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .72);
+      line-height: 1.35
+    }
+
+    .pillbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid rgba(255, 255, 255, .10);
+      cursor: pointer;
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .82);
+      user-select: none;
+    }
+
+    .pill.active {
+      border-color: rgba(201, 255, 91, .30);
+      background: rgba(201, 255, 91, .10)
+    }
+
+    .sep {
+      height: 1px;
+      background: rgba(255, 255, 255, .08);
+      margin: 14px 0
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .listItem {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .listItem b {
+      font-weight: 750
+    }
+
+    .xbtn {
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(255, 255, 255, .05);
+      color: rgba(255, 255, 255, .86);
+      cursor: pointer;
+    }
+
+    .xbtn:hover {
+      background: rgba(255, 255, 255, .09)
+    }
+
+    @media (max-width: 768px) {
+      #topbar {
+        top: 10px;
+        padding: 8px 10px;
+      }
+
+      #btn-info {
+        top: 10px;
+        right: 10px;
+      }
+
+      #hud {
+        left: 10px;
+        bottom: 10px
+      }
+
+      #status {
+        right: 10px;
+        bottom: 10px;
+        max-width: 92vw
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports":{
+      "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Scale bar -->
+  <div id="scale-bar"></div>
+  <div id="scale-label">300 parsecs</div>
+
+  <div id="ui-layer">
+    <div id="topbar" class="glass">
+      <input id="search" placeholder="Search cluster or pulsar (Enter) — e.g. NGC 104, Ter 5, J0024-7204" />
+      <button class="btn" id="btn-tools">ASTRONOMER</button>
+      <button class="btn" id="btn-share">SHARE</button>
+      <button class="btn" id="btn-export">EXPORT</button>
+      <button class="btn primary" id="btn-refresh">REFRESH</button>
+    </div>
+
+    <button id="btn-info" title="About this tool" style="pointer-events: auto !important">?</button>
+
+    <div id="status">Loading…</div>
+
+    <!-- Tools drawer -->
+    <aside id="drawer" class="glass" aria-hidden="true">
+      <header>
+        <h3>Astronomer tools</h3>
+        <button class="xbtn" id="drawer-close" title="Close">✕</button>
+      </header>
+      <div class="body">
+        <div class="sectTitle">Filters</div>
+        <div class="row">
+          <div class="field">
+            <label>R⊙ max (kpc)</label>
+            <input id="f-rsun" type="number" min="1" step="1" value="200" />
+            <small>Hide distant clusters to declutter.</small>
+          </div>
+          <div class="field">
+            <label>Pulsars ≥</label>
+            <input id="f-psrmin" type="number" min="0" step="1" value="0" />
+            <small>Only show clusters with at least N pulsars.</small>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Mass ≥ (Msun)</label>
+            <input id="f-mass" type="number" min="0" step="10000" value="0" />
+            <small>Uses Baumgardt mass if present.</small>
+          </div>
+          <div class="field">
+            <label>Text contains</label>
+            <input id="f-text" placeholder="e.g. NGC, Terzan, Tuc, M 5" />
+            <small>Applied to id/name fields.</small>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Sky Observer</div>
+        <div class="row">
+          <div class="field">
+            <label>Latitude (deg)</label>
+            <input id="o-lat" type="number" step="0.1" value="50.7" />
+            <small>Observer latitude.</small>
+          </div>
+          <div class="field">
+            <label>Longitude (deg)</label>
+            <input id="o-lon" type="number" step="0.1" value="7.1" />
+            <small>East positive (Bonn ≈ 7.1°E).</small>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Time (UTC)</label>
+            <input id="o-time" type="datetime-local" />
+            <small>Leave empty = now.</small>
+          </div>
+          <div class="field">
+            <label>Display mode</label>
+            <select id="o-mode">
+              <option value="altaz">Alt/Az</option>
+              <option value="eq">RA/Dec</option>
+              <option value="gal">l/b</option>
+            </select>
+            <small>Coordinates in panel.</small>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btn-sky-apply">Apply</button>
+          <button class="btn" id="btn-sky-clear">Clear</button>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <div class="field">
+            <div class="k">Alt / Az</div>
+            <div class="v" id="ui-altaz">—</div>
+          </div>
+          <div class="field">
+            <div class="k">LST / HA</div>
+            <div class="v" id="ui-lstha">—</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Overlays</div>
+        <div class="pillbar">
+          <div class="pill" id="t-gal">Galactic plane</div>
+          <div class="pill" id="t-eq">Equatorial plane</div>
+          <div class="pill" id="t-ecliptic">Ecliptic plane</div>
+          <div class="pill" id="t-sunline">Sun line</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Pulsars</div>
+        <div class="row">
+          <div class="field">
+            <label>Color by</label>
+            <select id="p-color">
+              <option value="period">Spin period</option>
+              <option value="dm">DM</option>
+              <option value="binary">Binary flag</option>
+              <option value="none">None</option>
+            </select>
+            <small>Only affects pulsars shown near the selected cluster.</small>
+          </div>
+          <div class="field">
+            <label>Spin scale</label>
+            <input id="p-spin" type="range" min="0.0005" max="0.6" step="0.0005" value="0.35" />
+            <small>Scales pulsar animation (visual).</small>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Camera</div>
+        <div class="pillbar">
+          <div class="pill" id="cam-home">Home</div>
+          <div class="pill" id="cam-gc">Galactic center</div>
+          <div class="pill" id="cam-sun">Sun</div>
+          <div class="pill" id="cam-top">Top-down</div>
+          <div class="pill" id="cam-edge">Edge-on</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Compare</div>
+        <div class="mini">Add clusters from the right panel. Export a quick CSV for notes/talks.</div>
+        <div class="list" id="cmp-list" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="cmp-clear">Clear</button>
+          <button class="btn ok" id="cmp-export">Export CSV</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Performance</div>
+        <div class="row">
+          <div class="field">
+            <label>Quality</label>
+            <select id="perf-quality">
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+            <small>Low reduces pixel ratio while keeping brightness.</small>
+          </div>
+          <div class="field">
+            <label>Show FPS</label>
+            <select id="perf-fps">
+              <option value="off">Off</option>
+              <option value="on">On</option>
+            </select>
+            <small>Useful on laptops.</small>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Provenance</div>
+        <div class="mini" id="prov">—</div>
+      </div>
+    </aside>
+
+    <!-- Info modal -->
+    <div id="info-modal" class="glass" aria-hidden="true">
+      <div class="body">
+        <button class="close" id="info-close">✕</button>
+        <h3>Globular Clusters & Pulsars 3D Explorer</h3>
+        <p>This interactive visualization shows globular clusters (yellow/gold) and their pulsars (pink) within the
+          Milky Way galaxy. The galaxy is obviously fake particle simulation and it only added for orientation. The distances are scaled but relative.</p>
+
+        <p><strong>Features:</strong></p>
+        <ul>
+          <li><strong>Navigation:</strong> Click & drag to rotate, scroll to zoom, right-click to pan</li>
+          <li><strong>Search:</strong> Type cluster names (NGC 104, Ter 5) or pulsar names in the search bar</li>
+          <li><strong>Selection:</strong> Click on any cluster to pin its information panel</li>
+          <li><strong>Filtering: Filter clusters by pulsars, distance, mass</strong></li>
+          <li><strong>Observer Tools:</strong> Set your location and time to see Alt/Az coordinates</li>
+          <li><strong>Compare:</strong> Add clusters to compare list and export as CSV</li>
+          <li><strong>Overlays:</strong> Toggle galactic, equatorial, ecliptic planes and Sun line</li>
+          <li><strong>Share: Share your exact view to someone else with a link</strong>
+          <li><strong>Export:</strong> Save screenshots or filtered data</li>
+        </ul>
+
+        <p><strong>Data Sources:</strong></p>
+        <ul>
+          <li>Globular cluster positions, distances, and properties from Holger Baumgardt's catalog</li>
+          <li>Paulo's Globular Cluster Pulsar catalogue (GCpsr.txt)</li>
+          <li>Cluster images from Holger Baumgardt's image archive</li>
+        </ul>
+
+        <p><strong>Controls:</strong></p>
+        <ul>
+          <li><strong>Escape:</strong> Unpin current cluster and return to previous view</li>
+          <li><strong>Enter:</strong> Execute search</li>
+          <li><strong>ASTRONOMER button:</strong> Open advanced tools panel</li>
+          <li><strong>Spin slider:</strong> Adjust pulsar rotation speed visually. Log scaled for better visualization</li>
+        </ul>
+
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px;">
+          Created for astronomical visualization and research. Data is updated regularly from live sources.
+        </p>
+        
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px; text-align: center;">
+          Made with ❤️ by Fazal Kareem.
+          <a href="https://github.com/wintervolcano" target="_blank" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent);">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="width: 16px; height: 16px; vertical-align: middle; margin-left: 4px;" />
+          </a>
+        </p>
+        </p>
+      </div>
+    </div>
+
+    <!-- Cluster panel -->
+    <aside id="panel" class="glass" aria-hidden="true">
+      <header>
+        <div>
+          <h2 id="ui-title">—</h2>
+          <div class="sub" id="ui-sub">Hover preview — click a cluster to pin</div>
+        </div>
+        <button id="close" title="Close panel">✕</button>
+      </header>
+
+      <div class="body">
+        <div class="hero">
+          <div class="thumb"><img id="ui-img" alt="Cluster image" /></div>
+          <div style="min-width:0">
+            <div class="chips">
+              <div class="chip" id="ui-id">—</div>
+              <div class="chip" id="ui-pcount">—</div>
+              <div class="chip" id="ui-rsun">—</div>
+              <div class="chip" id="ui-rgc">—</div>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap">
+              <button class="btn" id="btn-compare">Add to compare</button>
+              <button class="btn" id="btn-copy">Copy coords</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="box">
+            <div class="k">Galactic (l,b)</div>
+            <div class="v" id="ui-lb">—</div>
+          </div>
+          <div class="box">
+            <div class="k">V mag</div>
+            <div class="v" id="ui-vmag">—</div>
+          </div>
+
+          <div class="box">
+            <div class="k">Core r_c</div>
+            <div class="v" id="ui-rc">—</div>
+          </div>
+          <div class="box">
+            <div class="k">Half-light r_h</div>
+            <div class="v" id="ui-rh">—</div>
+          </div>
+
+          <div class="box">
+            <div class="k">Tidal r_t</div>
+            <div class="v" id="ui-rt">—</div>
+          </div>
+          <div class="box">
+            <div class="k">Mass</div>
+            <div class="v" id="ui-mass">—</div>
+          </div>
+
+          <div class="box wide">
+            <div class="k">RA (J2000)</div>
+            <div class="v" id="ui-ra">—</div>
+          </div>
+          <div class="box wide">
+            <div class="k">Dec (J2000)</div>
+            <div class="v" id="ui-dec">—</div>
+          </div>
+
+          <div class="box wide">
+            <div class="k" id="ui-coord-title">Alt/Az (observer)</div>
+            <div class="v" id="ui-altaz-display">—</div>
+          </div>
+        </div>
+
+        <div class="pulsars">
+          <div class="phead">
+            <div>Pulsars in this cluster</div>
+            <div id="ui-note">click empty space to unpin</div>
+          </div>
+          <div class="plist" id="ui-psrs"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- HUD -->
+    <div id="hud">
+      <button class="btn" id="btn-reset">Reset View</button>
+      <button class="btn" id="btn-sun">Locate Sun</button>
+      <button class="btn" id="btn-gal">Galactic Plane</button>
+      <button class="btn" id="btn-eq">Equatorial Plane</button>
+      <button class="btn" id="btn-ecliptic">Ecliptic Plane</button>
+      <button class="btn" id="btn-lines">Sun Line</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+    const CONFIG = {
+      apiBase: "http://localhost:8787",
+      scaleFactor: 90,
+      R0_kpc: 8.2,
+      RADIUS_EXAGGERATION: 6.0,
+      colors: {
+        coreWarm: new THREE.Color(0xffc98c),
+        diskCool: new THREE.Color(0x9fd0ff),
+        teal: new THREE.Color(0x8ff3e4),
+        cluster: new THREE.Color(0xffe2b8),
+        pulsar: new THREE.Color(0xf2a7d8),
+        plane: new THREE.Color(0x8ff3e4),
+        line: new THREE.Color(0xb7b6ff),
+        sun: new THREE.Color(0xfff2a4),
+        gcGlow: new THREE.Color(0xffc68a),
+      },
+      bloom: { strength: 1.25, radius: 0.22, threshold: 0.16 },
+      galaxy: { diskStars: 110000, bulgeStars: 50000, dustPuffs: 16000 },
+    };
+
+    // Coordinate transform matrices
+    const A0G = [
+      [-0.0548755604162154, -0.8734370902348850, -0.4838350155487132],
+      [0.4941094278755837, -0.4448296299600112, 0.7469822444972189],
+      [-0.8676661490190047, -0.1980763734312015, 0.4559837761750669],
+    ];
+    const G0A = [
+      [-0.0548755604162154, 0.4941094278755837, -0.8676661490190047],
+      [-0.8734370902348850, -0.4448296299600112, -0.1980763734312015],
+      [-0.4838350155487132, 0.7469822444972189, 0.4559837761750669],
+    ];
+
+    // DOM elements
+    const el = (id) => document.getElementById(id);
+    const panel = el("panel");
+    const drawer = el("drawer");
+    const infoModal = el("info-modal");
+    const status = el("status");
+    const prov = el("prov");
+    const search = el("search");
+
+    const ui = {
+      title: el("ui-title"),
+      sub: el("ui-sub"),
+      id: el("ui-id"),
+      pcount: el("ui-pcount"),
+      rsun: el("ui-rsun"),
+      rgc: el("ui-rgc"),
+      img: el("ui-img"),
+      lb: el("ui-lb"),
+      vmag: el("ui-vmag"),
+      ra: el("ui-ra"),
+      dec: el("ui-dec"),
+      altazDisplay: el("ui-altaz-display"),
+      coordTitle: el("ui-coord-title"),
+      rc: el("ui-rc"),
+      rh: el("ui-rh"),
+      rt: el("ui-rt"),
+      mass: el("ui-mass"),
+      psrs: el("ui-psrs"),
+      altaz: el("ui-altaz"),
+      lstha: el("ui-lstha"),
+    };
+
+    // State
+    let clusters = [];
+    let clustersMeta = null;
+    let pulsarByKey = {};
+    let pulsarsMeta = null;
+    let hovered = null;
+    let pinned = null;
+    let lastView = null;
+    const compare = new Map();
+
+    // Settings
+    const filters = {
+      rsunMax: 200,
+      psrMin: 0,
+      massMin: 0,
+      text: "",
+    };
+
+    const observer = {
+      lat: 50.7,
+      lon: 7.1,
+      timeLocal: "",
+      mode: "altaz",
+      enabled: true,
+    };
+
+    const pulsarStyle = {
+      colorBy: "period",
+      spinScale: 0.35,
+    };
+
+    const perf = {
+      quality: "high",
+      showFps: false,
+    };
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x070a12, 0.00115);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.02, 28000);
+    camera.position.set(0, 560, 1180);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.getElementById("canvas-container").appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.zoomSpeed = 0.75;
+    controls.panSpeed = 0.65;
+    controls.rotateSpeed = 0.55;
+    controls.minDistance = 0.7;
+    controls.maxDistance = 7500;
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.38));
+    const key = new THREE.DirectionalLight(0xffffff, 0.70);
+    key.position.set(1, 1.2, 0.2);
+    scene.add(key);
+
+    // Post-processing
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      CONFIG.bloom.strength,
+      CONFIG.bloom.radius,
+      CONFIG.bloom.threshold
+    ));
+
+    // Helper functions
+    function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+    function pcToScene(pc) { return (pc / 1000) * CONFIG.scaleFactor; }
+
+    function degToHMS(raDeg) {
+      const totalHours = ((raDeg / 15) % 24 + 24) % 24;
+      const h = Math.floor(totalHours);
+      const mFloat = (totalHours - h) * 60;
+      const m = Math.floor(mFloat);
+      const s = (mFloat - m) * 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(2).padStart(5, "0")}`;
+    }
+
+    function degToDMS(decDeg) {
+      const sign = decDeg < 0 ? "-" : "+";
+      const a = Math.abs(decDeg);
+      const d = Math.floor(a);
+      const mFloat = (a - d) * 60;
+      const m = Math.floor(mFloat);
+      const s = (mFloat - m) * 60;
+      return `${sign}${String(d).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
+    }
+
+    // Galactic to equatorial conversion
+    function galToEq(lDeg, bDeg) {
+      const l = THREE.MathUtils.degToRad(lDeg);
+      const b = THREE.MathUtils.degToRad(bDeg);
+      const xg = Math.cos(b) * Math.cos(l);
+      const yg = Math.cos(b) * Math.sin(l);
+      const zg = Math.sin(b);
+
+      const xe = G0A[0][0] * xg + G0A[0][1] * yg + G0A[0][2] * zg;
+      const ye = G0A[1][0] * xg + G0A[1][1] * yg + G0A[1][2] * zg;
+      const ze = G0A[2][0] * xg + G0A[2][1] * yg + G0A[2][2] * zg;
+
+      const ra = Math.atan2(ye, xe);
+      const dec = Math.asin(clamp(ze, -1, 1));
+      const raDeg = (THREE.MathUtils.radToDeg(ra) + 360) % 360;
+      const decDeg = THREE.MathUtils.radToDeg(dec);
+      return { raDeg, decDeg };
+    }
+
+    // Time helpers
+    function toJulianDate(date) {
+      return (date.getTime() / 86400000) + 2440587.5;
+    }
+
+    function gmstDeg(jd) {
+      const T = (jd - 2451545.0) / 36525.0;
+      let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - (T * T * T) / 38710000.0;
+      gmst = ((gmst % 360) + 360) % 360;
+      return gmst;
+    }
+
+    function lstDeg(dateUTC, lonDeg) {
+      return ((gmstDeg(toJulianDate(dateUTC)) + lonDeg) % 360 + 360) % 360;
+    }
+
+    // Observer time
+    function observerTimeUTC() {
+      const s = observer.timeLocal;
+      if (!s) return new Date();
+
+      // Parse datetime-local value
+      const d = new Date(s + 'Z'); // Treat as UTC
+      return d;
+    }
+
+    // RA/Dec to Alt/Az
+    function eqToAltAz(raDeg, decDeg, dateUTC, latDeg, lonDeg) {
+      const LST = lstDeg(dateUTC, lonDeg);
+      let H = (LST - raDeg) * Math.PI / 180;
+      H = Math.atan2(Math.sin(H), Math.cos(H));
+      const lat = latDeg * Math.PI / 180;
+      const dec = decDeg * Math.PI / 180;
+
+      const sinAlt = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(lat) * Math.cos(H);
+      const alt = Math.asin(clamp(sinAlt, -1, 1));
+      const cosAz = (Math.sin(dec) - Math.sin(alt) * Math.sin(lat)) / (Math.cos(alt) * Math.cos(lat) + 1e-12);
+      let az = Math.acos(clamp(cosAz, -1, 1));
+      if (Math.sin(H) > 0) az = 2 * Math.PI - az;
+
+      return { altDeg: THREE.MathUtils.radToDeg(alt), azDeg: THREE.MathUtils.radToDeg(az) };
+    }
+
+    // Coordinate transform
+    function lbToVec3(lDeg, bDeg, rsun_kpc) {
+      const l = THREE.MathUtils.degToRad(lDeg);
+      const b = THREE.MathUtils.degToRad(bDeg);
+      const d = rsun_kpc * CONFIG.scaleFactor;
+      const x = d * Math.cos(b) * Math.cos(l);
+      const y = d * Math.sin(b);
+      const z = d * Math.cos(b) * Math.sin(l);
+      // scene mapping: X=+x, Y=+y, Z=-z (to match prior look)
+      return new THREE.Vector3(x, y, -z);
+    }
+
+    // Add this function near your other helper functions
+    function updateScaleBar() {
+      const scaleBar = el("scale-bar");
+      const scaleLabel = el("scale-label");
+
+      // Get camera distance to origin
+      const cameraDistance = camera.position.length();
+
+      // Calculate appropriate scale based on distance
+      // We'll show different scales based on how far we're zoomed out
+      let scaleValue, scalePc, barLength;
+
+      if (cameraDistance < 300) {
+        scaleValue = 100; // 100 parsecs
+        scalePc = 100;
+        barLength = 180; // pixels
+      } else if (cameraDistance < 1000) {
+        scaleValue = 300; // 300 parsecs
+        scalePc = 300;
+        barLength = 150; // pixels
+      } else if (cameraDistance < 3000) {
+        scaleValue = 1000; // 1 kpc
+        scalePc = 1000;
+        barLength = 120; // pixels
+      } else {
+        scaleValue = 3000; // 3 kpc
+        scalePc = 3000;
+        barLength = 100; // pixels
+      }
+
+      // Update scale bar
+      scaleBar.style.width = `${barLength}px`;
+      scaleLabel.textContent = `${scalePc} parsecs`;
+
+      // Also update the label with distance info
+      const labelDist = cameraDistance / CONFIG.scaleFactor; // Convert to kpc
+      scaleLabel.title = `Camera distance: ${labelDist.toFixed(1)} kpc`;
+    }
+
+    // Add to your state variables near planeVisible:
+    let eclipticVisible = false;
+
+    // Add after the equator creation code:
+    let ecliptic = null;
+    function createEclipticPlane() {
+      // Ecliptic pole coordinates (J2000): RA = 18h 00m, Dec = 66°33'38.6"
+      // Convert to unit vector
+      const eclipticPoleEq = new THREE.Vector3(
+        Math.cos(THREE.MathUtils.degToRad(66.560722)) * Math.cos(THREE.MathUtils.degToRad(270.0)),
+        Math.cos(THREE.MathUtils.degToRad(66.560722)) * Math.sin(THREE.MathUtils.degToRad(270.0)),
+        Math.sin(THREE.MathUtils.degToRad(66.560722))
+      );
+
+      // Convert ecliptic pole from equatorial to galactic
+      const eclipticPoleGal = new THREE.Vector3(
+        A0G[0][0] * eclipticPoleEq.x + A0G[0][1] * eclipticPoleEq.y + A0G[0][2] * eclipticPoleEq.z,
+        A0G[1][0] * eclipticPoleEq.x + A0G[1][1] * eclipticPoleEq.y + A0G[1][2] * eclipticPoleEq.z,
+        A0G[2][0] * eclipticPoleEq.x + A0G[2][1] * eclipticPoleEq.y + A0G[2][2] * eclipticPoleEq.z
+      ).normalize();
+
+      // Ecliptic plane is perpendicular to the ecliptic pole
+      const eclipticPlane = new THREE.GridHelper(2000, 20, 0xFF6B6B, 0xFF6B6B);
+      eclipticPlane.material.transparent = true;
+      eclipticPlane.material.opacity = 0.09;
+      eclipticPlane.material.depthWrite = false;
+
+      // Rotate to align with ecliptic plane (perpendicular to ecliptic pole)
+      const quat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        eclipticPoleGal
+      );
+      eclipticPlane.quaternion.copy(quat);
+
+      // Position at the Sun (ecliptic plane goes through Sun)
+      eclipticPlane.position.copy(sunPos);
+      eclipticPlane.position.add(new THREE.Vector3(0, 2, 0)); // Slight offset for visibility
+
+      ecliptic = eclipticPlane;
+      ecliptic.visible = eclipticVisible;
+      scene.add(ecliptic);
+    }
+
+    // Image URL
+    function imageSlugFromToken(clusterToken) {
+      const s = String(clusterToken || "").trim();
+      const m = s.match(/^NGC_(\d+)$/i);
+      if (m) return "ngc" + String(m[1]).padStart(4, "0");
+      return s.toLowerCase().replace(/_/g, "");
+    }
+
+    function imageUrl(c) {
+      const slug = imageSlugFromToken(c.cluster_token || c.id);
+      return `https://people.smp.uq.edu.au/HolgerBaumgardt/globular/fits/images/${slug}.jpg`;
+    }
+
+    // Create sprite textures (exact match to v6)
+    function makeRadialSpriteTexture({ size = 256, stops }) {
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const ctx = c.getContext("2d");
+      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      for (const s of stops) g.addColorStop(s[0], s[1]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    const starSprite = makeRadialSpriteTexture({
+      size: 128,
+      stops: [
+        [0.0, "rgba(255,255,255,1.0)"],
+        [0.18, "rgba(255,255,255,0.85)"],
+        [0.40, "rgba(255,255,255,0.22)"],
+        [1.0, "rgba(0,0,0,0.0)"],
+      ]
+    });
+
+    const dustSprite = makeRadialSpriteTexture({
+      size: 256,
+      stops: [
+        [0.0, "rgba(160,220,255,0.25)"],
+        [0.25, "rgba(140,220,210,0.12)"],
+        [0.60, "rgba(120,160,220,0.05)"],
+        [1.0, "rgba(0,0,0,0.0)"],
+      ]
+    });
+
+    const clusterSprite = makeRadialSpriteTexture({
+      size: 256,
+      stops: [
+        [0.0, "rgba(255,245,225,1.0)"],
+        [0.16, "rgba(255,210,160,0.70)"],
+        [0.45, "rgba(255,190,120,0.22)"],
+        [1.0, "rgba(0,0,0,0.0)"],
+      ]
+    });
+
+    const clusterHaloSprite = makeRadialSpriteTexture({
+      size: 256,
+      stops: [
+        [0.0, "rgba(255,220,150,0.35)"],
+        [0.40, "rgba(255,180,110,0.11)"],
+        [1.0, "rgba(0,0,0,0.0)"],
+      ]
+    });
+
+    const gcGlowSprite = makeRadialSpriteTexture({
+      size: 512,
+      stops: [
+        [0.0, "rgba(255,245,215,1.0)"],
+        [0.12, "rgba(255,200,140,0.85)"],
+        [0.35, "rgba(255,160,90,0.35)"],
+        [1.0, "rgba(0,0,0,0.0)"],
+      ]
+    });
+
+    // Create Milky Way (exact match to v6)
+    function createMilkyWay() {
+      const disk = new THREE.BufferGeometry();
+      const bulge = new THREE.BufferGeometry();
+      const dust = new THREE.BufferGeometry();
+
+      function alloc(n) {
+        return { pos: new Float32Array(n * 3), col: new Float32Array(n * 3), size: new Float32Array(n) };
+      }
+
+      const D = alloc(CONFIG.galaxy.diskStars);
+      const B = alloc(CONFIG.galaxy.bulgeStars);
+      const U = alloc(CONFIG.galaxy.dustPuffs);
+
+      for (let i = 0; i < CONFIG.galaxy.diskStars; i++) {
+        const u = Math.max(1e-9, Math.random());
+        const Rd = 5.2 * CONFIG.scaleFactor;
+        const R = -Rd * Math.log(u);
+        const theta = Math.random() * Math.PI * 2;
+
+        const pitchDeg = 13.1;
+        const pitch = THREE.MathUtils.degToRad(pitchDeg);
+        const bSpiral = 1 / Math.tan(pitch);
+        const arms = 4;
+        const Rref = 2.0 * CONFIG.scaleFactor;
+        const eps = 1e-6;
+        const SPIRAL_SENSE = -1;
+
+        const spiralCoord = theta + SPIRAL_SENSE * bSpiral * Math.log(Math.max(eps, R / Rref));
+        let armPhase = (Math.round((spiralCoord / (2 * Math.PI)) * arms) / arms) * (2 * Math.PI);
+        let dTheta = armPhase - spiralCoord;
+        dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
+        const armTight = 0.12;
+        const armPull = Math.exp(-(dTheta * dTheta) / (2 * armTight * armTight));
+        const theta2 = theta + 0.70 * dTheta * armPull;
+        const Rj = R * (1 + 0.18 * armPull * (Math.random() * 2 - 1));
+        const y = (Math.random() < 0.5 ? -1 : 1) * (Math.random() ** 0.55) * 0.9 * CONFIG.scaleFactor * Math.exp(-R / (10 * CONFIG.scaleFactor));
+        const cl = (Math.random() ** 2.2) * 0.35 * CONFIG.scaleFactor;
+        const x = Math.cos(theta2) * Rj + (Math.random() - 0.5) * cl;
+        const z = Math.sin(theta2) * Rj + (Math.random() - 0.5) * cl;
+
+        D.pos[i * 3 + 0] = x; D.pos[i * 3 + 1] = y; D.pos[i * 3 + 2] = z;
+        const t = clamp(R / (14 * CONFIG.scaleFactor), 0, 1);
+        const c = CONFIG.colors.coreWarm.clone().lerp(CONFIG.colors.diskCool, t);
+        c.lerp(CONFIG.colors.teal, 0.10 * t);
+        D.col[i * 3 + 0] = c.r; D.col[i * 3 + 1] = c.g; D.col[i * 3 + 2] = c.b;
+        D.size[i] = 0.9 + 2.2 * Math.random();
+      }
+
+      for (let i = 0; i < CONFIG.galaxy.bulgeStars; i++) {
+        const u = Math.random();
+        const r = (u ** (1 / 3)) * 1.5 * CONFIG.scaleFactor;
+        const th = Math.acos(2 * Math.random() - 1);
+        const ph = Math.random() * Math.PI * 2;
+        const x = r * Math.sin(th) * Math.cos(ph);
+        const y = r * Math.cos(th) * 0.55;
+        const z = r * Math.sin(th) * Math.sin(ph);
+
+        B.pos[i * 3 + 0] = x; B.pos[i * 3 + 1] = y; B.pos[i * 3 + 2] = z;
+        const c = CONFIG.colors.coreWarm.clone().lerp(CONFIG.colors.diskCool, 0.12 * Math.random());
+        B.col[i * 3 + 0] = c.r; B.col[i * 3 + 1] = c.g; B.col[i * 3 + 2] = c.b;
+        B.size[i] = 1.8 + 3.6 * Math.random();
+      }
+
+      for (let i = 0; i < CONFIG.galaxy.dustPuffs; i++) {
+        const R = (Math.random() ** 0.42) * 16 * CONFIG.scaleFactor;
+        const th = Math.random() * Math.PI * 2;
+        const x = Math.cos(th) * R + (Math.random() - 0.5) * 1.1 * CONFIG.scaleFactor;
+        const z = Math.sin(th) * R + (Math.random() - 0.5) * 1.1 * CONFIG.scaleFactor;
+        const y = (Math.random() - 0.5) * 0.55 * CONFIG.scaleFactor * Math.exp(-R / (7.5 * CONFIG.scaleFactor));
+
+        U.pos[i * 3 + 0] = x; U.pos[i * 3 + 1] = y; U.pos[i * 3 + 2] = z;
+        const c = CONFIG.colors.teal.clone().lerp(CONFIG.colors.diskCool, 0.55 * Math.random());
+        U.col[i * 3 + 0] = c.r; U.col[i * 3 + 1] = c.g; U.col[i * 3 + 2] = c.b;
+        U.size[i] = 6.0 + 16.0 * Math.random();
+      }
+
+      function makePoints(geom, data, sprite, opacity, blending) {
+        geom.setAttribute("position", new THREE.BufferAttribute(data.pos, 3));
+        geom.setAttribute("color", new THREE.BufferAttribute(data.col, 3));
+        geom.setAttribute("size", new THREE.BufferAttribute(data.size, 1));
+
+        const mat = new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          blending,
+          uniforms: {
+            uMap: { value: sprite },
+            uOpacity: { value: opacity },
+          },
+          vertexShader: `
+          attribute float size;
+          varying vec3 vColor;
+          void main(){
+            vColor = color;
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            float s = size * (300.0 / max(40.0, -mv.z));
+            gl_PointSize = s;
+            gl_Position = projectionMatrix * mv;
+          }
+        `,
+          fragmentShader: `
+          uniform sampler2D uMap;
+          uniform float uOpacity;
+          varying vec3 vColor;
+          void main(){
+            vec4 t = texture2D(uMap, gl_PointCoord);
+            float a = t.a * uOpacity;
+            if (a < 0.02) discard;
+            gl_FragColor = vec4(vColor, 1.0) * vec4(1.0,1.0,1.0,a);
+          }
+        `,
+          vertexColors: true
+        });
+
+        return new THREE.Points(geom, mat);
+      }
+
+      const diskPts = makePoints(disk, D, starSprite, 0.85, THREE.AdditiveBlending);
+      const bulgePts = makePoints(bulge, B, starSprite, 0.88, THREE.AdditiveBlending);
+      const dustPts = makePoints(dust, U, dustSprite, 0.22, THREE.AdditiveBlending);
+
+      scene.add(dustPts);
+      scene.add(diskPts);
+      scene.add(bulgePts);
+
+      const sheen = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: dustSprite,
+        color: CONFIG.colors.teal,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.10,
+        depthWrite: false,
+      }));
+      sheen.scale.set(6800, 6800, 1);
+      scene.add(sheen);
+    }
+
+    function createGalacticCenter() {
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: gcGlowSprite,
+        color: CONFIG.colors.gcGlow,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.98,
+        depthWrite: false
+      }));
+      halo.scale.set(520, 520, 1);
+      scene.add(halo);
+
+      const core = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: gcGlowSprite,
+        color: CONFIG.colors.gcGlow,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.70,
+        depthWrite: false
+      }));
+      core.scale.set(170, 170, 1);
+      scene.add(core);
+    }
+
+    // Create Sun
+    const sunPos = new THREE.Vector3(CONFIG.R0_kpc * CONFIG.scaleFactor, 0, 0);
+    const sun = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: starSprite,
+      color: CONFIG.colors.sun,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      opacity: 0.95,
+      depthWrite: false
+    }));
+    sun.scale.set(26, 26, 1);
+    sun.position.copy(sunPos);
+    scene.add(sun);
+
+    // Planes
+    let planeVisible = false;
+    const plane = new THREE.GridHelper(2000, 20, CONFIG.colors.plane, CONFIG.colors.plane);
+    plane.material.transparent = true;
+    plane.material.opacity = 0.06;
+    plane.visible = planeVisible;
+    scene.add(plane);
+
+    let equatorVisible = false;
+    const ncp_gal = new THREE.Vector3(A0G[0][2], A0G[1][2], A0G[2][2]).normalize();
+    const ncp_scene = new THREE.Vector3(ncp_gal.x, ncp_gal.z, -ncp_gal.y).normalize();
+    const equator = new THREE.GridHelper(2000, 20, 0xb7b6ff, 0xb7b6ff);
+    equator.material.transparent = true;
+    equator.material.opacity = 0.12;
+    equator.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ncp_scene);
+    equator.position.copy(sunPos);
+    equator.position.addScaledVector(ncp_scene, 0.05);
+    equator.visible = equatorVisible;
+    scene.add(equator);
+
+    // Sun line
+    let sunLineVisible = true;
+    const sunLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({
+      color: CONFIG.colors.line,
+      transparent: true,
+      opacity: 0.55
+    }));
+    sunLine.visible = sunLineVisible;
+    scene.add(sunLine);
+
+    // Clusters group
+    const clustersGroup = new THREE.Group();
+    const pickTargets = [];
+    const pulsarSystems = [];
+    const searchIndex = new Map();
+
+    // Compute cluster radii
+    function computeClusterRadii(c) {
+      const coreR = Math.max(0.55, pcToScene(c.rc_pc ?? 0) * CONFIG.RADIUS_EXAGGERATION);
+      const halfLightR = Math.max(coreR * 1.5, pcToScene(c.rhl_pc ?? 0) * CONFIG.RADIUS_EXAGGERATION);
+      return { coreR, halfLightR };
+    }
+
+    // Add cluster visual (exact match to v6)
+    function addClusterVisual(pos, c) {
+      const { coreR, halfLightR } = computeClusterRadii(c);
+
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: clusterHaloSprite,
+        color: CONFIG.colors.coreWarm,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.20,
+        depthWrite: false
+      }));
+      halo.position.copy(pos);
+      halo.scale.set(halfLightR * 7.2, halfLightR * 7.2, 1);
+
+      const core = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: clusterSprite,
+        color: CONFIG.colors.cluster,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.85,
+        depthWrite: false
+      }));
+      core.position.copy(pos);
+      core.scale.set(coreR * 7.0, coreR * 7.0, 1);
+
+      clustersGroup.add(halo);
+      clustersGroup.add(core);
+
+      const n = 20;
+      const geom = new THREE.BufferGeometry();
+      const p = new Float32Array(n * 3);
+      const col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        const r = (Math.random() ** 0.35) * coreR * 2.4;
+        const th = Math.random() * Math.PI * 2;
+        const ph = Math.acos(2 * Math.random() - 1);
+        p[i * 3 + 0] = pos.x + r * Math.sin(ph) * Math.cos(th);
+        p[i * 3 + 1] = pos.y + r * Math.cos(ph);
+        p[i * 3 + 2] = pos.z + r * Math.sin(ph) * Math.sin(th);
+
+        const cc = CONFIG.colors.cluster.clone().lerp(CONFIG.colors.coreWarm, Math.random() * 0.35);
+        col[i * 3 + 0] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b;
+      }
+      geom.setAttribute("position", new THREE.BufferAttribute(p, 3));
+      geom.setAttribute("color", new THREE.BufferAttribute(col, 3));
+
+      const mat = new THREE.PointsMaterial({
+        map: starSprite,
+        size: 10.0,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      clustersGroup.add(new THREE.Points(geom, mat));
+
+      return { coreR };
+    }
+
+    // Pulsar functions (exact match to v6)
+    function omegaDisplayFromPeriodMs(ms, scale = 1.0){
+        if (!ms || !Number.isFinite(ms) || ms <= 0) {
+          const rps = 0.3 + Math.random() * 1.4;
+          return 2 * Math.PI * rps;
+        }
+        const Ps = ms / 1000;
+        let rps = 1 / Math.max(0.001, Ps);
+        // Apply scale factor (p-spin slider value, typically 0.35)
+        rps = clamp(rps * scale, 0.10, 8.0);
+        return 2 * Math.PI * rps;
+    }
+
+    function randomUnitVector() {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const z = 2 * v - 1;
+      const r = Math.sqrt(Math.max(0, 1 - z * z));
+      return new THREE.Vector3(r * Math.cos(theta), z, r * Math.sin(theta));
+    }
+
+    // Pulsar color function
+    function pulsarColor(p) {
+      const mode = pulsarStyle.colorBy;
+      if (mode === "none") return new THREE.Color("#FF2BD6");
+      if (mode === "binary") {
+        const isBin = (p.pb_days != null && p.pb_days !== "—" && p.pb_days !== "");
+        return new THREE.Color(isBin ? "#00FFE6" : "#FF2BD6");
+      }
+      if (mode === "dm") {
+        const dm = Number(p.dm);
+        if (!Number.isFinite(dm)) return new THREE.Color("#A0C4FF");
+        const t = clamp((dm - 20) / 120, 0, 1);
+        return new THREE.Color().lerpColors(new THREE.Color("#00FFE6"), new THREE.Color("#FFAA00"), t);
+      }
+      // period
+      const P = Number(p.period_ms);
+      if (!Number.isFinite(P)) return new THREE.Color("#A0C4FF");
+      const t = clamp((Math.log10(P) - Math.log10(1.5)) / (Math.log10(30) - Math.log10(1.5)), 0, 1);
+      return new THREE.Color().lerpColors(new THREE.Color("#FFAA00"), new THREE.Color("#00B3FF"), t);
+    }
+
+    function addPulsarVisual(clusterPos, visualSize, p) {
+        const col = pulsarColor(p);
+        const root = new THREE.Group();
+        root.position.copy(clusterPos);
+        root.position.add(new THREE.Vector3(
+          (Math.random() - 0.5) * visualSize * 0.85,
+          (Math.random() - 0.5) * visualSize * 0.55,
+          (Math.random() - 0.5) * visualSize * 0.85
+        ));
+
+        const spinAxis = randomUnitVector();
+        root.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), spinAxis);
+
+        const spin = new THREE.Group();
+        root.add(spin);
+
+        const obliq = THREE.MathUtils.degToRad(clamp(6 + 60 * Math.random(), 6, 70));
+        const mag = new THREE.Group();
+        mag.rotation.x = obliq;
+        spin.add(mag);
+
+        const core = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: starSprite,
+          color: col,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          opacity: 0.92,
+          depthWrite: false
+        }));
+        const coreSize = Math.max(1.6, visualSize * 0.20);
+        core.scale.set(coreSize, coreSize, 1);
+        mag.add(core);
+
+        const beamLen = Math.max(12.0, visualSize * 1.35);
+        const beamRad = Math.max(0.55, visualSize * 0.10);
+        const beamGeom = new THREE.ConeGeometry(beamRad, beamLen, 20, 1, true);
+        const beamMat = new THREE.MeshBasicMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.14,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+
+        const beam1 = new THREE.Mesh(beamGeom, beamMat.clone());
+        beam1.position.y = beamLen / 2;
+        mag.add(beam1);
+
+        const beam2 = new THREE.Mesh(beamGeom, beamMat.clone());
+        beam2.rotation.x = Math.PI;
+        beam2.position.y = -beamLen / 2;
+        mag.add(beam2);
+
+        const phase0 = Math.random() * Math.PI * 2;
+        const omega = omegaDisplayFromPeriodMs(p.period_ms, pulsarStyle.spinScale);
+
+        // Store the period and pulsar data for later updates
+        pulsarSystems.push({
+          root, spin, beams: [beam1, beam2], core, omega, phase: phase0,
+          periodMs: p.period_ms, // Store the period
+          pulsarData: p // Store the whole pulsar data object
+        });
+        clustersGroup.add(root);
+      }
+
+    // Pulsar key for cluster
+    function pulsarKeyForCluster(c) {
+      return (c.key || c.id || c.name || "").trim();
+    }
+
+    function pulsarsForCluster(c) {
+      const k = pulsarKeyForCluster(c);
+      return pulsarByKey[k] || pulsarByKey[k.toUpperCase().replace(/\s+/g, " ").trim()] || [];
+    }
+
+    // Filter function
+    function passesFilters(c) {
+      const name = `${c.id ?? ""} ${c.name ?? ""}`.toLowerCase();
+      if (filters.text && !name.includes(filters.text.toLowerCase())) return false;
+      const rs = Number(c.rsun_kpc);
+      if (Number.isFinite(rs) && rs > filters.rsunMax) return false;
+      const m = Number(c.mass_msun);
+      if (Number.isFinite(m) && m < filters.massMin) return false;
+      const ps = pulsarsForCluster(c).length;
+      if (ps < filters.psrMin) return false;
+      return true;
+    }
+
+    // Build scene
+    function rebuildScene() {
+      clustersGroup.clear();
+      pickTargets.length = 0;
+      pulsarSystems.length = 0;
+      searchIndex.clear();
+
+      const hitGeo = new THREE.SphereGeometry(1, 12, 12);
+      const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+
+      let shown = 0;
+      clusters.forEach(c => {
+        if (!passesFilters(c)) return;
+
+        const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+        const { coreR } = addClusterVisual(pos, c);
+
+        const hit = new THREE.Mesh(hitGeo, hitMat);
+        hit.position.copy(pos);
+        hit.scale.setScalar(Math.max(7, coreR * 2.8));
+        hit.userData = c;
+        pickTargets.push(hit);
+        clustersGroup.add(hit);
+
+        const psrs = pulsarsForCluster(c);
+        const count = Math.min(psrs.length, 8);
+        for (let i = 0; i < count; i++) {
+          addPulsarVisual(pos, coreR * 1.65, psrs[i]);
+        }
+
+        // Add to search index
+        const addKey = (s) => {
+          const k = String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+          if (k) searchIndex.set(k, c);
+        };
+        addKey(c.id);
+        addKey(c.cluster_token);
+        addKey(c.name);
+        psrs.forEach(p => addKey(p.name));
+
+        shown++;
+      });
+
+      scene.add(clustersGroup);
+      status.textContent = `Loaded: ${clusters.length} clusters | Shown: ${shown} | Click to select, Esc to unpin`;
+    }
+
+    // Data loading
+    async function fetchJSON(url) {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return await r.json();
+    }
+
+    async function loadData({ noCache = false } = {}) {
+      try {
+        status.textContent = "Loading catalogs...";
+        const qc = noCache ? "?nocache=1" : "";
+        const qp = noCache ? "?nocache=1" : "";
+        const [cjson, pjson] = await Promise.all([
+          fetchJSON(`${CONFIG.apiBase}/api/clusters${qc}`),
+          fetchJSON(`${CONFIG.apiBase}/api/pulsars${qp}`)
+        ]);
+
+        clustersMeta = cjson;
+        pulsarsMeta = pjson;
+        clusters = cjson.clusters || [];
+        pulsarByKey = pjson.byKey || pjson.pulsarsByKey || {};
+
+        // Add normalized fallback keys
+        const norm = {};
+        for (const [k, v] of Object.entries(pulsarByKey)) {
+          const nk = String(k).toUpperCase().replace(/\s+/g, " ").trim();
+          norm[nk] = v;
+        }
+        Object.assign(pulsarByKey, norm);
+
+        // Update provenance
+        const lines = [];
+        if (clustersMeta) {
+          lines.push(`Clusters: ${clustersMeta.source || "—"}`);
+          if (clustersMeta.updated) lines.push(`Updated: ${clustersMeta.updated}`);
+          if (clustersMeta.worker_version) lines.push(`Worker: ${clustersMeta.worker_version}`);
+        }
+        if (pulsarsMeta) {
+          lines.push(`Pulsars: ${pulsarsMeta.source || "—"}`);
+          if (pulsarsMeta.updated) lines.push(`Updated: ${pulsarsMeta.updated}`);
+          if (pulsarsMeta.worker_version) lines.push(`Worker: ${pulsarsMeta.worker_version}`);
+        }
+        prov.textContent = lines.join("\n") || "—";
+
+        // Initialize observer time if not set
+        if (!observer.timeLocal) {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          observer.timeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
+          el("o-time").value = observer.timeLocal;
+        }
+
+        rebuildScene();
+        applyOverlayVisibility();
+        applyPerf();
+
+        status.textContent = `Loaded ${clusters.length} clusters, ${Object.keys(pulsarByKey).length} pulsar groups.`;
+      } catch (err) {
+        status.textContent = `Load failed: ${err.message}`;
+        console.error(err);
+      }
+    }
+
+    // Panel display
+    function showPanel(c, { pin = false } = {}) {
+      const psrs = pulsarsForCluster(c);
+
+      ui.title.textContent = c.name || c.id;
+      ui.sub.textContent = pin ? "Pinned (Esc or ✕ to close)" : "Hover preview — click a cluster to pin";
+      ui.id.textContent = c.id || c.name || "—";
+      ui.pcount.textContent = `${psrs.length} pulsars`;
+      ui.rsun.textContent = `R⊙ ${Number(c.rsun_kpc).toFixed(2)} kpc`;
+      ui.rgc.textContent = c.rgc_kpc == null ? "RGC —" : `RGC ${Number(c.rgc_kpc).toFixed(2)} kpc`;
+      ui.lb.textContent = `${Number(c.l).toFixed(2)}°, ${Number(c.b).toFixed(2)}°`;
+      ui.vmag.textContent = c.vmag == null ? "—" : Number(c.vmag).toFixed(2);
+
+      const eq = (c.ra_deg != null && c.dec_deg != null)
+        ? { raDeg: Number(c.ra_deg), decDeg: Number(c.dec_deg) }
+        : galToEq(Number(c.l), Number(c.b));
+
+      const raDeg = eq.raDeg;
+      const decDeg = eq.decDeg;
+      ui.ra.textContent = `${degToHMS(raDeg)} (${raDeg.toFixed(2)}°)`;
+      ui.dec.textContent = `${degToDMS(decDeg)} (${decDeg.toFixed(2)}°)`;
+
+      ui.rc.textContent = c.rc_pc == null ? "—" : `${Number(c.rc_pc).toFixed(2)} pc`;
+      ui.rh.textContent = c.rhl_pc == null ? "—" : `${Number(c.rhl_pc).toFixed(2)} pc`;
+      ui.rt.textContent = c.rt_pc == null ? "—" : `${Number(c.rt_pc).toFixed(2)} pc`;
+      ui.mass.textContent = c.mass_msun == null ? "—" : `${(Number(c.mass_msun)).toExponential(2)} M☉`;
+
+      // Update coordinate display based on observer mode
+      let coordText = "—";
+      let coordTitle = "Alt/Az (observer)";
+
+      if (observer.mode === "altaz" && observer.enabled) {
+        const dateUTC = observerTimeUTC();
+        const lat = Number(observer.lat);
+        const lon = Number(observer.lon);
+        const aa = eqToAltAz(raDeg, decDeg, dateUTC, lat, lon);
+        coordText = `Alt ${aa.altDeg.toFixed(1)}° • Az ${aa.azDeg.toFixed(1)}°`;
+        coordTitle = "Alt/Az (observer)";
+
+        // Update LST/HA in drawer
+        const lst = lstDeg(dateUTC, lon);
+        const ha = ((lst - raDeg + 360) % 360);
+        const haHours = (ha / 15).toFixed(2);
+        const lstHours = (lst / 15).toFixed(2);
+        ui.lstha.textContent = `LST ${lstHours}h • HA ${haHours}h`;
+        ui.altaz.textContent = `Alt ${aa.altDeg.toFixed(1)}° • Az ${aa.azDeg.toFixed(1)}°`;
+      } else if (observer.mode === "eq") {
+        coordText = `${degToHMS(raDeg)}  ${degToDMS(decDeg)}`;
+        coordTitle = "RA/Dec (J2000)";
+        ui.lstha.textContent = "—";
+      } else if (observer.mode === "gal") {
+        coordText = `${Number(c.l).toFixed(2)}°, ${Number(c.b).toFixed(2)}°`;
+        coordTitle = "Galactic (l,b)";
+        ui.lstha.textContent = "—";
+      }
+
+      ui.coordTitle.textContent = coordTitle;
+      ui.altazDisplay.textContent = coordText;
+
+      const url = imageUrl(c);
+      ui.img.src = url;
+      ui.img.onerror = () => { ui.img.removeAttribute("src"); };
+      ui.img.onclick = () => { window.open(url, "_blank"); };
+
+      ui.psrs.innerHTML = "";
+      if (!psrs.length) {
+        const div = document.createElement("div");
+        div.className = "psr";
+        div.style.borderColor = "rgba(255,255,255,.14)";
+        div.style.background = "rgba(0,0,0,.10)";
+        div.textContent = "No pulsars listed for this cluster in GCpsr.txt";
+        ui.psrs.appendChild(div);
+      } else {
+        for (const p of psrs.slice(0, 80)) {
+          const div = document.createElement("div");
+          div.className = "psr";
+          const P = (p.period_ms == null) ? "—" : `${Number(p.period_ms).toFixed(4)} ms`;
+          div.innerHTML = `
+          <div class="psrTop">
+            <div class="psrName">${p.name ?? "Pulsar"}</div>
+            <div class="psrP">${P}</div>
+          </div>
+          <div class="psrGrid">
+            <div>DM<br><b>${p.dm ?? "—"}</b></div>
+            <div>Pb (d)<br><b>${p.pb_days ?? "—"}</b></div>
+            <div>e<br><b>${p.ecc ?? "—"}</b></div>
+          </div>`;
+          ui.psrs.appendChild(div);
+        }
+      }
+
+      panel.classList.add("visible");
+      panel.setAttribute("aria-hidden", "false");
+    }
+
+    function hidePanel() {
+      panel.classList.remove("visible");
+      panel.setAttribute("aria-hidden", "true");
+    }
+
+    // Interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function pickCluster(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(pickTargets, false);
+      if (!hits.length) return null;
+      return hits[0].object.userData;
+    }
+
+    // Fly-to animation
+    let fly = null;
+    function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+    function startFlyTo(camPos, targetPos, ms = 900) {
+      fly = {
+        t0: performance.now(),
+        ms,
+        cam0: camera.position.clone(),
+        tar0: controls.target.clone(),
+        cam1: camPos.clone(),
+        tar1: targetPos.clone(),
+      };
+    }
+
+    function snapshotView() {
+      return { cam: camera.position.clone(), target: controls.target.clone() };
+    }
+
+    function restoreView(v) {
+      if (!v) return;
+      startFlyTo(v.cam, v.target, 850);
+    }
+
+    function focusCluster(c, { pin = true } = {}) {
+      const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+      if (pin) {
+        pinned = c;
+        hovered = c;
+        showPanel(c, { pin: true });
+      } else {
+        hovered = c;
+        showPanel(c, { pin: false });
+      }
+
+      if (sunLineVisible) {
+        sunLine.geometry.setFromPoints([sunPos, pos]);
+        sunLine.visible = true;
+      }
+
+      const dir = camera.position.clone().sub(pos).normalize();
+      const dist = Math.max(8, Math.min(320, camera.position.distanceTo(pos) * 0.11));
+      startFlyTo(
+        pos.clone().add(dir.multiplyScalar(dist)).add(new THREE.Vector3(0, dist * 0.28, 0)),
+        pos,
+        920
+      );
+    }
+
+    // Compare feature
+    function compareKey(c) { return String(c.id || c.name || "").trim(); }
+
+    function rebuildCompareUI() {
+      const list = el("cmp-list");
+      list.innerHTML = "";
+      if (!compare.size) {
+        const d = document.createElement("div");
+        d.className = "mini";
+        d.textContent = "No clusters in compare yet.";
+        list.appendChild(d);
+        return;
+      }
+      for (const [k, c] of compare.entries()) {
+        const item = document.createElement("div");
+        item.className = "listItem";
+        const ps = pulsarsForCluster(c).length;
+        item.innerHTML = `<div><b>${c.name || c.id}</b><div class="mini">R⊙ ${Number(c.rsun_kpc).toFixed(2)} kpc • ${ps} pulsars</div></div>`;
+        const x = document.createElement("button");
+        x.className = "xbtn";
+        x.textContent = "Remove";
+        x.onclick = () => { compare.delete(k); rebuildCompareUI(); syncURLStateDebounced(); };
+        item.appendChild(x);
+        list.appendChild(item);
+      }
+    }
+
+    function exportCompareCSV() {
+      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars"]];
+      for (const c of compare.values()) {
+        const ps = pulsarsForCluster(c).length;
+        rows.push([
+          c.id ?? "", c.name ?? "",
+          c.l ?? "", c.b ?? "",
+          c.rsun_kpc ?? "", c.rgc_kpc ?? "",
+          c.vmag ?? "", c.mass_msun ?? "",
+          c.rc_pc ?? "", c.rhl_pc ?? "", c.rt_pc ?? "",
+          ps
+        ]);
+      }
+      downloadCSV("compare_clusters.csv", rows);
+    }
+
+    function downloadCSV(filename, rows) {
+      const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Export functions
+    function exportFilteredCSV() {
+      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars"]];
+      for (const c of clusters) {
+        if (!passesFilters(c)) continue;
+        const ps = pulsarsForCluster(c).length;
+        rows.push([
+          c.id ?? "", c.name ?? "",
+          c.l ?? "", c.b ?? "",
+          c.rsun_kpc ?? "", c.rgc_kpc ?? "",
+          c.vmag ?? "", c.mass_msun ?? "",
+          c.rc_pc ?? "", c.rhl_pc ?? "", c.rt_pc ?? "",
+          ps
+        ]);
+      }
+      downloadCSV("filtered_clusters.csv", rows);
+    }
+
+    function exportPNG() {
+      const prev = renderer.getPixelRatio();
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+      composer.render();
+      const url = renderer.domElement.toDataURL("image/png");
+      renderer.setPixelRatio(prev);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "gc3d.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // URL state management
+    let syncTimer = null;
+    function syncURLStateDebounced() {
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(syncURLState, 250);
+    }
+
+    function currentState() {
+      return {
+        v: 2,
+        cam: camera.position.toArray(),
+        target: controls.target.toArray(),
+        pinned: pinned ? compareKey(pinned) : null,
+        compare: Array.from(compare.keys()),
+        toggles: { planeVisible, equatorVisible, sunLineVisible, eclipticVisible },
+        filters: { ...filters },
+        observer: { ...observer },
+        pulsarStyle: { ...pulsarStyle },
+        perf: { ...perf },
+      };
+    }
+
+    function encodeState(obj) {
+      const json = JSON.stringify(obj);
+      return btoa(unescape(encodeURIComponent(json)));
+    }
+
+    function decodeState(s) {
+      try {
+        const json = decodeURIComponent(escape(atob(s)));
+        return JSON.parse(json);
+      } catch (e) { return null; }
+    }
+
+    function syncURLState() {
+      const st = encodeState(currentState());
+      const url = new URL(window.location.href);
+      url.hash = `state=${st}`;
+      history.replaceState(null, "", url.toString());
+    }
+
+    function applyStateFromURL() {
+      const h = window.location.hash || "";
+      const m = h.match(/state=([^&]+)/);
+      if (!m) return false;
+      const st = decodeState(m[1]);
+      if (!st) return false;
+
+      if (st.cam && st.target) {
+        camera.position.fromArray(st.cam);
+        controls.target.fromArray(st.target);
+        controls.update();
+      }
+      if (st.filters) Object.assign(filters, st.filters);
+      if (st.observer) Object.assign(observer, st.observer);
+      if (st.pulsarStyle) Object.assign(pulsarStyle, st.pulsarStyle);
+      if (st.perf) Object.assign(perf, st.perf);
+
+      const t = st.toggles || {};
+      planeVisible = !!t.planeVisible;
+      equatorVisible = !!t.equatorVisible;
+      sunLineVisible = !!t.sunLineVisible;
+      eclipticVisible = !!t.eclipticVisible;
+
+      window.__pendingState = st;
+      return true;
+    }
+
+    function applyPendingCompare() {
+      const st = window.__pendingState;
+      if (!st) return;
+      window.__pendingState = null;
+
+      compare.clear();
+      if (Array.isArray(st.compare)) {
+        for (const k of st.compare) {
+          const c = searchIndex.get(k.toLowerCase().replace(/[^a-z0-9]+/g, "").trim());
+          if (c) compare.set(compareKey(c), c);
+        }
+      }
+      rebuildCompareUI();
+
+      if (st.pinned) {
+        const c = searchIndex.get(st.pinned.toLowerCase().replace(/[^a-z0-9]+/g, "").trim());
+        if (c) {
+          pinned = c;
+          showPanel(c, { pin: true });
+          if (sunLineVisible) {
+            const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+            sunLine.geometry.setFromPoints([sunPos, pos]);
+            sunLine.visible = true;
+          }
+        }
+      }
+    }
+
+    // Overlay visibility
+    function applyOverlayVisibility() {
+      plane.visible = planeVisible;
+      equator.visible = equatorVisible;
+      sunLine.visible = sunLineVisible && !!(pinned || hovered);
+      if (ecliptic) ecliptic.visible = eclipticVisible;
+
+      // Update pill states
+      ["t-gal", "t-eq", "t-sunline", "t-ecliptic"].forEach(id => {
+        const e = el(id);
+        if (e) e.classList.remove("active");
+      });
+      if (planeVisible) el("t-gal").classList.add("active");
+      if (equatorVisible) el("t-eq").classList.add("active");
+      if (sunLineVisible) el("t-sunline").classList.add("active");
+      if (eclipticVisible) el("t-ecliptic").classList.add("active");
+
+      syncURLStateDebounced();
+    }
+
+    // Performance settings
+    function applyPerf() {
+      const wantLow = perf.quality === "low";
+      const pr = wantLow ? 1.0 : Math.min(2, window.devicePixelRatio);
+      renderer.setPixelRatio(pr);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Event Listeners
+    el("btn-refresh").addEventListener("click", async () => {
+      await loadData({ noCache: true });
+    });
+
+    el("btn-tools").addEventListener("click", () => {
+      drawer.classList.toggle("visible");
+      drawer.setAttribute("aria-hidden", drawer.classList.contains("visible") ? "false" : "true");
+    });
+
+    el("drawer-close").addEventListener("click", () => {
+      drawer.classList.remove("visible");
+      drawer.setAttribute("aria-hidden", "true");
+    });
+
+    el("btn-share").addEventListener("click", async () => {
+      syncURLState();
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        status.textContent = "Copied share link to clipboard.";
+      } catch {
+        status.textContent = "Copy failed (browser permission).";
+      }
+    });
+
+    el("btn-export").addEventListener("click", () => {
+      exportPNG();
+      exportFilteredCSV();
+    });
+
+    el("btn-info").addEventListener("click", () => {
+      infoModal.classList.add("visible");
+      infoModal.setAttribute("aria-hidden", "false");
+    });
+
+    el("info-close").addEventListener("click", () => {
+      infoModal.classList.remove("visible");
+      infoModal.setAttribute("aria-hidden", "true");
+    });
+
+    el("btn-reset").addEventListener("click", () => {
+      lastView = snapshotView();
+      startFlyTo(new THREE.Vector3(0, 560, 1180), new THREE.Vector3(0, 0, 0), 850);
+      syncURLStateDebounced();
+    });
+
+    el("btn-sun").addEventListener("click", () => {
+      lastView = snapshotView();
+      const tgt = sun.position.clone();
+      const cam = tgt.clone().add(new THREE.Vector3(180, 80, 160));
+      startFlyTo(cam, tgt, 850);
+      syncURLStateDebounced();
+    });
+
+    el("btn-gal").addEventListener("click", () => { planeVisible = !planeVisible; applyOverlayVisibility(); });
+    el("btn-eq").addEventListener("click", () => { equatorVisible = !equatorVisible; applyOverlayVisibility(); });
+    el("btn-lines").addEventListener("click", () => { sunLineVisible = !sunLineVisible; applyOverlayVisibility(); });
+    el("btn-ecliptic").addEventListener("click", () => { eclipticVisible = !eclipticVisible; applyOverlayVisibility(); });
+    el("t-ecliptic").addEventListener("click", () => { eclipticVisible = !eclipticVisible; applyOverlayVisibility(); });
+
+    el("t-gal").addEventListener("click", () => { planeVisible = !planeVisible; applyOverlayVisibility(); });
+    el("t-eq").addEventListener("click", () => { equatorVisible = !equatorVisible; applyOverlayVisibility(); });
+    el("t-sunline").addEventListener("click", () => { sunLineVisible = !sunLineVisible; applyOverlayVisibility(); });
+
+    el("cam-home").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 560, 1180), new THREE.Vector3(0, 0, 0), 850); });
+    el("cam-gc").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 140, 420), new THREE.Vector3(0, 0, 0), 850); });
+    el("cam-sun").addEventListener("click", () => { lastView = snapshotView(); const tgt = sun.position.clone(); startFlyTo(tgt.clone().add(new THREE.Vector3(220, 120, 180)), tgt, 850); });
+    el("cam-top").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 1400, 0.1), new THREE.Vector3(0, 0, 0), 850); });
+    el("cam-edge").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 60, 1400), new THREE.Vector3(0, 0, 0), 850); });
+
+    el("btn-compare").addEventListener("click", () => {
+      if (!pinned) return;
+      const k = compareKey(pinned);
+      compare.set(k, pinned);
+      rebuildCompareUI();
+      syncURLStateDebounced();
+    });
+
+    el("btn-copy").addEventListener("click", async () => {
+      if (!pinned) return;
+      const c = pinned;
+      const raDeg = (c.ra_deg != null) ? Number(c.ra_deg) : galToEq(c.l, c.b).raDeg;
+      const decDeg = (c.dec_deg != null) ? Number(c.dec_deg) : galToEq(c.l, c.b).decDeg;
+      const txt = `${c.name || c.id}\nRA ${degToHMS(raDeg)} (${raDeg.toFixed(5)}°)\nDec ${degToDMS(decDeg)} (${decDeg.toFixed(5)}°)\nl ${Number(c.l).toFixed(3)} b ${Number(c.b).toFixed(3)}\nRsun ${Number(c.rsun_kpc).toFixed(3)} kpc`;
+      try {
+        await navigator.clipboard.writeText(txt);
+        status.textContent = "Copied coordinates to clipboard.";
+      } catch {
+        status.textContent = "Copy failed.";
+      }
+    });
+
+    el("cmp-clear").addEventListener("click", () => { compare.clear(); rebuildCompareUI(); syncURLStateDebounced(); });
+    el("cmp-export").addEventListener("click", exportCompareCSV);
+
+    // Filters UI
+    el("f-rsun").addEventListener("input", (e) => { filters.rsunMax = Number(e.target.value || 200); rebuildScene(); syncURLStateDebounced(); });
+    el("f-psrmin").addEventListener("input", (e) => { filters.psrMin = Number(e.target.value || 0); rebuildScene(); syncURLStateDebounced(); });
+    el("f-mass").addEventListener("input", (e) => { filters.massMin = Number(e.target.value || 0); rebuildScene(); syncURLStateDebounced(); });
+    el("f-text").addEventListener("input", (e) => { filters.text = String(e.target.value || ""); rebuildScene(); syncURLStateDebounced(); });
+
+    // Observer UI
+    function syncObserverFromUI() {
+      observer.lat = Number(el("o-lat").value || 0);
+      observer.lon = Number(el("o-lon").value || 0);
+      observer.timeLocal = el("o-time").value || "";
+      observer.mode = el("o-mode").value || "altaz";
+      observer.enabled = true;
+      if (pinned) showPanel(pinned, { pin: true });
+      syncURLStateDebounced();
+    }
+    ["o-lat", "o-lon", "o-time", "o-mode"].forEach(id => el(id).addEventListener("input", syncObserverFromUI));
+
+    el("btn-sky-apply").addEventListener("click", syncObserverFromUI);
+    el("btn-sky-clear").addEventListener("click", () => {
+      observer.enabled = false;
+      if (pinned) showPanel(pinned, { pin: true });
+      syncURLStateDebounced();
+    });
+
+    // Pulsar UI
+    el("p-color").addEventListener("input", (e) => {
+      pulsarStyle.colorBy = e.target.value;
+      // Rebuild pulsar visuals with new colors
+      if (pinned) {
+        const pos = lbToVec3(pinned.l, pinned.b, pinned.rsun_kpc);
+        const { coreR } = computeClusterRadii(pinned);
+        // Clear existing pulsars and rebuild
+        pulsarSystems.length = 0;
+        const psrs = pulsarsForCluster(pinned);
+        const count = Math.min(psrs.length, 8);
+        for (let i = 0; i < count; i++) {
+          addPulsarVisual(pos, coreR * 1.65, psrs[i]);
+        }
+      }
+      syncURLStateDebounced();
+    });
+
+    el("p-spin").addEventListener("input", (e) => {
+        const newScale = Number(e.target.value);
+        pulsarStyle.spinScale = newScale;
+
+        // Update all pulsarSystems with the new scale
+        for (const ps of pulsarSystems) {
+          // Recalculate omega using the stored period and new scale
+          ps.omega = omegaDisplayFromPeriodMs(ps.periodMs, newScale);
+        }
+
+        syncURLStateDebounced();
+      });
+
+    // Perf UI
+    el("perf-quality").addEventListener("input", (e) => { perf.quality = e.target.value; applyPerf(); syncURLStateDebounced(); });
+    el("perf-fps").addEventListener("input", (e) => { perf.showFps = (e.target.value === "on"); syncURLStateDebounced(); });
+
+    // Search
+    search.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const q = String(search.value || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+      if (!q) return;
+
+      let found = null;
+      for (const [k, c] of searchIndex.entries()) {
+        if (k.includes(q)) { found = c; break; }
+      }
+      if (!found) {
+        status.textContent = `No match for "${search.value}".`;
+        return;
+      }
+      lastView = snapshotView();
+      focusCluster(found, { pin: true });
+      syncURLStateDebounced();
+    });
+
+    // Mouse interaction
+    renderer.domElement.addEventListener("mousemove", (e) => {
+      if (pinned) return;
+      const c = pickCluster(e);
+      hovered = c;
+      if (c) {
+        showPanel(c, { pin: false });
+        if (sunLineVisible) {
+          const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+          sunLine.geometry.setFromPoints([sunPos, pos]);
+          sunLine.visible = true;
+        }
+      } else {
+        hidePanel();
+        sunLine.visible = false;
+        hovered = null;
+      }
+    });
+
+    renderer.domElement.addEventListener("click", (e) => {
+      const c = pickCluster(e);
+      if (!c) return;
+      lastView = snapshotView();
+      focusCluster(c, { pin: true });
+      syncURLStateDebounced();
+    });
+
+    // Close panel
+    el("close").addEventListener("click", () => {
+      pinned = null;
+      hovered = null;
+      hidePanel();
+      sunLine.visible = false;
+      restoreView(lastView);
+      lastView = null;
+      syncURLStateDebounced();
+    });
+
+    // Escape key
+    window.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (panel.classList.contains("visible")) {
+        pinned = null;
+        hovered = null;
+        hidePanel();
+        sunLine.visible = false;
+      }
+      if (drawer.classList.contains("visible")) {
+        drawer.classList.remove("visible");
+        drawer.setAttribute("aria-hidden", "true");
+      }
+      if (infoModal.classList.contains("visible")) {
+        infoModal.classList.remove("visible");
+        infoModal.setAttribute("aria-hidden", "true");
+      }
+      restoreView(lastView);
+      lastView = null;
+      syncURLStateDebounced();
+    });
+
+    // Initialize
+    createMilkyWay();
+    createGalacticCenter();
+    createEclipticPlane();
+
+    // Apply URL state first, then load data
+    applyStateFromURL();
+    loadData({ noCache: false }).then(() => {
+      applyPendingCompare();
+    });
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    let fpsLast = performance.now();
+    let fpsFrames = 0;
+    let fpsValue = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      controls.update();
+      updateScaleBar();
+
+      // Fly-to animation
+      if (fly) {
+        const t = clamp((performance.now() - fly.t0) / fly.ms, 0, 1);
+        const e = easeInOut(t);
+        camera.position.lerpVectors(fly.cam0, fly.cam1, e);
+        controls.target.lerpVectors(fly.tar0, fly.tar1, e);
+        controls.update();
+        if (t >= 1) fly = null;
+      }
+
+      // Pulsar rotation
+      for (const p of pulsarSystems) {
+        p.phase += dt * p.omega;
+        p.spin.rotation.y = p.phase;
+        const pulse = 0.05 + 0.20 * (0.5 + 0.5 * Math.sin(p.phase));
+        p.beams[0].material.opacity = pulse;
+        p.beams[1].material.opacity = pulse;
+      }
+
+      // FPS counter
+      fpsFrames++;
+      const tnow = performance.now();
+      if (tnow - fpsLast > 500) {
+        fpsValue = Math.round((fpsFrames * 1000) / (tnow - fpsLast));
+        fpsFrames = 0;
+        fpsLast = tnow;
+        if (perf.showFps) {
+          const base = status.textContent.split("\n")[0];
+          status.textContent = `${base}\nFPS: ${fpsValue}`;
+        }
+      }
+
+      composer.render();
+    }
+    animate();
+
+    // Resize handler
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+      applyPerf();
+    });
+
+    // Initial status
+    status.textContent = "Ready. Hover over clusters to preview, click to select. Use ASTRONOMER panel for advanced tools.";
+  </script>
+</body>
+
+</html>

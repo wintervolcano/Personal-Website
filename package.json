@@ -1,0 +1,27 @@
+{
+    "scripts": {
+        "trapum:build": "node scripts/build-trapum-pulsars.mjs --trapum ./trapum.org --out ./src/data/trapum_pulsars.json --outImages ./public/trapum/discoveries",
+        "dev": "vite",
+        "build": "npm run trapum:build && vite build"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.1.18",
+        "@types/react": "^19.2.7",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^5.1.2",
+        "fast-glob": "^3.3.3",
+        "typescript": "^5.9.3",
+        "vite": "^7.3.0"
+    },
+    "dependencies": {
+        "framer-motion": "^12.23.26",
+        "lucide-react": "^0.562.0",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3",
+        "react-markdown": "^10.1.0",
+        "react-router-dom": "^7.11.0",
+        "remark-gfm": "^4.0.1",
+        "three": "^0.182.0",
+        "yaml": "^2.8.2"
+    }
+}

@@ -21,37 +21,37 @@ type GalleryItem = {
 const GALLERY_ITEMS: GalleryItem[] = [
     {
         id: "g-1",
-        src: "src/gallery/sardinia-conference.png",
+        src: "/gallery/sardinia-conference.png",
         title: "MPIfR group at Pulsar 2025, Sardinia.",
         description: "When a bunch of pulsar astronomers are asked what pulsars look like.",
     },
     {
         id: "g-2",
-        src: "src/gallery/compact-group-lunch-2025.png",
+        src: "/gallery/compact-group-lunch-2025.png",
         title: "COMPACT Group (MPIfR) lunch, Dec 2025",
         description: "We went to Pasterei, Bonn. 1 Word. Amazing! ",
     },
     {
         id: "g-3",
-        src: "src/gallery/with-paulo-sardinia.png",
+        src: "/gallery/with-paulo-sardinia.png",
         title: "A selfie with Paulo Freire near Sardinia Radio Telescope",
         description: "With rolling with legends out here.",
     },
     {
         id: "g-4",
-        src: "src/gallery/farewell-vishnu.png",
+        src: "/gallery/farewell-vishnu.png",
         title: "Farewell dinner for Vishnu",
         description: "When Harvard calls, you need to go.",
     },
     {
         id: "g-5",
-        src: "src/gallery/effelsberg-far.png",
+        src: "/gallery/effelsberg-far.png",
         title: "Effelsberg from far away",
         description: "That beast is my bread and butter.",
     },
     {
         id: "g-6",
-        src: "src/gallery/effelsberg-wiring.png",
+        src: "/gallery/effelsberg-wiring.png",
         title: "Effelsberg from underneath",
         description: "These are the wires that carry data from the dish to the faraday room. They can twist up to 720 degrees.",
     },

@@ -98,12 +98,12 @@ const PORTRAIT_SRC = "/Fazal_image_cropped.jpeg";
 const ABOUT_IMAGES: { id: string; src: string; alt: string }[] = [
   {
     id: "effelsberg",
-    src: "/src/gallery/effelsberg-far.png",
+    src: "/gallery/effelsberg-far.png",
     alt: "Effelsberg telescope from far away",
   },
   {
     id: "group-sardinia",
-    src: "src/gallery/sardinia-conference.png",
+    src: "/gallery/sardinia-conference.png",
     alt: "MPIfR group at Pulsar 2025, Sardinia.",
   }
 ];

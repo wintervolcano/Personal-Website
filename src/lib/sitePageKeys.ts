@@ -112,11 +112,21 @@ export const SITE_PAGE_KEYS: string[] = (() => {
   const pageFiles = import.meta.glob("../pages/**/*.{tsx,ts}");
 
   // Content posts (md/mdx)
-  // Use `as: "raw"` so Vite treats these as plain text strings rather than
-  // trying to parse Markdown as JavaScript during the bundle.
-  const blogFiles = import.meta.glob("../content/blog/**/*.{md,mdx}", { as: "raw" });
-  const researchFiles = import.meta.glob("../content/research/**/*.{md,mdx}", { as: "raw" });
-  const resourcesFiles = import.meta.glob("../content/resources/**/*.{md,mdx}", { as: "raw" });
+  // Use the `?raw` query so Vite treats these as plain text strings rather than
+  // trying to parse Markdown as JavaScript during the bundle. We only use the
+  // keys, not the loaded contents.
+  const blogFiles = import.meta.glob("../content/blog/**/*.{md,mdx}", {
+    query: "?raw",
+    import: "default",
+  });
+  const researchFiles = import.meta.glob("../content/research/**/*.{md,mdx}", {
+    query: "?raw",
+    import: "default",
+  });
+  const resourcesFiles = import.meta.glob("../content/resources/**/*.{md,mdx}", {
+    query: "?raw",
+    import: "default",
+  });
 
   const keys = new Set<string>();
 

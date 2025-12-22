@@ -331,7 +331,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
   const box = (orbitR + rP + rBH) * 2 + 32;
 
   return (
-    <div className="pointer-events-none absolute right-4 bottom-4 lg:bottom-25 xs:right-20 xs:bottom-40 z-[5] opacity-90" aria-hidden>
+    <div className="pointer-events-none absolute right-4 bottom-34 sm:right-8 sm:bottom-24 lg:right-20 lg:bottom-20 z-[5] opacity-90" aria-hidden>
       <div className="relative" style={{ width: box, height: box }}>
         {/* ✅ Grid lives INSIDE overlay so it can use box + orbitSec */}
         <SpacetimeGrid theme={theme} width={box * 1} height={box * 1} orbitSec={orbitSec} />

@@ -133,6 +133,18 @@ export default function App() {
     })();
   }, []);
 
+  // Keep browser UI (address bar, OS chrome) in sync with theme.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const color = theme === "dark" ? "#000000" : "#ffffff";
+    if (meta) {
+      meta.content = color;
+    }
+    // Hint to the browser for form controls / scrollbars.
+    document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
+  }, [theme]);
+
   useEffect(() => {
     const update = () => {
       if (typeof window === "undefined") return;

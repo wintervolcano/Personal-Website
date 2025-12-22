@@ -87,7 +87,7 @@ function makePulsars(): PulsarSprite[] {
 // don’t sit directly under nav/hero text.
 function makeMobilePulsars(): PulsarSprite[] {
   return [
-    { id: "p1", x: 0.07, y: 0.18, r: 14, spinSec: 0.9, driftSec: 10.0, depth: 0.55, beamLen: 130, beamW: 16, beamAlpha: 0.20, tiltDeg: 18 },
+    { id: "p1", x: 0.07, y: 0.12, r: 14, spinSec: 0.9, driftSec: 10.0, depth: 0.55, beamLen: 130, beamW: 16, beamAlpha: 0.20, tiltDeg: 18 },
     { id: "p2", x: 0.01, y: 0.54, r: 11, spinSec: 3.2, driftSec: 9.0, depth: 0.45, beamLen: 150, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
     { id: "p3", x: 0.50, y: 0.72, r: 11, spinSec: 2.2, driftSec: 9.0, depth: 0.45, beamLen: 160, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
     // { id: "p4", x: 0.78, y: 0.78, r: 10, spinSec: 1.3, driftSec: 11.0, depth: 0.40, beamLen: 145, beamW: 12, beamAlpha: 0.16, tiltDeg: 22 },
@@ -277,7 +277,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
   const binaries = useMemo(() => makeBinaries(), []);
 
   const enabled = theme === "light";
-  const { x, y } = useMouseXYEnabled(enabled && !reduced);
+  const { x, y } = useMouseXYEnabled(enabled && !reduced && !isMobile);
 
   // smoother + subtler
   const sx = useSpring(x, { stiffness: 140, damping: 30, mass: 0.9 });
@@ -309,10 +309,10 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
           {/* OUTER: mouse parallax (no drift here) */}
           <motion.div
             style={{
-              x: reduced ? 0 : (px as any),
-              y: reduced ? 0 : (py as any),
-              rotateX: reduced ? 0 : (rX as any),
-              rotateY: reduced ? 0 : (rY as any),
+              x: reduced || isMobile ? 0 : (px as any),
+              y: reduced || isMobile ? 0 : (py as any),
+              rotateX: reduced || isMobile ? 0 : (rX as any),
+              rotateY: reduced || isMobile ? 0 : (rY as any),
             }}
             transformTemplate={(t) => {
               const tx = num(t.x) * s.depth;
@@ -341,10 +341,10 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
         >
           <motion.div
             style={{
-              x: reduced ? 0 : (px as any),
-              y: reduced ? 0 : (py as any),
-              rotateX: reduced ? 0 : (rX as any),
-              rotateY: reduced ? 0 : (rY as any),
+              x: reduced || isMobile ? 0 : (px as any),
+              y: reduced || isMobile ? 0 : (py as any),
+              rotateX: reduced || isMobile ? 0 : (rX as any),
+              rotateY: reduced || isMobile ? 0 : (rY as any),
             }}
             transformTemplate={(t) => {
               const tx = num(t.x) * s.depth;

@@ -281,7 +281,7 @@ export function About({ theme }: { theme: Theme }) {
           </div>
         </div>
 
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col items-start lg:items-end gap-4">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col items-center lg:items-end gap-4">
           <motion.div
             className="relative w-full max-w-xs sm:max-w-sm lg:max-w-sm xl:max-w-md aspect-[4/5] rounded-3xl overflow-hidden border"
             initial={{ opacity: 0, y: 12 }}
@@ -292,7 +292,7 @@ export function About({ theme }: { theme: Theme }) {
             <img
               src={PORTRAIT_SRC}
               alt="Fazal Kareem"
-              className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
+              className="h-full w-full object-cover sm:grayscale sm:hover:grayscale-0 transition-all duration-500"
             />
           </motion.div>
         </div>
@@ -351,7 +351,7 @@ export function About({ theme }: { theme: Theme }) {
               <img
                 src={img.src}
                 alt={img.alt}
-                className="h-full w-full object-cover grayscale hover:grayscale-0 hover:scale-[1.03] transition-all duration-500"
+                className="h-full w-full object-cover sm:grayscale sm:hover:grayscale-0 sm:hover:scale-[1.03] transition-all duration-500"
               />
             </motion.div>
           ))}

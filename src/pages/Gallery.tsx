@@ -147,7 +147,10 @@ export function Gallery({ theme }: { theme: Theme }) {
                                             alt={item.title}
                                             className={cn(
                                                 "h-full w-full object-cover",
-                                                "grayscale group-hover:grayscale-0 group-hover:scale-[1.05] transition-transform duration-400 ease-out"
+                                                // Only apply grayscale + hover zoom on devices
+                                                // with hover (sm and up). On mobile, images
+                                                // stay in full colour.
+                                                "sm:grayscale sm:group-hover:grayscale-0 sm:group-hover:scale-[1.05] transition-transform duration-400 ease-out"
                                             )}
                                         />
                                     </div>

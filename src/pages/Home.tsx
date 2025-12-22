@@ -41,6 +41,7 @@ function Hero({
   const isDark = theme === "dark";
   const { x, y } = useMouseXY();
   const { w: vw, h: vh } = useViewport();
+  const isMobile = vw < 768;
 
   const xSpring = useSpring(x, { stiffness: 220, damping: 28, mass: 0.8 });
   const ySpring = useSpring(y, { stiffness: 220, damping: 28, mass: 0.8 });
@@ -88,7 +89,7 @@ function Hero({
         <div className="h-[calc(110svh-8rem)] flex flex-col justify-center items-center text-center">
           <div className="mt-6 relative">
             <motion.div
-              style={reduced ? undefined : { x: tx2, y: ty2 }}
+              style={reduced || isMobile ? undefined : { x: tx2, y: ty2 }}
               className={cn("absolute -inset-8 blur-[1px]", isDark ? "text-white/10" : "text-black/10")}
               aria-hidden
             >
@@ -99,7 +100,7 @@ function Hero({
               </h1>
             </motion.div>
 
-            <motion.div style={reduced ? undefined : { x: tx, y: ty }}>
+            <motion.div style={reduced || isMobile ? undefined : { x: tx, y: ty }}>
               <h1 className={cn("text-[clamp(3.9rem,10.8vw,11.4rem)] leading-[0.88] font-black tracking-[-0.06em]", isDark ? "text-white" : "text-black")}>
                 Fazal
                 <br />

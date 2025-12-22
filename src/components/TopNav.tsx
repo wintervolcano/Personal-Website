@@ -21,11 +21,13 @@ export function TopNav({
   setTheme,
   page,
   setPage,
+  isMobile,
 }: {
   theme: Theme;
   setTheme: (t: Theme) => void;
   page: PageKey;
   setPage: (k: PageKey) => void;
+  isMobile: boolean;
 }) {
   const isDark = theme === "dark";
 
@@ -75,7 +77,7 @@ export function TopNav({
             </div>
 
             <div className="flex items-center gap-3" data-nolock>
-              <ThemeToggle theme={theme} setTheme={setTheme} />
+              <ThemeToggle theme={theme} setTheme={setTheme} isMobile={isMobile} />
               <a
                 href="mailto:fkareem@mpifr-bonn.mpg.de"
                 className={cn(

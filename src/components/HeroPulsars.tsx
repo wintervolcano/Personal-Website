@@ -83,6 +83,17 @@ function makePulsars(): PulsarSprite[] {
   ];
 }
 
+// Slightly different layout for small screens so the glyphs
+// don’t sit directly under nav/hero text.
+function makeMobilePulsars(): PulsarSprite[] {
+  return [
+    { id: "p1", x: 0.07, y: 0.18, r: 14, spinSec: 0.9, driftSec: 10.0, depth: 0.55, beamLen: 130, beamW: 16, beamAlpha: 0.20, tiltDeg: 18 },
+    { id: "p2", x: 0.01, y: 0.54, r: 11, spinSec: 3.2, driftSec: 9.0, depth: 0.45, beamLen: 150, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
+    { id: "p3", x: 0.50, y: 0.72, r: 11, spinSec: 2.2, driftSec: 9.0, depth: 0.45, beamLen: 160, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
+    // { id: "p4", x: 0.78, y: 0.78, r: 10, spinSec: 1.3, driftSec: 11.0, depth: 0.40, beamLen: 145, beamW: 12, beamAlpha: 0.16, tiltDeg: 22 },
+  ];
+}
+
 function makeBinaries(): BinarySprite[] {
   return [
     // hover speed-up: faster but not silly
@@ -98,13 +109,16 @@ function Beam({
   alpha,
   rotateDeg,
   tiltDeg,
+  bright,
 }: {
   len: number;
   w: number;
   alpha: number;
   rotateDeg: number;
   tiltDeg: number;
+  bright?: boolean;
 }) {
+  const rgb = bright ? "255,255,255" : "0,0,0";
   return (
     <div
       className="absolute left-1/2 top-1/2"
@@ -121,7 +135,7 @@ function Beam({
           transform: "translate(-50%,-100%)",
           marginLeft: "50%",
           borderRadius: 999,
-          background: `linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,${alpha}))`,
+          background: `linear-gradient(to top, rgba(${rgb},0), rgba(${rgb},${alpha}))`,
           filter: "blur(0.5px)",
         }}
       />
@@ -134,7 +148,7 @@ function Beam({
           marginLeft: "50%",
           marginTop: -len + 14,
           borderRadius: 999,
-          background: `linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,${alpha * 0.9}))`,
+          background: `linear-gradient(to top, rgba(${rgb},0), rgba(${rgb},${alpha * 0.9}))`,
           filter: "blur(0.15px)",
           opacity: 0.95,
         }}
@@ -143,7 +157,7 @@ function Beam({
   );
 }
 
-function PulsarGlyph({ s }: { s: PulsarSprite }) {
+function PulsarGlyph({ s, bright }: { s: PulsarSprite; bright?: boolean }) {
   return (
     <div className="relative" style={{ width: s.beamLen * 2, height: s.beamLen * 2 }}>
       {/* TWO beams 180° apart */}
@@ -152,8 +166,8 @@ function PulsarGlyph({ s }: { s: PulsarSprite }) {
         animate={{ rotate: 360 }}
         transition={{ duration: s.spinSec, repeat: Infinity, ease: "linear" }}
       >
-        <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={0} tiltDeg={s.tiltDeg} />
-        <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={180} tiltDeg={s.tiltDeg} />
+        <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={0} tiltDeg={s.tiltDeg} bright={bright} />
+        <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={180} tiltDeg={s.tiltDeg} bright={bright} />
       </motion.div>
 
       {/* star sphere (black) */}
@@ -163,8 +177,9 @@ function PulsarGlyph({ s }: { s: PulsarSprite }) {
           width: s.r * 2,
           height: s.r * 2,
           transform: "translate(-50%,-50%)",
-          background:
-            "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.28), rgba(0,0,0,1) 62%, rgba(0,0,0,1) 100%)",
+          background: bright
+            ? "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(152, 196, 249, 1) 60%, rgba(166, 224, 248, 1) 100%)"
+            : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.28), rgba(0,0,0,1) 62%, rgba(0,0,0,1) 100%)",
           boxShadow: "0 10px 20px rgba(0,0,0,0.16)",
         }}
       />
@@ -176,7 +191,9 @@ function PulsarGlyph({ s }: { s: PulsarSprite }) {
           width: s.r * 2.4,
           height: s.r * 2.4,
           transform: "translate(-50%,-50%)",
-          background: "radial-gradient(circle, rgba(0,0,0,0.18), rgba(0,0,0,0) 70%)",
+          background: bright
+            ? "radial-gradient(circle, rgba(147,197,253,0.3), rgba(15,23,42,0) 70%)"
+            : "radial-gradient(circle, rgba(0,0,0,0.18), rgba(0,0,0,0) 70%)",
           filter: "blur(0.35px)",
           opacity: 0.75,
           pointerEvents: "none",
@@ -186,7 +203,7 @@ function PulsarGlyph({ s }: { s: PulsarSprite }) {
   );
 }
 
-function BinaryGlyph({ s }: { s: BinarySprite }) {
+function BinaryGlyph({ s, bright }: { s: BinarySprite; bright?: boolean }) {
   const [hover, setHover] = useState(false);
 
   const box = (s.orbitR + s.rP + s.rC) * 2 + 36;
@@ -210,16 +227,17 @@ function BinaryGlyph({ s }: { s: BinarySprite }) {
         <div className="absolute left-0 top-0" style={{ transform: `translate(${s.orbitR}px, ${-s.orbitR * 0.10}px)` }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: s.spinSec, repeat: Infinity, ease: "linear" }}>
             <div className="relative" style={{ width: s.rP * 2, height: s.rP * 2 }}>
-              <Beam len={Math.round(s.orbitR * 2.2)} w={12} alpha={0.14} rotateDeg={0} tiltDeg={16} />
-              <Beam len={Math.round(s.orbitR * 2.2)} w={12} alpha={0.14} rotateDeg={180} tiltDeg={16} />
+              <Beam len={Math.round(s.orbitR * 2.2)} w={12} alpha={0.14} rotateDeg={0} tiltDeg={16} bright={bright} />
+              <Beam len={Math.round(s.orbitR * 2.2)} w={12} alpha={0.14} rotateDeg={180} tiltDeg={16} bright={bright} />
               <div
                 className="absolute left-1/2 top-1/2 rounded-full"
                 style={{
                   width: s.rP * 2,
                   height: s.rP * 2,
                   transform: "translate(-50%,-50%)",
-                  background:
-                    "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.26), rgba(0,0,0,1) 62%, rgba(0,0,0,1) 100%)",
+                  background: bright ?
+                    "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(152, 196, 249, 1) 60%, rgba(166, 224, 248, 1) 100%)" :
+                    "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.26), rgba(0,0,0,1) 62%, rgba(0,0,0,1) 100%)",
                   boxShadow: "0 10px 20px rgba(0,0,0,0.14)",
                 }}
               />
@@ -234,8 +252,9 @@ function BinaryGlyph({ s }: { s: BinarySprite }) {
             style={{
               width: s.rC * 2,
               height: s.rC * 2,
-              background:
-                "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.95), rgba(255,255,255,0.55) 60%, rgba(0,0,0,0.12) 100%)",
+              background: bright
+                ? "radial-gradient(circle at 35% 35%, rgba(255,255,255,1), rgba(191, 191, 191, 0.95) 55%, rgba(248,250,252,0.1) 100%)"
+                : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.95), rgba(255,255,255,0.55) 60%, rgba(0,0,0,0.12) 100%)",
               boxShadow: hover ? "0 14px 28px rgba(0,0,0,0.18)" : "0 10px 20px rgba(0,0,0,0.12)",
               border: "1px solid rgba(0,0,0,0.10)",
             }}
@@ -248,13 +267,16 @@ function BinaryGlyph({ s }: { s: BinarySprite }) {
 
 export function HeroPulsars({ theme }: { theme: Theme }) {
   // IMPORTANT: no early return before hooks.
-  const enabled = theme === "light";
-
   const reduced = usePrefersReducedMotion();
-  const sprites = useMemo(() => makePulsars(), []);
+  const { vw, vh } = useViewport();
+  const isMobile = vw < 768;
+
+  const brightOnMobileDark = isMobile && theme === "dark";
+
+  const sprites = useMemo(() => (isMobile ? makeMobilePulsars() : makePulsars()), [isMobile]);
   const binaries = useMemo(() => makeBinaries(), []);
 
-  const { vw, vh } = useViewport();
+  const enabled = theme === "light";
   const { x, y } = useMouseXYEnabled(enabled && !reduced);
 
   // smoother + subtler
@@ -271,8 +293,10 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
 
   const num = (v: any) => (typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : 0);
 
-  // Render nothing in dark mode, but only AFTER hooks executed.
-  if (!enabled) return null;
+  // Render nothing in dark mode on desktop/tablet, but always keep
+  // the glyphs visible on mobile so the hero feels alive even when
+  // Search Mode is disabled.
+  if (!enabled && !isMobile) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -298,12 +322,12 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
               return `translate3d(${tx}px, ${ty}px, 0) rotateX(${rx}deg) rotateY(${ry}deg)`;
             }}
           >
-            {/* INNER: your existing drift (doesn’t fight the mouse) */}
+
             <motion.div
               animate={{ y: [0, -6, 0], x: [0, 2, 0] }}
               transition={{ duration: s.driftSec, repeat: Infinity, ease: "easeInOut" }}
             >
-              <PulsarGlyph s={s} />
+              <PulsarGlyph s={s} bright={brightOnMobileDark} />
             </motion.div>
           </motion.div>
         </motion.div>
@@ -334,7 +358,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
               animate={{ y: [0, -5, 0], x: [0, 2.5, 0] }}
               transition={{ duration: s.driftSec, repeat: Infinity, ease: "easeInOut" }}
             >
-              <BinaryGlyph s={s} />
+              <BinaryGlyph s={s} bright={brightOnMobileDark} />
             </motion.div>
           </motion.div>
         </motion.div>

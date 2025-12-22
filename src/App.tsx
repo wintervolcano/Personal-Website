@@ -101,6 +101,8 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [isMobile, setIsMobile] = useState(false);
+
   const page: PageKey = useMemo(() => pageKeyFromPath(location.pathname), [location.pathname]);
   const isDark = theme === "dark";
 
@@ -129,6 +131,16 @@ export default function App() {
       setResourceDocs(res);
       setProjectDocs(proj);
     })();
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      if (typeof window === "undefined") return;
+      setIsMobile(window.innerWidth < 768);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   const latestBlog = useMemo(
@@ -176,7 +188,7 @@ export default function App() {
   return (
     <div className={cn("min-h-[100svh] flex flex-col", isDark ? "bg-black text-white" : "bg-white text-black")}>
       <ScrollToTop />
-      <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} />
+      <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} isMobile={isMobile} />
 
       <main className="flex-1 pt-24 sm:pt-28">
         <AnimatePresence mode="wait">
@@ -229,8 +241,8 @@ export default function App() {
         />
       ) : null}
 
-      {/* SearchOverlay on ALL pages (including blog posts), but not on /search-mode */}
-      {!isSearchModePage && (
+      {/* SearchOverlay on ALL non-mobile pages (including blog posts), but not on /search-mode */}
+      {!isSearchModePage && !isMobile && (
         <SearchOverlay
           theme={theme}
           pageKey={overlayPageKey}

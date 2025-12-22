@@ -84,7 +84,7 @@ function Hero({
 
       <HeroPulsars theme={theme} />
 
-      <div className="relative mx-auto max-w-[1800px] px-4 sm:px-8 pt-28 sm:pt-32 min-h-[110svh] -translate-y-20">
+      <div className="relative mx-auto max-w-[1800px] px-4 sm:px-8 pt-28 sm:pt-32 min-h-[110svh] lg:-translate-y-20">
         <div className="h-[calc(110svh-8rem)] flex flex-col justify-center items-center text-center">
           <div className="mt-6 relative">
             <motion.div
@@ -112,17 +112,32 @@ function Hero({
                 Pulsars • Timing • Neutron Stars • Gravitational Waves
               </div>
 
-              {/*  Only visible in LIGHT mode */}
-              {!isDark ? (
-                <div className={cn("mt-3 max-w-[74ch] text-base sm:text-lg leading-relaxed", "text-black/65")}>
-                  Toggle into <span className="font-semibold text-black">Search Mode</span> to hunt hidden pulsars.
-                </div>
-              ) :
-                <div className={cn("mt-3 max-w-[74ch] text-base sm:text-lg leading-relaxed", "ext-white/65")}>
-                  Learn how the <span className="font-semibold text-white">Search Mode</span> mode works below.
-                </div>
-              }
+              {/* Desktop copy about Search Mode */}
+              <div className="hidden md:block">
+                {!isDark ? (
+                  <div className={cn("mt-3 max-w-[74ch] text-base sm:text-lg leading-relaxed", "text-black/65")}>
+                    Toggle into <span className="font-semibold text-black">Search Mode</span> to hunt hidden pulsars.
+                  </div>
+                ) : (
+                  <div className={cn("mt-3 max-w-[74ch] text-base sm:text-lg leading-relaxed", "text-white/65")}>
+                    Learn how the <span className="font-semibold text-white">Search Mode</span> works below.
+                  </div>
+                )}
+              </div>
 
+              {/* Mobile copy: no Search Mode on small screens */}
+              <div className="block md:hidden">
+                <div
+                  className={cn(
+                    "mt-3 max-w-[74ch] text-base leading-relaxed",
+                    isDark ? "text-white/75" : "text-black/70"
+                  )}
+                >
+                  Visit again on a bigger screen to use the Search Mode.
+                </div>
+              </div>
+
+              {/* CTA: Search Mode button (all breakpoints) */}
               <div className="mt-7 flex flex-wrap justify-center gap-2" data-nolock>
                 <button
                   type="button"
@@ -140,12 +155,12 @@ function Hero({
                 >
                   What is Search Mode?
                 </button>
-
               </div>
             </div>
           </div>
 
-          <div className="mt-10 sm:mt-12">
+          {/* KPI cards: desktop / tablet only */}
+          <div className="mt-10 sm:mt-12 hidden md:block w-full">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
               <KPI theme={theme} title="Focus" value="Globular cluster pulsars" />
               <KPI theme={theme} title="Methods" value="Surveys, pipelines, timing" />

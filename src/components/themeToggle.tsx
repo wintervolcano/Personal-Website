@@ -8,11 +8,20 @@ export type Theme = "light" | "dark";
 export function ThemeToggle({
   theme,
   setTheme,
+  isMobile = false,
 }: {
   theme: Theme;
   setTheme: (t: Theme) => void;
+  isMobile?: boolean;
 }) {
   const isDark = theme === "dark";
+  const label = isMobile
+    ? isDark
+      ? "Dark Mode"
+      : "Light Mode"
+    : isDark
+      ? "Search Mode"
+      : "Browse Mode";
 
   return (
     <button
@@ -31,7 +40,7 @@ export function ThemeToggle({
           isDark ? "text-white/70" : "text-black/60"
         )}
       >
-        {isDark ? "Search Mode" : "Browse Mode"}
+        {label}
       </span>
 
       <span

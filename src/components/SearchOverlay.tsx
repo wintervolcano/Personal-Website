@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { type Pulsar } from "../lib/pulsars";
 import { getTrapumPulsars, type TrapumPulsar } from "../lib/trapumPulsars";
+import { recordDetection } from "../lib/detections";
 
 type Theme = "light" | "dark";
 
@@ -411,6 +412,7 @@ export function SearchOverlay({
   }, [sessionSet, siteEmbeddedIds]);
 
   const sessionLeft = Math.max(0, siteEmbeddedIds.size - sessionFound);
+  const pulsarsOnThisPage = assignedIdsForPage.length;
 
   // Stats (simulated)
   const statsRef = useRef<Stats>({
@@ -424,16 +426,6 @@ export function SearchOverlay({
   });
   const [statsUi, setStatsUi] = useState<Stats>({ ...statsRef.current });
   const lastTickRef = useRef<number>(0);
-
-  const discoveryRankFor = (pulsarId: string) => {
-    try {
-      const k = `fk_discovery_count:${pulsarId}`;
-      const v = Number(window.localStorage.getItem(k) || "0");
-      return v + 1;
-    } catch {
-      return 1;
-    }
-  };
 
   const commitDiscovery = (pulsarId: string) => {
     try {
@@ -985,7 +977,7 @@ export function SearchOverlay({
     };
   }, [isActive, theme, pageKey, reduced, locked, lockX, status, hotspotMap, autoSaltSeed]);
 
-  const attemptFromFFTClick = (e: React.MouseEvent) => {
+  const attemptFromFFTClick = async (e: React.MouseEvent) => {
     if (!isActive) return;
     if (!locked) {
       // Helpful miss note if the user clicks FFT before capturing
@@ -1018,7 +1010,22 @@ export function SearchOverlay({
     if (d <= tol) {
       setStatus("hit");
       const id = (pulsar as any).id as string;
-      const rank = discoveryRankFor(id);
+
+      // Global rank via KV (fallback to local session counter on failure)
+      let rank = 1;
+      const remoteRank = await recordDetection(id);
+      if (remoteRank != null && Number.isFinite(remoteRank)) {
+        rank = remoteRank;
+      } else {
+        // fallback: approximate rank from localStorage
+        try {
+          const k = `fk_discovery_count:${id}`;
+          const v = Number(window.localStorage.getItem(k) || "0");
+          rank = v + 1;
+        } catch {
+          rank = 1;
+        }
+      }
 
       commitDiscovery(id);
 
@@ -1169,6 +1176,12 @@ export function SearchOverlay({
                   >
                     Logbook ({displayLog.length})
                   </button>
+
+                  <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-white/80">
+                    {pulsarsOnThisPage === 1
+                      ? "1 pulsar on this page"
+                      : `${pulsarsOnThisPage} pulsars on this page`}
+                  </div>
 
                   <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-white/80">
                     Session: {sessionFound} found • {sessionLeft} left

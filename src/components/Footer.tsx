@@ -136,18 +136,30 @@ function warpPoint(x: number, y: number, masses: MassPoint[], k: number) {
   const x2 = x - dxSum * k;
   const y2 = y - dySum * k;
 
-  // subtle “sag” toward barycenter (helps sell depth)
-  const cx = 50;
-  const cy = 56;
+  // subtle “sag” toward the instantaneous barycenter of the binary so the
+  // deepest part of the sheet lines up with the orbiting system.
+  let cx = 50;
+  let cy = 56;
+  let mTot = 0;
+  for (const mp of masses) {
+    cx += mp.x * mp.m;
+    cy += mp.y * mp.m;
+    mTot += mp.m;
+  }
+  if (mTot > 0) {
+    cx /= 1 + mTot;
+    cy /= 1 + mTot;
+  }
+
   const ddx = x - cx;
   const ddy = y - cy;
   const d2 = ddx * ddx + ddy * ddy;
-  const sag = 1.6 * Math.exp(-d2 / 900);
+  const sag = 0.8 * Math.exp(-d2 / 1400);
 
   return { x: x2, y: y2 + sag };
 }
 
-function makeWarpedPathHorizontal(y0: number, masses: MassPoint[], k: number, samples = 40) {
+function makeWarpedPathHorizontal(y0: number, masses: MassPoint[], k: number, samples = 52) {
   let d = "";
   for (let i = 0; i <= samples; i++) {
     const x = (i / samples) * 100;
@@ -157,12 +169,12 @@ function makeWarpedPathHorizontal(y0: number, masses: MassPoint[], k: number, sa
   return d;
 }
 
-function makeWarpedPathVertical(x0: number, masses: MassPoint[], k: number, samples = 28) {
+function makeWarpedPathVertical(x0: number, masses: MassPoint[], k: number, samples = 52) {
   let d = "";
   for (let i = 0; i <= samples; i++) {
     const y = (i / samples) * 100;
     const p = warpPoint(x0, y, masses, k);
-    d += i === 0 ? `M ${p.x.toFixed(5)} ${p.y.toFixed(5)}` : ` L ${p.x.toFixed(5)} ${p.y.toFixed(5)}`;
+    d += i === 0 ? `M ${p.x.toFixed(20)} ${p.y.toFixed(20)}` : ` L ${p.x.toFixed(5)} ${p.y.toFixed(5)}`;
   }
   return d;
 }
@@ -180,11 +192,19 @@ function SpacetimeGrid({
 }) {
   const isDark = theme === "dark";
 
-  // grid definition
-  const hLines = useMemo(() => [30, 38, 46, 54, 62, 70], []);
-  const vLines = useMemo(() => [28, 36, 44, 52, 60, 68, 76], []);
+  // grid definition: reasonably dense mesh across most of the plane
+  const hLines = useMemo(() => {
+    const ys: number[] = [];
+    for (let y = 12; y <= 88; y += 4) ys.push(y);
+    return ys;
+  }, []);
+  const vLines = useMemo(() => {
+    const xs: number[] = [];
+    for (let x = 0; x <= 100; x += 4) xs.push(x);
+    return xs;
+  }, []);
 
-  const k = 95; // warp strength
+  const k = 90; // warp strength (lower = smoother sheet)
   const stroke = isDark ? "rgba(255, 255, 255, 0.65)" : "rgba(0,0,0,0.22)";
   const glow = isDark ? "rgba(255, 255, 255, 0.73)" : "rgba(0,0,0,0.14)";
 
@@ -235,7 +255,7 @@ function SpacetimeGrid({
       style={{
         width,
         height,
-        transform: "translate(-50%,-50%) translateY(18px) perspective(520px) rotateX(72deg)",
+        transform: "translate(-50%,-50%) translateY(10px) perspective(640px) rotateX(58deg)",
         transformOrigin: "50% 50%",
         opacity: isDark ? 0.9 : 0.75,
         filter: "blur(0.15px)",
@@ -244,10 +264,10 @@ function SpacetimeGrid({
     >
       <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
-          <radialGradient id="gridFade" cx="50%" cy="58%" r="90%">
+          <radialGradient id="gridFade" cx="50%" cy="60%" r="95%">
             <stop offset="0%" stopColor="white" stopOpacity="1" />
-            <stop offset="60%" stopColor="white" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
+            <stop offset="70%" stopColor="white" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="white" stopOpacity="0.12" />
           </radialGradient>
 
           <mask id="fadeMask">
@@ -269,7 +289,7 @@ function SpacetimeGrid({
           </filter>
         </defs>
 
-        <g mask="url(#fadeMask)" filter={isDark ? "url(#softGlow)" : undefined}>
+        <g filter={isDark ? "url(#softGlow)" : undefined}>
           <rect x="0" y="0" width="100" height="100" fill={isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"} />
 
           {paths.h.map((d, i) => (
@@ -311,7 +331,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
   const box = (orbitR + rP + rBH) * 2 + 32;
 
   return (
-    <div className="pointer-events-none absolute right-4 bottom-4 sm:right-20 sm:bottom-20 z-[5] opacity-90" aria-hidden>
+    <div className="pointer-events-none absolute right-4 bottom-4 lg:bottom-25 xs:right-20 xs:bottom-40 z-[5] opacity-90" aria-hidden>
       <div className="relative" style={{ width: box, height: box }}>
         {/* ✅ Grid lives INSIDE overlay so it can use box + orbitSec */}
         <SpacetimeGrid theme={theme} width={box * 1} height={box * 1} orbitSec={orbitSec} />
@@ -330,7 +350,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
         {/* orbital rotation (binary + wells rotate together because grid is time-driven by orbitSec) */}
         <motion.div
           className="absolute left-1/2 top-1/2"
-          style={{ width: 1, height: 1 }}
+          style={{ width: 1, height: 1, scaleY: 0.70, }}
           animate={{ rotate: 360 }}
           transition={{ duration: orbitSec, repeat: Infinity, ease: "linear" }}
         >

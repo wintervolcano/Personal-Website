@@ -51,12 +51,17 @@ export function ThemeToggle({
       >
         <motion.span
           layout
+          animate={{ rotate: isDark ? 180 : 0 }}
           transition={{ type: "spring", stiffness: 600, damping: 40 }}
           className={cn(
-            "absolute top-0.5 h-6 w-6 rounded-full",
-            isDark ? "left-[calc(100%-1.625rem)] bg-white" : "left-0.5 bg-black"
+            "absolute top-0.5 h-6 w-6 rounded-full flex items-center justify-center shadow-sm",
+            // In light / Browse mode the knob is black on the left.
+            // In dark / Search mode the knob is white on the right.
+            isDark ? "left-[calc(100%-1.625rem)] bg-white text-black" : "left-0.5 bg-black text-white"
           )}
-        />
+        >
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+        </motion.span>
         <span
           className={cn(
             "absolute inset-0",
@@ -65,18 +70,6 @@ export function ThemeToggle({
           )}
         />
       </span>
-
-      <motion.span
-        className={cn(
-          "inline-flex items-center justify-center rounded-full h-7 w-7",
-          isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-        )}
-        animate={{ rotate: isDark ? 180 : 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        aria-hidden
-      >
-        <Sparkles className="h-4 w-4" />
-      </motion.span>
     </button>
   );
 }

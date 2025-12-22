@@ -209,7 +209,14 @@ export function Home({
   const navigate = useNavigate();
 
   const openInternal = (path: string, e?: React.MouseEvent) => {
+    const isStaticHtml = path.endsWith(".html");
     const newTab = !!e && (e.metaKey || e.ctrlKey);
+
+    if (isStaticHtml) {
+      window.open(path, newTab ? "_blank" : "_self", "noopener,noreferrer");
+      return;
+    }
+
     if (newTab) window.open(path, "_blank", "noopener,noreferrer");
     else navigate(path);
   };
@@ -254,10 +261,10 @@ export function Home({
               items={[
                 {
                   k: "p1",
-                  t: "Globular Cluster Pulsar Searches",
-                  d: "Compact accelerations, crowded fields, real candidates.",
-                  tag: "surveys",
-                  onClick: () => openInternal("/projects"),
+                  t: "3D Globular Cluster Pulsars",
+                  d: "A 3 dimensional interactive map of Globular Clusters and their pulsars.",
+                  tag: "Tools",
+                  onClick: () => openInternal("/globular-clusters-3d.html"),
                 },
                 {
                   k: "p2",

@@ -30,6 +30,7 @@ import { ForMedia } from "./content/resources/for-Media";
 import { PostModal } from "./pages/PostModal";
 
 import ResearchPost from "./pages/ResearchPost";
+import ProjectsPost from "./pages/ProjectsPost";
 import BlogPost from "./pages/BlogPost";
 import ResourcePost from "./pages/ResourcePost";
 
@@ -87,6 +88,7 @@ export default function App() {
   const [blogDocs, setBlogDocs] = useState<MdDoc[]>([]);
   const [researchDocs, setResearchDocs] = useState<MdDoc[]>([]);
   const [resourceDocs, setResourceDocs] = useState<MdDoc[]>([]);
+  const [projectDocs, setProjectDocs] = useState<MdDoc[]>([]);
 
   // Optional modal (keep only if you still want research updates as modal)
   const [postOpen, setPostOpen] = useState(false);
@@ -116,14 +118,16 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [b, r, res] = await Promise.all([
+      const [b, r, res, proj] = await Promise.all([
         loadCollection("blog"),
         loadCollection("research"),
         loadCollection("resources"),
+        loadCollection("projects"),
       ]);
       setBlogDocs(b);
       setResearchDocs(r);
       setResourceDocs(res);
+      setProjectDocs(proj);
     })();
   }, []);
 
@@ -192,10 +196,11 @@ export default function App() {
                 />
                 <Route path="/research" element={<Research theme={theme} docs={researchDocs} />} />
                 <Route path="/research/:slug" element={<ResearchPost theme={theme} posts={researchDocs} />} />
-                <Route path="/projects" element={<Projects theme={theme} />} />
+                <Route path="/projects" element={<Projects theme={theme} docs={projectDocs} />} />
                 <Route path="/publications" element={<Publications theme={theme} />} />
                 <Route path="/resources" element={<Resources theme={theme} docs={resourceDocs} />} />
                 <Route path="/resources/:slug" element={<ResourcePost theme={theme} docs={resourceDocs} />} />
+                <Route path="/projects/:slug" element={<ProjectsPost theme={theme} posts={projectDocs} />} />
                 <Route path="/blog" element={<Blog theme={theme} docs={blogDocs} onOpen={(slug) => openPost("blog", slug)} />} />
                 <Route path="/blog/:slug" element={<BlogPost theme={theme} posts={blogDocs} />} />
                 <Route path="/about" element={<About theme={theme} />} />

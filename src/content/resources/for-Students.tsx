@@ -168,23 +168,23 @@ function Section({
 export function ForStudents({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
 
-  const quickLinks = [
-    {
-      title: "Pulsar Software Jungle",
-      href: "https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html",
-      desc: "A curated “map” of pulsar software (PRESTO, DSPSR, PSRCHIVE, tempo/tempo2, psrdada, and more).",
-    },
-    {
-      title: "Some useful sites (Freire)",
-      href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html",
-      desc: "Follow-up tools, catalogues, survey portals, and the daily-driver astronomy links.",
-    },
-    {
-      title: "Pulsars in Globular Clusters",
-      href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html",
-      desc: "The master list of GC pulsars and references — invaluable once you start thinking in clusters.",
-    },
-  ];
+  // const quickLinks = [
+  //   {
+  //     title: "Pulsar Software Jungle",
+  //     href: "https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html",
+  //     desc: "A curated “map” of pulsar software (PRESTO, DSPSR, PSRCHIVE, tempo/tempo2, psrdada, and more).",
+  //   },
+  //   {
+  //     title: "Some useful sites (Freire)",
+  //     href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html",
+  //     desc: "Follow-up tools, catalogues, survey portals, and the daily-driver astronomy links.",
+  //   },
+  //   {
+  //     title: "Pulsars in Globular Clusters",
+  //     href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html",
+  //     desc: "The master list of GC pulsars and references — invaluable once you start thinking in clusters.",
+  //   },
+  // ];
 
   return (
     <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
@@ -234,11 +234,11 @@ export function ForStudents({ theme }: { theme: Theme }) {
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-fr items-stretch">
+          {/* <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-fr items-stretch">
             {quickLinks.map((x) => (
               <LinkCard key={x.href} theme={theme} href={x.href} title={x.title} desc={x.desc} />
             ))}
-          </div>
+          </div> */}
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-export type CollectionKey = "blog" | "research" | "resources";
+export type CollectionKey = "blog" | "research" | "resources" | "projects";
 
 export type MdDoc = {
   slug: string;
@@ -75,6 +75,10 @@ const BLOG_MODULES = import.meta.glob<string>("../content/blog/*.md", {
   query: "?raw",
   import: "default",
 });
+const PROJECT_MODULES = import.meta.glob<string>("../content/projects/*.md", {
+  query: "?raw",
+  import: "default",
+});
 const RESEARCH_MODULES = import.meta.glob<string>("../content/research/*.md", {
   query: "?raw",
   import: "default",
@@ -88,9 +92,11 @@ export async function loadCollection(collection: CollectionKey): Promise<MdDoc[]
   const modules =
     collection === "blog"
       ? BLOG_MODULES
-      : collection === "research"
-        ? RESEARCH_MODULES
-        : RESOURCES_MODULES;
+      : collection === "projects"
+        ? PROJECT_MODULES
+        : collection === "research"
+          ? RESEARCH_MODULES
+          : RESOURCES_MODULES;
 
   const entries = await Promise.all(
     Object.entries(modules).map(async ([path, loader]) => {

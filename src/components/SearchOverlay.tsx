@@ -156,7 +156,7 @@ export function SearchOverlay({
 }: {
   theme: Theme;
   pageKey: string;
-  onSolved: (p: Pulsar, rank: number) => void;
+  onSolved: (p: Pulsar, rank: number, stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }) => void;
   onOpenDetection: (p: Pulsar, rank: number) => void;
   /**
    * Pass ALL discoverable pages here (including blog/research slugs).
@@ -488,13 +488,18 @@ export function SearchOverlay({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        // If the logbook is open, close it first instead of resetting.
+        if (logOpen) {
+          setLogOpen(false);
+          return;
+        }
         reset();
       }
       if (e.key.toLowerCase() === "l") setLogOpen((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isActive]);
+  }, [isActive, logOpen, reset]);
 
   const computeCellFromXY = (mx: number, my: number) => {
     const w = window.innerWidth || 1;
@@ -584,7 +589,7 @@ export function SearchOverlay({
         cellIndex,
         nonce: s.nonce + 1,
       };
-      statsRef.current.candidates += 1;
+      statsRef.current.candidates +=5;
       dirtyRef.current = true;
     };
     window.addEventListener("mousemove", onMove, { passive: true });
@@ -787,7 +792,8 @@ export function SearchOverlay({
   // Stats ticking (simulated)
   const tickStats = (now: number) => {
     const last = lastTickRef.current || now;
-    const dt = Math.max(0, Math.min(0.25, (now - last) / 100));
+    // Convert ms → seconds and clamp so we don't jump on tab-resume.
+    const dt = Math.max(0, Math.min(0.25, (now - last) / 1000));
     lastTickRef.current = now;
     if (!isActive) return;
 
@@ -795,14 +801,12 @@ export function SearchOverlay({
     s.wallSec += dt;
 
     const activity = locked ? 1.25 : 0.75;
-    s.cpuHrs += (dt * (48 * activity)) / 3600;
-    s.gpuHrs += (dt * (12 * activity)) / 3600;
-
-    s.dataTB += dt * (0.12 * activity);
+    s.cpuHrs += (dt * (100 * activity)) / 360;
+    s.gpuHrs += (dt * (40 * activity)) / 360;
+    s.dataTB += dt * (100 * activity) / 3600;
     s.diskGB += dt * (0.5 * activity);
-    s.files += Math.floor(dt * (120 * activity));
-
-    if (now % 100 < 16) setStatsUi({ ...s });
+    s.files += Math.floor(dt * (1200 * activity));
+    setStatsUi({ ...s });
   };
 
   // Draw loop
@@ -1024,13 +1028,22 @@ export function SearchOverlay({
        // don't increment global or session counters again.
        const alreadyFound = sessionSet.has(id);
 
-       if (alreadyFound) {
-         const existing = logbook.find((e) => e.id === id);
-         const rank = existing?.rank ?? 1;
-         showRepeatToast();
-         setTimeout(() => onSolved(pulsar, rank), 500);
-         return;
-       }
+      if (alreadyFound) {
+        const existing = logbook.find((e) => e.id === id);
+        const rank = existing?.rank ?? 1;
+        showRepeatToast();
+        setTimeout(
+          () =>
+            onSolved(pulsar, rank, {
+              candidates: statsUi.candidates,
+              cpuHrs: statsUi.cpuHrs,
+              gpuHrs: statsUi.gpuHrs,
+              dataTB: statsUi.dataTB,
+            }),
+          500
+        );
+        return;
+      }
 
       // Global rank via KV (fallback to local session counter on failure)
       let rank = 1;
@@ -1058,7 +1071,16 @@ export function SearchOverlay({
         return next;
       });
 
-      setTimeout(() => onSolved(pulsar, rank), 240);
+      setTimeout(
+        () =>
+          onSolved(pulsar, rank, {
+            candidates: statsUi.candidates,
+            cpuHrs: statsUi.cpuHrs,
+            gpuHrs: statsUi.gpuHrs,
+            dataTB: statsUi.dataTB,
+          }),
+        240
+      );
     } else {
       setStatus("miss");
       showMissToast();
@@ -1184,7 +1206,7 @@ export function SearchOverlay({
                       </>
                     ) : (
                       <>
-                        Move mouse: mostly noise. <span className="text-white/50">Click anywhere to capture a signal.</span>
+                        Move mouse sample the sky. <span className="text-white/50">Click anywhere to capture a signal.</span>
                       </>
                     )}
                   </div>

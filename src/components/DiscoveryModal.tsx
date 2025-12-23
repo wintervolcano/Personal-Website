@@ -11,12 +11,14 @@ export function DiscoveryModal({
   open,
   pulsar,
   rank,
+  stats,
   onClose,
 }: {
   theme: Theme;
   open: boolean;
   pulsar: Pulsar | null;
   rank: number;
+  stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number };
   onClose: () => void;
 }) {
   if (!open || !pulsar) return null;
@@ -296,16 +298,39 @@ export function DiscoveryModal({
                           }}
                         >
                           <div className="text-xs" style={{ color: "rgba(249,250,251,0.7)" }}>
-                            (Placeholder) Fold PNG goes here
+                            No fold image available. But I assure you it's a beautiful pulsar!
                           </div>
                         </div>
                       )}
+
+                      {stats && (
+                        <div className="mt-4 text-sm leading-relaxed" style={{ color: "rgba(249,250,251,0.75)" }}>
+                          You had to look through{" "}
+                          <span className="font-semibold">
+                            {stats.candidates.toLocaleString()} candidates
+                          </span>{" "}
+                          spending{" "}
+                          <span className="font-semibold">
+                            {stats.cpuHrs.toFixed(1)} CPU hours
+                          </span>{" "}
+                          and{" "}
+                          <span className="font-semibold">
+                            {stats.gpuHrs.toFixed(1)} GPU hours
+                          </span>{" "}
+                          capturing a whopping{" "}
+                          <span className="font-semibold">
+                            {stats.dataTB.toFixed(1)} TB
+                          </span>{" "}
+                          of data to detect this.
+                        </div>
+                      )}
+
                       <div
-                        className="px-5 py-4 border-b flex items-center justify-between gap-3"
+                        className="mt-6 flex items-center justify-end gap-3 pt-4 border-t"
                         style={{ borderColor: "rgba(255,255,255,0.1)" }}
                       >
                         <button
-                          className="rounded-full px-7 py-5 text-[15px] font-semibold tracking-[0.18em] uppercase transition-colors duration-150 hover:bg-white/10"
+                          className="rounded-full px-7 py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-colors duration-150 hover:bg-white/10"
                           data-nolock
                           onClick={handleDownloadDiscoveryCard}
                           style={{
@@ -756,7 +781,7 @@ export function DiscoveryModal({
                   </div>
 
                 </div>
-                <div style={{ padding: "16px" }}>
+                <div style={{ padding: "16px", paddingBottom: "12px" }}>
                   {pulsar.fold_png_url ? (
                     <div
                       style={{
@@ -812,6 +837,35 @@ export function DiscoveryModal({
                       }}
                     >
                       (Placeholder) Fold PNG goes here
+                    </div>
+                  )}
+
+                  {stats && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        fontSize: "12px",
+                        lineHeight: 1.5,
+                        color: "rgba(249,250,251,0.75)",
+                      }}
+                    >
+                      You had to look through{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {stats.candidates.toLocaleString()} candidates
+                      </span>{" "}
+                      spending{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {stats.cpuHrs.toFixed(1)} CPU hours
+                      </span>{" "}
+                      and{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {stats.gpuHrs.toFixed(1)} GPU hours
+                      </span>{" "}
+                      capturing a whopping{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {stats.dataTB.toFixed(1)} TB
+                      </span>{" "}
+                      of data to detect this.
                     </div>
                   )}
                 </div>

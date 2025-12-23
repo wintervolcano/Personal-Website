@@ -101,6 +101,12 @@ export default function App() {
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
   const [discoveredPulsar, setDiscoveredPulsar] = useState<Pulsar | null>(null);
   const [discoveryRank, setDiscoveryRank] = useState(1);
+  const [discoveryStats, setDiscoveryStats] = useState<{
+    candidates: number;
+    cpuHrs: number;
+    gpuHrs: number;
+    dataTB: number;
+  } | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,15 +116,21 @@ export default function App() {
   const page: PageKey = useMemo(() => pageKeyFromPath(location.pathname), [location.pathname]);
   const isDark = theme === "dark";
 
-  const handleSolved = (p: Pulsar, rank: number) => {
+  const handleSolved = (
+    p: Pulsar,
+    rank: number,
+    stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }
+  ) => {
     setDiscoveredPulsar(p);
     setDiscoveryRank(rank);
+    setDiscoveryStats(stats ?? null);
     setDiscoveryOpen(true);
   };
 
   const handleOpenDetection = (p: Pulsar, rank: number) => {
     setDiscoveredPulsar(p);
     setDiscoveryRank(rank);
+    setDiscoveryStats(null);
     setDiscoveryOpen(true);
   };
 
@@ -286,6 +298,7 @@ export default function App() {
         open={discoveryOpen}
         pulsar={discoveredPulsar}
         rank={discoveryRank}
+        stats={discoveryStats ?? undefined}
         onClose={() => setDiscoveryOpen(false)}
       />
 

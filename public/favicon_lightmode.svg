@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="coreL" cx="30%" cy="28%" r="75%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.92)"/>
+      <stop offset="60%" stop-color="rgba(0,0,0,0.70)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.18)"/>
+    </radialGradient>
+
+    <linearGradient id="beamL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="35%" stop-color="rgba(0,0,0,0.55)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.0)"/>
+    </linearGradient>
+
+    <linearGradient id="ringL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.85)"/>
+      <stop offset="55%" stop-color="rgba(0,0,0,0.35)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.75)"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="32" cy="32" rx="22" ry="14" transform="rotate(-18 32 32)"
+      stroke="url(#ringL)" stroke-width="3.2" opacity="0.95"/>
+    <ellipse cx="32" cy="32" rx="14" ry="9" transform="rotate(-18 32 32)"
+      stroke="rgba(0,0,0,0.32)" stroke-width="2.6" opacity="0.9"/>
+  </g>
+
+  <rect x="28.8" y="4.8" width="6.4" height="18.0" rx="3.2" fill="url(#beamL)"/>
+  <rect x="28.8" y="41.2" width="6.4" height="18.0" rx="3.2" fill="url(#beamL)"/>
+
+  <circle cx="32" cy="32" r="8.2" fill="url(#coreL)"/>
+  <circle cx="32" cy="32" r="8.2" fill="none" stroke="rgba(0,0,0,0.28)" stroke-width="1.2"/>
+  <circle cx="35.0" cy="29.2" r="1.5" fill="rgba(255,255,255,0.85)"/>
+
+  <g stroke="rgba(0,0,0,0.35)" stroke-width="1" stroke-linecap="round" opacity="0.8">
+    <path d="M50 26 l3 -1"/>
+    <path d="M14 38 l-3 1"/>
+  </g>
+</svg>

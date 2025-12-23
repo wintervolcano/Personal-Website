@@ -595,7 +595,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
 
                 const msg =
                     status === "idle"
-                        ? "Move mouse: mostly noise. Capture first, then click an FFT peak. (ESC resets)"
+                        ? "Move mouse, Capture first, then click an FFT peak. (ESC resets)"
                         : status === "captured"
                             ? "Captured. Click an FFT peak to attempt detection. (ESC resets)"
                             : status === "miss"
@@ -717,7 +717,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                 {guideStep === 0 && (
                     <div
                         className={cn(
-                            "pointer-events-none absolute right-60 top-0 max-w-xs rounded-2xl px-4 py-3 text-xs sm:text-sm",
+                            "pointer-events-none absolute right-55 -top-5 max-w-xs rounded-2xl px-4 py-3 text-xs sm:text-sm",
                             glass
                         )}
                     >
@@ -734,7 +734,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                 {guideStep === 1 && (
                     <div
                         className={cn(
-                            "pointer-events-none absolute left-1/2 top-[7%] -translate-x-1/2 -translate-y-1/2 max-w-md rounded-2xl px-4 py-3 text-xs sm:text-sm",
+                            "pointer-events-none absolute left-1/2 top-6 -translate-x-1/2 -translate-y-1/2 max-w-md rounded-2xl px-4 py-3 text-xs sm:text-sm",
                             glass
                         )}
                     >
@@ -767,7 +767,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                 {guideStep === 3 && (
                     <div
                         className={cn(
-                            "pointer-events-none absolute left-4 bottom-4 max-w-xs rounded-2xl px-4 py-3 text-xs sm:text-sm",
+                            "pointer-events-none absolute left-1/2 top-6 max-w-xs rounded-2xl px-4 py-3 text-xs sm:text-sm",
                             glass
                         )}
                     >
@@ -775,7 +775,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                             Step 4
                         </div>
                         <div className="mt-1">
-                            Nice — you’ve found the demo pulsar. On the real site, each confirmed detection reveals a new target and increments your session tally. 
+                            Nice — you’ve found the demo pulsar! On the site, each confirmed detection reveals the detection plot and increments your session tally. 
                         </div>
                     </div>
                 )}
@@ -1083,8 +1083,7 @@ export function SearchMode({
                     </p>
 
                     <p>
-                        If you already work with pulsar search pipelines, you can scroll straight to the demo panel below — the UI
-                        should feel familiar. For everyone else, here’s the short version of what is being simulated.
+                        If you already work with pulsar search pipelines, you can scroll straight to the demo panel below to get an understanding of the UI. For everyone else, here’s the short version of what is being simulated.
                     </p>
 
                     <p>
@@ -1103,7 +1102,7 @@ export function SearchMode({
 
                     <p>
                         Real searches do this at scale. Specialised programs search over many trial periods and dispersion
-                        measures, producing **millions** of candidate plots. Machine‑learning models and ranking scores bring this
+                        measures, producing <strong>millions</strong> of candidate plots. Machine‑learning models and ranking scores bring this
                         down to thousands that humans actually look at. Each confirmed pulsar sits on top of a lot of telescope
                         time, compute, and careful inspection.
                     </p>
@@ -1186,7 +1185,7 @@ export function SearchMode({
                             >
                                 <li>• Time series + FFT in the demo are synthetic.</li>
                                 <li>• Compute/disk stats are simulated to communicate scale.</li>
-                                <li>• Your portfolio content (blog, research, projects) is real.</li>
+                                <li>• The discovery plots and pulsars are real.</li>
                             </ul>
 
                             <div
@@ -1231,15 +1230,14 @@ export function SearchMode({
                     >
                         <div className="aspect-video w-full flex items-center justify-center">
                             <div className={cn("text-sm font-semibold", "text-black/55")}>
-                                Video placeholder (embed later)
+                                Video placeholder (I'll add later)
                             </div>
                         </div>
                     </div>
 
                     <div className={cn("mt-3 text-sm leading-relaxed", sub)}>
                         Drop in a{" "}
-                        <code className={cn("px-1 rounded", "bg-black/10")}>{"<video />"}</code> tag or an
-                        iframe when you’re ready.
+                        <code className={cn("px-1 rounded", "bg-black/10")}>{"<video />"}</code>
                     </div>
                 </div>
             </div>

@@ -13,7 +13,6 @@ import { DiscoveryModal } from "./components/DiscoveryModal";
 import type { Pulsar } from "./lib/pulsars";
 import { SearchMode } from "./pages/SearchMode";
 import { Gallery } from "./pages/Gallery";
-
 import { Home } from "./pages/Home";
 import { Research } from "./pages/Research";
 import { Projects } from "./pages/Projects";

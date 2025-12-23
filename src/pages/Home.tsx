@@ -3,6 +3,7 @@ import { motion, useSpring, useTransform } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn";
 import { useMouseXY, useViewport, usePrefersReducedMotion } from "../lib/motion";
+import { usePageMeta } from "../lib/usePageMeta";
 import type { Theme } from "../components/themeToggle";
 import { HeroPulsars } from "../components/HeroPulsars";
 import { CardGrid } from "../components/CardGrid";
@@ -284,8 +285,13 @@ export function Home({
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  usePageMeta(
+    "Fazal Kareem – Radio, pulsars, gravity",
+    "Personal site of Fazal Kareem, a PhD researcher in radio astronomy working on pulsars in globular clusters, timing arrays, and strong‑field gravity."
+  );
+
   return (
-    <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
+      <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
       <Hero
         theme={theme}
         onScrollTo={scrollTo}
@@ -317,7 +323,7 @@ export function Home({
                   t: "3D Globular Cluster Pulsars",
                   d: "A 3 dimensional interactive map of Globular Clusters and their pulsars.",
                   tag: "Tools",
-                  onClick: () => openInternal("/globular-clusters-3d.html"),
+                  onClick: () => window.open("/globular-clusters", "_blank", "noopener,noreferrer"),
                 },
                 {
                   k: "p2",

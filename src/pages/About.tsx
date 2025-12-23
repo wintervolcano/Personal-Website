@@ -5,6 +5,7 @@ import type { Theme } from "../components/themeToggle";
 import { cn } from "../lib/cn";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import { usePageMeta } from "../lib/usePageMeta";
 
 type TimelineNode = {
   id: string;
@@ -175,12 +176,13 @@ export function About({ theme }: { theme: Theme }) {
   const navigate = useNavigate();
   const isDark = theme === "dark";
 
+  usePageMeta(
+    "About – Fazal Kareem",
+    "About Fazal Kareem, a PhD researcher in radio astronomy working with pulsars in globular clusters, compact binaries, and timing experiments."
+  );
+
   return (
-    <SectionShell
-      theme={theme}
-      eyebrow="About"
-      title="Hi — I'm Fazal."
-    >
+      <SectionShell theme={theme} eyebrow="About" title="Hi — I'm Fazal.">
       {/* Top row: narrative and portrait */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         <div className="lg:col-span-7 xl:col-span-8 space-y-5 max-w-none">

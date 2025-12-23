@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn";
 import { usePrefersReducedMotion } from "../lib/motion";
+import { usePageMeta } from "../lib/usePageMeta";
 import { ThemeToggle, type Theme } from "../components/themeToggle";
 
 /* -------------------------
@@ -1032,6 +1033,11 @@ export function SearchMode({
 
     const card = isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5";
     const sub = isDark ? "text-white/65" : "text-black/65";
+
+    usePageMeta(
+        "Search Mode – Learn how pulsar searches work",
+        "A guided, interactive demo of pulsar searching. Watch synthetic data, click FFT peaks, and reveal real TRAPUM discoveries while learning how search-mode pipelines behave."
+    );
 
     return (
         <div className={cn("min-h-[100svh] w-full text-justify", "bg-white text-black")}>

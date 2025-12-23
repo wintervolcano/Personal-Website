@@ -803,8 +803,8 @@ export function SearchOverlay({
     const activity = locked ? 1.25 : 0.75;
     s.cpuHrs += (dt * (100 * activity)) / 360;
     s.gpuHrs += (dt * (40 * activity)) / 360;
-    s.dataTB += dt * (100 * activity) / 3600;
-    s.diskGB += dt * (0.5 * activity);
+    s.dataTB += dt * (150 * activity) / 360;
+    s.diskGB += dt * (500 * activity) / 360;
     s.files += Math.floor(dt * (1200 * activity));
     setStatsUi({ ...s });
   };

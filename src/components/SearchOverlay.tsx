@@ -278,6 +278,7 @@ export function SearchOverlay({
 
   const dirtyRef = useRef(true);
   const pausedInteractiveRef = useRef(false);
+  const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
 
   // Toast on miss
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
@@ -797,6 +798,15 @@ export function SearchOverlay({
     lastTickRef.current = now;
     if (!isActive) return;
 
+    // Only advance stats when the mouse has moved (i.e. user is actively exploring).
+    const scan = scanRef.current;
+    if (!scan) return;
+    const lastMouse = lastMouseRef.current;
+    const moved =
+      !lastMouse || lastMouse.x !== scan.mouseX || lastMouse.y !== scan.mouseY;
+    lastMouseRef.current = { x: scan.mouseX, y: scan.mouseY };
+    if (!moved) return;
+
     const s = statsRef.current;
     s.wallSec += dt;
 
@@ -971,7 +981,7 @@ export function SearchOverlay({
 
         const msg =
           status === "idle"
-            ? "Move mouse: mostly noise. Click anywhere to CAPTURE. Then click an FFT peak. (ESC resets)"
+            ? "Move mouse: Click anywhere to CAPTURE. Then click an FFT peak. (ESC resets)"
             : status === "locked"
               ? "Captured. Click an FFT peak to attempt detection. (ESC resets)"
               : status === "miss"
@@ -1193,7 +1203,6 @@ export function SearchOverlay({
               <div className="col-span-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1 pb-1">
                 <div>
                   <div className="text-[11px] font-semibold tracking-[0.28em] uppercase text-white/55">
-                    SEARCH MODE • INSTRUMENT OVERLAY
                   </div>
                   <div className="text-xs text-white/70 mt-1">
                     {locked ? (

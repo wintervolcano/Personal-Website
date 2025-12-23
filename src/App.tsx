@@ -83,7 +83,11 @@ function pathFromPageKey(k: PageKey): string {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = window.localStorage.getItem("fk-theme");
+    return stored === "dark" ? "dark" : "light";
+  });
 
   const [blogDocs, setBlogDocs] = useState<MdDoc[]>([]);
   const [researchDocs, setResearchDocs] = useState<MdDoc[]>([]);
@@ -143,6 +147,14 @@ export default function App() {
     }
     // Hint to the browser for form controls / scrollbars.
     document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
+
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("fk-theme", theme);
+      } catch {
+        // ignore persistence errors
+      }
+    }
   }, [theme]);
 
   useEffect(() => {

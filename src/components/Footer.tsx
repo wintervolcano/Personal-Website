@@ -460,7 +460,7 @@ export function Footer({ theme }: { theme: Theme }) {
                     <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
                       Toggle dark mode to scan the sky. Capture a signal. Click the peak. Reveal the pulsar.
                     </div>
-                    <div className={cn("mt-3 text-xs", isDark ? "text-white/55" : "text-black/55")}>100 hidden targets • synthetic plots</div>
+                    <div className={cn("mt-3 text-xs", isDark ? "text-white/55" : "text-black/55")}>150 hidden targets • real plots</div>
                   </div>
 
                   <div>
@@ -468,7 +468,7 @@ export function Footer({ theme }: { theme: Theme }) {
                       Now
                     </div>
                     <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
-                      MPIfR Bonn. Globular clusters. Timing arrays. Wideband pipelines.
+                      MPIfR Bonn. Globular clusters. Timing arrays. 
                     </div>
                     <a
                       href="./CV_Fazal_Kareem.pdf"

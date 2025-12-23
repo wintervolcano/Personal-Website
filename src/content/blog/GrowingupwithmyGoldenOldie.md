@@ -2,7 +2,7 @@
 ---
 title: "Growing up with my Golden Oldie."
 date: "2020-03-31"
-description: "ഒരു പേമാരിയിൽ മീൻ പിടിക്കാൻ പോയ പത്തുവയസ്സുകാരന്റെ ഓർമ്മകൾ."
+description: "A walk down memory lane with my grandpa."
 tags: [life]
 ---
 

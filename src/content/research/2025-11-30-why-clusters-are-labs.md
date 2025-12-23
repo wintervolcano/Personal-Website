@@ -1,7 +1,7 @@
 ---
 title: Why globular clusters are the best pulsar labs
 date: 2025-11-30
-description: High encounter rates make exotic binaries — and the timing is fun.
+description: High encounter rates make exotic binaries and the timing is fun.
 tags: [globular-clusters, binaries]
 ---
 

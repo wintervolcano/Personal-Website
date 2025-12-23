@@ -217,7 +217,7 @@ export function ForStudents({ theme }: { theme: Theme }) {
               </h1>
               <p className={cn("mt-5 max-w-[85ch] text-base sm:text-lg leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
                 This page is a gentle introduction to pulsar astronomy. It is meant for students who are curious about neutron stars and radio
-                astronomy, and who want to understand the ideas behind the plots and software — not just follow a recipe.
+                astronomy, and who want to understand the ideas behind the plots and software; not just follow a recipe.
                 You can treat it as a small handbook: start with the concepts, then move into signals, tools, and project ideas.
               </p>
 
@@ -237,7 +237,7 @@ export function ForStudents({ theme }: { theme: Theme }) {
                 <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>
                   If you&apos;re new, read the{" "}
                   <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>Start here</span> section slowly and sketch the ideas.
-                  When you start research, come back for the software and catalogue links — they become more useful once the physics is familiar.
+                  When you start research, come back for the software and catalogue links, they become more useful once the physics is familiar.
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">

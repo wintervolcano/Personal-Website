@@ -156,7 +156,7 @@ type PulsarSprite = {
   tiltDeg: number;
 };
 
-function PulsarGlyph({ s }: { s: PulsarSprite }) {
+function PulsarGlyph({ s, animated }: { s: PulsarSprite; animated: boolean }) {
   const box = s.beamLen * 2;
 
   return (
@@ -164,8 +164,12 @@ function PulsarGlyph({ s }: { s: PulsarSprite }) {
       {/* Everything that must rotate together goes in THIS wrapper */}
       <motion.div
         className="absolute inset-0"
-        animate={{ rotate: 360 }}
-        transition={{ duration: s.spinSec, repeat: Infinity, ease: "linear" }}
+        animate={animated ? { rotate: 360 } : { rotate: 0 }}
+        transition={
+          animated
+            ? { duration: s.spinSec, repeat: Infinity, ease: "linear" }
+            : { duration: 0 }
+        }
         style={{ pointerEvents: "none" }}
       >
         {/* magnetic field loops rotate EXACTLY with beams */}
@@ -215,7 +219,7 @@ type BinarySprite = {
   spinSec: number;
 };
 
-function BinaryGlyph({ s }: { s: BinarySprite }) {
+function BinaryGlyph({ s, animated }: { s: BinarySprite; animated: boolean }) {
   const [hover, setHover] = useState(false);
   const box = (s.orbitR + s.rP + s.rC) * 2 + 36;
 
@@ -230,12 +234,27 @@ function BinaryGlyph({ s }: { s: BinarySprite }) {
       <motion.div
         className="absolute left-1/2 top-1/2"
         style={{ width: 1, height: 1 }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: hover ? s.hoverOrbitSec : s.baseOrbitSec, repeat: Infinity, ease: "linear" }}
+        animate={animated ? { rotate: 360 } : { rotate: 0 }}
+        transition={
+          animated
+            ? {
+                duration: hover ? s.hoverOrbitSec : s.baseOrbitSec,
+                repeat: Infinity,
+                ease: "linear",
+              }
+            : { duration: 0 }
+        }
       >
         {/* pulsar body (white) */}
         <div className="absolute left-0 top-0" style={{ transform: `translate(${s.orbitR}px, ${-s.orbitR * 0.10}px)` }}>
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: s.spinSec, repeat: Infinity, ease: "linear" }}>
+          <motion.div
+            animate={animated ? { rotate: 360 } : { rotate: 0 }}
+            transition={
+              animated
+                ? { duration: s.spinSec, repeat: Infinity, ease: "linear" }
+                : { duration: 0 }
+            }
+          >
             <div className="relative" style={{ width: s.rP * 2, height: s.rP * 2 }}>
               {/* short-ish white beams */}
               <Beam len={Math.round(s.orbitR * 2.0)} w={12} alpha={0.16} rotateDeg={0} tiltDeg={16} />
@@ -319,9 +338,11 @@ function binaryFromPulsar(p: Pulsar): BinarySprite {
 export function DiscoveryPulsarPanel({
   theme,
   pulsar,
+  animated = true,
 }: {
   theme: Theme;
   pulsar: Pulsar;
+  animated?: boolean;
 }) {
   const isBinary = !!(pulsar as any)?.binary?.isBinary;
 
@@ -339,7 +360,11 @@ export function DiscoveryPulsarPanel({
 
       {/* centered */}
       <div className="absolute inset-0 grid place-items-center">
-        {isBinary ? <BinaryGlyph s={bs} /> : <PulsarGlyph s={ps} />}
+        {isBinary ? (
+          <BinaryGlyph s={bs} animated={animated} />
+        ) : (
+          <PulsarGlyph s={ps} animated={animated} />
+        )}
       </div>
     </div>
   );

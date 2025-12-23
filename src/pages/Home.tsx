@@ -147,7 +147,7 @@ function Hero({
 
             <div className="mt-4">
               <div className={cn("text-[clamp(0.95rem,1.5vw,1.1rem)] font-semibold tracking-[0.22em] uppercase", isDark ? "text-white/70" : "text-black/60")}>
-                Pulsars • Timing • Neutron Stars • Gravitational Waves
+                Pulsars • Neutron Stars • Gravitational Waves
               </div>
 
               {/* Desktop copy about Search Mode */}
@@ -303,7 +303,7 @@ export function Home({
             </div>
             <div className="lg:col-span-5">
               <p className={cn("text-base sm:text-lg leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
-                From searching for pulsars to timing models — and from globular clusters to nanohertz gravitational waves, testing General Relativity in strong field regime. 
+                From searching for pulsars to timing models and from globular clusters to nanohertz gravitational waves, testing General Relativity in strong field regime. 
               </p>
             </div>
           </div>
@@ -321,10 +321,10 @@ export function Home({
                 },
                 {
                   k: "p2",
-                  t: "Precision Timing",
-                  d: "Long baselines, robust noise models, gravity tests.",
-                  tag: "timing",
-                  onClick: () => openInternal("/research"),
+                  t: "A website to have fun with pulsar searching",
+                  d: "An interactive site to learn about pulsar searching algorithms.",
+                  tag: "Tools",
+                  onClick: () => openInternal("/projects/search-mode-website"),
                 },
                 {
                   k: "p3",

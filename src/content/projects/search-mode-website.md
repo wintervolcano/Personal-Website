@@ -1,8 +1,8 @@
 ---
-title: Search Mode as an outreach medium
-date: 2025-12-15
+title: Search Mode as an outreach medium 
+date: 2025-12-23
 description: A small training ground for thinking like a pulsar astronomer.
-tags: [ui, outreach, pulsars, methods]
+tags: [outreach, pulsars]
 ---
 
 Search Mode started as a UI experiment: could a personal site double as a tiny, fun environment for learning about pulsar searching? The idea was to build a simplified, game-like overlay that mimics the *shape* of a real pulsar search without trying to be a full survey pipeline. The goal is to give visitors a feel for how pulsar searching works in practice, and what it means to detect a weak periodic signal buried in noise.
@@ -22,7 +22,7 @@ Under the hood, the signals are tied to real TRAPUM discoveries so that each “
 
 Search Mode is described in more detail on the dedicated documentation page — if you want the full design story and a step‑by‑step guide, start there:
 
-- [What is Search Mode?](/search-mode)
+- **[What is Search Mode?](/search-mode)**
 
 ## Why an FFT shows up at all
 

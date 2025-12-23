@@ -62,7 +62,14 @@ function Card({ theme, title, body }: { theme: Theme; title: string; body: React
             <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
                 {title}
             </div>
-            <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>{body}</div>
+            <div
+                className={cn(
+                    "mt-3 text-[0.95rem] sm:text-base leading-relaxed",
+                    isDark ? "text-white/70" : "text-black/70"
+                )}
+            >
+                {body}
+            </div>
             <div className="mt-auto" />
         </motion.div>
     );
@@ -116,7 +123,14 @@ function LinkCard({
                 </div>
 
                 {desc ? (
-                    <div className={cn("mt-2 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/65")}>{desc}</div>
+                    <div
+                        className={cn(
+                            "mt-2 text-[0.95rem] sm:text-base leading-relaxed",
+                            isDark ? "text-white/70" : "text-black/65"
+                        )}
+                    >
+                        {desc}
+                    </div>
                 ) : null}
 
                 <div className="mt-auto" />
@@ -168,21 +182,112 @@ function Section({
 export function ForAstronomers({ theme }: { theme: Theme }) {
     const isDark = theme === "dark";
 
-    const heroLinks = [
+    type LinkRow = {
+        area: string;
+        label: string;
+        href: string;
+        what: string;
+        notes?: string;
+    };
+
+    const links: LinkRow[] = [
         {
-            title: "Pulsars in Globular Clusters (master list)",
+            area: "Globular clusters",
+            label: "Pulsars in Globular Clusters (Freire)",
             href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html",
-            desc: "Cluster-by-cluster tables, references, and a living overview of GC pulsars.",
+            what: "Living list of GC pulsars with basic parameters and references.",
+            notes: "Keep open whenever you work on clusters or need quick context for a GC system.",
         },
         {
-            title: "Some useful sites (Freire)",
+            area: "Catalogues & reference",
+            label: "Some useful sites (Freire)",
             href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html",
-            desc: "Catalogues, surveys, follow-up tools, and publication workflow in one place.",
+            what: "Jump page to ATNF, magnetars, RRATs, NS masses, SNRs, GC catalogues, survey links and more.",
+            notes: "Good default homepage; most other links here can be reached from this hub.",
         },
         {
-            title: "Pulsar Software Jungle",
+            area: "Survey discovery streams",
+            label: "Survey & new pulsar links (via Freire)",
+            href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html#surveys",
+            what: "FAST, MeerKAT/TRAPUM, GBNCC, LOFAR and other survey discovery pages.",
+            notes: "Quick way to see if similar systems have appeared in another survey.",
+        },
+        {
+            area: "Software map",
+            label: "Pulsar Software Jungle",
             href: "https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html",
-            desc: "A high-signal index of pulsar packages for searching, folding, archives, and timing.",
+            what: "Curated index of search, folding, archive, timing and pipeline tools.",
+            notes: "Use it as a map, not a to‑do list; great for placing a new package in context.",
+        },
+        {
+            area: "Catalogues & tools",
+            label: "ATNF Pulsar Catalogue",
+            href: "https://www.atnf.csiro.au/research/pulsar/psrcat/",
+            what: "Canonical pulsar catalogue with powerful query interface.",
+            notes: "Often accessed via psrqpy in scripts; the web UI is still handy for quick checks.",
+        },
+        {
+            area: "Catalogues & tools",
+            label: "psrqpy",
+            href: "https://psrqpy.readthedocs.io/",
+            what: "Python interface for querying ATNF from notebooks and scripts.",
+            notes: "Ideal for reproducible tables and parameter pulls in analysis notebooks.",
+        },
+        {
+            area: "Counterparts & imaging",
+            label: "SIMBAD",
+            href: "https://simbad.u-strasbg.fr/simbad/",
+            what: "Object database for quick counterpart checks at given coordinates.",
+            notes: "First stop when you want to know “what is already here?” in other wavebands.",
+        },
+        {
+            area: "Counterparts & imaging",
+            label: "Aladin (Lite / Desktop)",
+            href: "https://aladin.u-strasbg.fr/",
+            what: "Interactive sky viewer and overlay tool.",
+            notes: "Great for visual sanity checks, nearby sources and field morphology.",
+        },
+        {
+            area: "Counterparts & imaging",
+            label: "Gaia archive",
+            href: "https://gea.esac.esa.int/archive/",
+            what: "Optical astrometry and photometry for stars near your pulsar.",
+            notes: "Useful for companions, cluster membership or nearby stellar populations.",
+        },
+        {
+            area: "Timing & ephemerides",
+            label: "TEMPO2",
+            href: "https://bitbucket.org/psrsoft/tempo2/src/master/",
+            what: "Widely used pulsar timing package.",
+            notes: "Many PTA/timing pipelines still assume familiarity with TEMPO2 conventions.",
+        },
+        {
+            area: "Timing & ephemerides",
+            label: "libstempo",
+            href: "https://github.com/vallis/libstempo",
+            what: "Python interface to TEMPO2 for scripting and analysis.",
+            notes: "Keeps timing analysis reproducible in notebooks.",
+        },
+        {
+            area: "Literature & publishing",
+            label: "ADS",
+            href: "https://ui.adsabs.harvard.edu/",
+            what: "Search engine, citation graph and library for astronomy papers.",
+            notes: "Treat it as your central spine for references and “who cited who?”.",
+        },
+        {
+            area: "Literature & publishing",
+            label: "arXiv astro-ph",
+            href: "https://arxiv.org/list/astro-ph/new",
+            what: "Daily preprint feed for astrophysics.",
+            notes: "Set up one or two filters instead of doomscrolling the full firehose.",
+        },
+        {
+            area: "Literature & publishing",
+            label: "ATel",
+            href: "https://www.astronomerstelegram.org/",
+            what: "Astronomer’s Telegram for fast transient and follow‑up notices.",
+            notes: "Good situational awareness when something in your parameter space is going off.",
         },
     ];
 
@@ -197,261 +302,97 @@ export function ForAstronomers({ theme }: { theme: Theme }) {
                                 Resources • For astronomers
                             </div>
                             <h1 className={cn("mt-4 text-5xl sm:text-7xl font-black tracking-[-0.05em]", isDark ? "text-white" : "text-black")}>
-                                Reference-grade links
+                                One-page link console
                             </h1>
                             <p className={cn("mt-5 max-w-[85ch] text-base sm:text-lg leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
-                                This page is meant to be “always open” during real work: catalogues, cross-match tools, survey discovery portals, and GC-specific
-                                reference tables. Minimal prose, maximum signal.
+                                Instead of repeating the same URLs under different headings, this page gives you a single, dense list of
+                                links you&apos;re likely to keep open while working: catalogues, survey pages, counterpart tools, timing
+                                software, and literature hubs.
                             </p>
-
-                            <div className="mt-6 flex flex-wrap gap-2">
-                                <Pill theme={theme}>GC pulsars</Pill>
-                                <Pill theme={theme}>Surveys</Pill>
-                                <Pill theme={theme}>Counterparts</Pill>
-                                <Pill theme={theme}>Publishing</Pill>
-                            </div>
                         </div>
 
                         <div className="lg:col-span-4">
                             <div className={cn("rounded-[28px] border p-6 sm:p-7", isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5")}>
                                 <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
-                                    Jump menu
+                                    How to use this
                                 </div>
                                 <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>
-                                    Start with <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>GC pulsars</span> if you work in clusters,
-                                    otherwise go straight to <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>Catalogues</span>.
-                                </div>
-
-                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <TOCLink theme={theme} href="#gc" label="GC pulsars" />
-                                    <TOCLink theme={theme} href="#catalogs" label="Catalogues" />
-                                    <TOCLink theme={theme} href="#followup" label="Follow-up" />
-                                    <TOCLink theme={theme} href="#surveys" label="Surveys" />
-                                    <TOCLink theme={theme} href="#software" label="Software" />
-                                    <TOCLink theme={theme} href="#pub" label="Publishing" />
+                                    Scan the left column for the area you care about (clusters, surveys, counterparts, timing, publishing),
+                                    then open the relevant rows in new tabs. The goal is a compact “links console” you can park on a second
+                                    monitor during analysis or paper writing.
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-fr items-stretch">
-                        {heroLinks.map((x) => (
-                            <LinkCard key={x.href} theme={theme} href={x.href} title={x.title} desc={x.desc} />
-                        ))}
-                    </div>
                 </div>
             </section>
 
-            <Section
-                theme={theme}
-                id="gc"
-                eyebrow="01 • globular clusters"
-                title="Globular cluster pulsars"
-                subtitle="The GC ecosystem is specialized enough that you want dedicated reference pages open while reading and writing."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-7">
-                        <LinkCard
-                            theme={theme}
-                            href="https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html"
-                            title="GC pulsars master list"
-                            desc="Cluster tables + references + a living snapshot of the field."
-                        />
-                    </div>
-                    <div className="lg:col-span-5">
-                        <Card
-                            theme={theme}
-                            title="How to use it"
-                            body={
-                                <>
-                                    Use it for (1) attribution, (2) quick sanity checks, (3) population context, and (4) catching “already known” cases early.
-                                    It’s also a great way to build intuition for what clusters tend to host which kinds of systems.
-                                </>
-                            }
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <Section
-                theme={theme}
-                id="catalogs"
-                eyebrow="02 • reference"
-                title="Catalogues & lists"
-                subtitle="When you need a definitive ‘what is known?’ answer, these links are the fastest route."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-6">
-                        <LinkCard
-                            theme={theme}
-                            href="https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html"
-                            title="Freire links: catalogues & lists"
-                            desc="ATNF (+ psrqpy), magnetars, RRATs, gamma-ray pulsars, NS masses, Harris GCs, parallaxes, SNRs."
-                        />
-                    </div>
-                    <div className="lg:col-span-6">
-                        <Card
-                            theme={theme}
-                            title="Default habit"
-                            body={
-                                <>
-                                    Build a 30-second check: catalogue → coordinates → counterpart → survey context → references.
-                                    It keeps your interpretation anchored and prevents “plot-driven hallucinations.”
-                                </>
-                            }
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <Section
-                theme={theme}
-                id="followup"
-                eyebrow="03 • follow-up"
-                title="Follow-up and counterparts"
-                subtitle="Cross-identification tools you’ll use repeatedly: coordinate conversion, sky viewers, and multi-wavelength context."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="Coordinates"
-                            body={
-                                <>
-                                    Keep a coordinate converter handy, especially when jumping between survey formats or telescope conventions.
-                                    (Freire’s page links a good one.)
-                                </>
-                            }
-                        />
-                    </div>
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="Finding counterparts"
-                            body={
-                                <>
-                                    SIMBAD + Aladin are your bread-and-butter for “what’s at these coordinates?”.
-                                    Add Gaia/SDSS when you need stellar context quickly.
-                                </>
-                            }
-                        />
-                    </div>
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="Gamma-ray context"
-                            body={
-                                <>
-                                    For high-energy association checks, it’s useful to keep the Fermi catalog link close.
-                                    It saves time when someone asks “could this be…?”
-                                </>
-                            }
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <Section
-                theme={theme}
-                id="surveys"
-                eyebrow="04 • discovery streams"
-                title="Survey discovery portals"
-                subtitle="A clean set of links for keeping up with new pulsars from major survey programs."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-6">
-                        <LinkCard
-                            theme={theme}
-                            href="https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html"
-                            title="Surveys & new pulsars (via Freire links)"
-                            desc="FAST (GPPS/CRAFTS/GC survey), MeerKAT TRAPUM, GBNCC, LOFAR LOTAAS, Arecibo survey pages, and more."
-                        />
-                    </div>
-                    <div className="lg:col-span-6">
-                        <Card
-                            theme={theme}
-                            title="Why this matters"
-                            body={
-                                <>
-                                    Discovery streams teach you the “shape” of announcements: naming, summary tables, confirmation standards, and common pitfalls.
-                                    It’s also how you track overlap with your own search space.
-                                </>
-                            }
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <Section
-                theme={theme}
-                id="software"
-                eyebrow="05 • tooling"
-                title="Software map"
-                subtitle="Not a tutorial — a map. Use it when you hear a tool name and want to place it in the ecosystem instantly."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-7">
-                        <LinkCard
-                            theme={theme}
-                            href="https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html"
-                            title="Pulsar Software Jungle"
-                            desc="A curated index of pulsar software across searching, folding, archives, timing, and pipelines."
-                        />
-                    </div>
-                    <div className="lg:col-span-5">
-                        <Card
-                            theme={theme}
-                            title="Practical use"
-                            body={
-                                <>
-                                    Use it to standardize your stack within a project: pick tools intentionally so your collaborators can reproduce your steps.
-                                    This also helps you justify “why this tool?” in methods sections.
-                                </>
-                            }
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <Section
-                theme={theme}
-                id="pub"
-                eyebrow="06 • publishing"
-                title="Publishing & staying current"
-                subtitle="A small set of links that cover 90% of what you need for reading, writing, and submission."
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="ADS"
-                            body={<>Use ADS as the citation spine: search, bibtex, related works, and “who cited who” maps.</>}
-                        />
-                    </div>
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="arXiv"
-                            body={<>For awareness and priority tracking. If you’re overwhelmed: one RSS filter is better than doomscrolling.</>}
-                        />
-                    </div>
-                    <div className="lg:col-span-4">
-                        <Card
-                            theme={theme}
-                            title="ATel + community streams"
-                            body={<>For fast transient context and quick community signals (especially when something “pops”).</>}
-                        />
-                    </div>
-                </div>
-            </Section>
-
-            <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
+            {/* Single table of links */}
+            <section className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pb-16">
-                    <div className={cn("text-xs", isDark ? "text-white/55" : "text-black/55")}>
-                        Note: this page is intentionally “reference-first”. If you want, we can add a secondary “opinionated stack” panel (your preferred tools + why).
+                    <div className="overflow-x-auto rounded-[24px] border">
+                        <table
+                            className={cn(
+                                "min-w-full border-collapse text-[0.95rem]",
+                                isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5"
+                            )}
+                        >
+                            <thead className={isDark ? "bg-white/10" : "bg-black/5"}>
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs sm:text-[0.8rem] font-semibold tracking-[0.16em] uppercase">
+                                        Area
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs sm:text-[0.8rem] font-semibold tracking-[0.16em] uppercase">
+                                        Link
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs sm:text-[0.8rem] font-semibold tracking-[0.16em] uppercase">
+                                        What you use it for
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs sm:text-[0.8rem] font-semibold tracking-[0.16em] uppercase">
+                                        Notes
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {links.map((row, idx) => (
+                                    <tr
+                                        key={row.label}
+                                        className={cn(
+                                            idx !== links.length - 1 ? (isDark ? "border-b border-white/10" : "border-b border-black/10") : "",
+                                            idx % 2 === 1 ? (isDark ? "bg-white/5" : "bg-black/5") : ""
+                                        )}
+                                    >
+                                        <td className="px-4 py-3 align-top text-[0.85rem] sm:text-[0.9rem] font-semibold tracking-[0.12em] uppercase whitespace-nowrap">
+                                            {row.area}
+                                        </td>
+                                        <td className="px-4 py-3 align-top">
+                                            <a
+                                                href={row.href}
+                                                target={isExternal(row.href) ? "_blank" : undefined}
+                                                rel={isExternal(row.href) ? "noopener noreferrer" : undefined}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1 font-semibold underline underline-offset-4 decoration-2",
+                                                    isDark ? "text-white hover:decoration-white/70" : "text-black hover:decoration-black/50"
+                                                )}
+                                                data-nolock
+                                            >
+                                                {row.label}
+                                            </a>
+                                            <div className={cn("mt-1 text-xs break-all", isDark ? "text-white/55" : "text-black/55")}>{row.href}</div>
+                                        </td>
+                                        <td className={cn("px-4 py-3 align-top text-[0.95rem] sm:text-base", isDark ? "text-white/80" : "text-black/80")}>
+                                            {row.what}
+                                        </td>
+                                        <td className={cn("px-4 py-3 align-top text-[0.85rem] sm:text-[0.95rem]", isDark ? "text-white/65" : "text-black/65")}>
+                                            {row.notes || "—"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }

@@ -198,7 +198,12 @@ export default function App() {
   const isSearchModePage = useMemo(() => location.pathname.startsWith("/search-mode"), [location.pathname]);
 
   return (
-    <div className={cn("min-h-[100svh] flex flex-col", isDark ? "bg-black text-white" : "bg-white text-black")}>
+    <div
+      className={cn(
+        "min-h-[100svh] flex flex-col overflow-x-hidden",
+        isDark ? "bg-black text-white" : "bg-white text-black"
+      )}
+    >
       <ScrollToTop />
       <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} isMobile={isMobile} />
 

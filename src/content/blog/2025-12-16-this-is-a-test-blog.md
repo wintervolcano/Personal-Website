@@ -2,7 +2,7 @@
 title: This is a test blog
 date: 2025-12-18
 description: Just a test blog to check the new content pipeline.
-tags: [pulsars, candidates, pipelines]
+tags: [science]
 ---
 ## Testing Blog Post
 

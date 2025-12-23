@@ -189,6 +189,28 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
               {children}
             </blockquote>
           ),
+          table: ({ children }) => (
+            <div className="mt-6 overflow-x-auto">
+              <table className="min-w-full border-collapse text-sm">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className={isDark ? "bg-white/10" : "bg-black/5"}>{children}</thead>
+          ),
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => (
+            <tr className={cn(isDark ? "border-white/10" : "border-black/10", "border-b last:border-0")}>{children}</tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-3 py-2 text-left text-[0.72rem] font-semibold tracking-[0.16em] uppercase">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-3 py-2 align-top text-sm">{children}</td>
+          ),
           code: ({ children }) => (
             <code
               className={cn(

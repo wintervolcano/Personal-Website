@@ -56,8 +56,7 @@ export default function ResourcePost({
             </p>
           ) : null}
         </header>
-
-        {/* Full control typography + link cards */}
+        
         <MarkdownProse theme={theme} markdown={doc.body} />
       </div>
     </div>

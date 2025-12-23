@@ -62,7 +62,14 @@ function Card({ theme, title, body }: { theme: Theme; title: string; body: React
       <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
         {title}
       </div>
-      <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>{body}</div>
+      <div
+        className={cn(
+          "mt-3 text-[0.95rem] sm:text-base leading-relaxed",
+          isDark ? "text-white/70" : "text-black/70"
+        )}
+      >
+        {body}
+      </div>
       <div className="mt-auto" />
     </motion.div>
   );
@@ -116,7 +123,14 @@ function LinkCard({
         </div>
 
         {desc ? (
-          <div className={cn("mt-2 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/65")}>{desc}</div>
+          <div
+            className={cn(
+              "mt-2 text-[0.95rem] sm:text-base leading-relaxed",
+              isDark ? "text-white/70" : "text-black/65"
+            )}
+          >
+            {desc}
+          </div>
         ) : null}
 
         <div className="mt-auto" />
@@ -197,38 +211,40 @@ export function ForStudents({ theme }: { theme: Theme }) {
                 Resources • For students
               </div>
               <h1 className={cn("mt-4 text-5xl sm:text-7xl font-black tracking-[-0.05em]", isDark ? "text-white" : "text-black")}>
-                A clean starter kit
+                Learn pulsar astronomy
                 <br />
-                for pulsar work.
+                from first pulses up.
               </h1>
               <p className={cn("mt-5 max-w-[85ch] text-base sm:text-lg leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
-                This page is optimized for first contact: “what tools exist?”, “what do I learn first?”, and “what do I click when I’m stuck?”.
-                Everything here points back to the three canonical hubs you shared — just organized into a calm, instrument-like checklist.
+                This page is a gentle introduction to pulsar astronomy. It is meant for students who are curious about neutron stars and radio
+                astronomy, and who want to understand the ideas behind the plots and software — not just follow a recipe.
+                You can treat it as a small handbook: start with the concepts, then move into signals, tools, and project ideas.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-2">
-                <Pill theme={theme}>Beginner-first</Pill>
-                <Pill theme={theme}>Software map</Pill>
-                <Pill theme={theme}>Catalogues & follow-up</Pill>
-                <Pill theme={theme}>Paper workflow</Pill>
+                <Pill theme={theme}>Concepts first</Pill>
+                <Pill theme={theme}>Signals & plots</Pill>
+                <Pill theme={theme}>Hands-on tools</Pill>
+                <Pill theme={theme}>Projects & reading</Pill>
               </div>
             </div>
 
             <div className="lg:col-span-4">
               <div className={cn("rounded-[28px] border p-6 sm:p-7", isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5")}>
                 <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
-                  Reading guide
+                  How to use this page
                 </div>
                 <div className={cn("mt-3 text-sm leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>
-                  If you only do two things today: open the <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>Software Jungle</span>{" "}
-                  and bookmark <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>Some useful sites</span>.
+                  If you&apos;re new, read the{" "}
+                  <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>Start here</span> section slowly and sketch the ideas.
+                  When you start research, come back for the software and catalogue links — they become more useful once the physics is familiar.
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <TOCLink theme={theme} href="#start" label="Start here" />
-                  <TOCLink theme={theme} href="#software" label="Software" />
-                  <TOCLink theme={theme} href="#catalogs" label="Catalogues" />
-                  <TOCLink theme={theme} href="#papers" label="Paper workflow" />
+                  <TOCLink theme={theme} href="#software" label="Signals & tools" />
+                  <TOCLink theme={theme} href="#catalogs" label="Where pulsars live" />
+                  <TOCLink theme={theme} href="#papers" label="Reading & projects" />
                 </div>
               </div>
             </div>
@@ -246,18 +262,19 @@ export function ForStudents({ theme }: { theme: Theme }) {
         theme={theme}
         id="start"
         eyebrow="01 • start"
-        title="Start here"
-        subtitle="A minimal path that gets you to ‘I can run tools and interpret outputs’ without drowning in options."
+        title="Pulsars in three questions"
+        subtitle="A conceptual first pass through what pulsars are, why they are interesting, and what we actually measure."
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Learn the objects"
+              title="What is a pulsar?"
               body={
                 <>
-                  Know the basic taxonomy: normal pulsars vs MSPs, binaries, globular cluster populations, and why timing matters.
-                  Then everything you see in plots starts to “snap into place.”
+                  A pulsar is a rapidly rotating, magnetised neutron star whose radio beam sweeps past us like a lighthouse.
+                  They are born in supernovae and pack more mass than the Sun into a city-sized object. Understanding this picture is the base
+                  for everything else.
                 </>
               }
             />
@@ -265,11 +282,12 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Learn the plots"
+              title="Why do we care?"
               body={
                 <>
-                  Build intuition for: folded profiles, sub-integration stability, frequency evolution, and what RFI looks like.
-                  Plot literacy is your superpower.
+                  Pulsars are exquisite clocks and extreme physics laboratories. We use them to probe binary dynamics, the interstellar medium,
+                  globular clusters, and even nanohertz gravitational waves. When you look at a timing plot, you are looking straight at gravity
+                  and plasma.
                 </>
               }
             />
@@ -277,11 +295,12 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Learn the workflow"
+              title="What do we actually measure?"
               body={
                 <>
-                  Search → candidate → fold → verify → (timing) → publish.
-                  You don’t need to master every step on day one — but you do want the “map”.
+                  Observers measure times-of-arrival of pulses, dispersion measures (how much the pulse is delayed by free electrons),
+                  pulse profiles, and how these change with time and frequency. Almost every piece of software you will meet exists to
+                  measure these things more precisely.
                 </>
               }
             />
@@ -292,28 +311,29 @@ export function ForStudents({ theme }: { theme: Theme }) {
       <Section
         theme={theme}
         id="software"
-        eyebrow="02 • software"
-        title="Software you’ll actually meet"
-        subtitle="These are the tools that show up repeatedly in real pulsar work. Start with the map, then go deep as needed."
+        eyebrow="02 • signals"
+        title="From telescope to plot"
+        subtitle="How raw voltages from a telescope become the folded profiles and diagnostic panels you see in talks and papers."
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
           <div className="lg:col-span-6">
             <LinkCard
               theme={theme}
               href="https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html"
-              title="Pulsar Software Jungle (curated map)"
-              desc="A single page that lists the core packages (searching, folding, archives, timing) and how they relate."
+              title="Pulsar Software Jungle (overview)"
+              desc="Once you know what the steps are, this map tells you which packages handle which part of the chain."
             />
           </div>
 
           <div className="lg:col-span-6">
             <Card
               theme={theme}
-              title="How to use the map"
+              title="Signal chain in words"
               body={
                 <>
-                  Don’t try to install everything. Pick one “spine” (search or folding + archives), then add timing later.
-                  The Jungle is best used as a reference index when you hear a new tool name in a meeting.
+                  Telescope → voltage time series → channelisation and dedispersion → search for periodicity → fold at a trial period →
+                  clean, stable pulse profile. When you look at a PRESTO or PSRCHIVE panel, you are seeing these operations stacked on top of
+                  one another.
                 </>
               }
             />
@@ -322,11 +342,12 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Search / candidates"
+              title="Search and candidates"
               body={
                 <>
-                  You’ll hear names like <span className="font-semibold">PRESTO</span> and related utilities for candidate sifting and diagnostics.
-                  Treat these as “detection engines”.
+                  Search codes (for example <span className="font-semibold">PRESTO</span>) take the time series and ask
+                  “is there a repeating pattern here?”. They produce diagnostic plots for thousands of candidates. Your job is to learn what
+                  looks like a real pulsar and what looks like radio-frequency interference.
                 </>
               }
             />
@@ -334,11 +355,12 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Folding / archives"
+              title="Folding and inspection"
               body={
                 <>
-                  Folding and archive inspection is where skepticism lives.
-                  Tools like <span className="font-semibold">DSPSR</span> and <span className="font-semibold">PSRCHIVE</span> show up constantly.
+                  Folding tools such as <span className="font-semibold">DSPSR</span> and archive toolkits like{" "}
+                  <span className="font-semibold">PSRCHIVE</span> convert promising candidates into high signal-to-noise profiles.
+                  This is where you build discipline about signal quality and learn to distrust pretty but suspicious plots.
                 </>
               }
             />
@@ -346,11 +368,11 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Timing"
+              title="Timing and physics"
               body={
                 <>
-                  Timing packages (e.g. <span className="font-semibold">tempo / tempo2</span>) become relevant once you have stable detections.
-                  Timing is where “cool plots” turn into physics.
+                  Timing packages (e.g. <span className="font-semibold">tempo / tempo2</span>) model pulse arrival times with exquisite precision.
+                  This is where measurements of binary orbits, gravitational-wave backgrounds, and tests of gravity actually happen.
                 </>
               }
             />
@@ -362,8 +384,8 @@ export function ForStudents({ theme }: { theme: Theme }) {
         theme={theme}
         id="catalogs"
         eyebrow="03 • reference"
-        title="Catalogues & follow-up tools"
-        subtitle="These links turn ‘I found something’ into ‘I can identify it, cross-match it, and contextualize it’."
+        title="Where pulsars live"
+        subtitle="Catalogues and globular-cluster lists that help you place a single pulsar into the bigger astrophysical picture."
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
           <div className="lg:col-span-6">
@@ -371,7 +393,7 @@ export function ForStudents({ theme }: { theme: Theme }) {
               theme={theme}
               href="https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html"
               title="Some useful sites (Freire)"
-              desc="Coordinate tools, SIMBAD/Aladin, Gaia/SDSS, ATNF + psrqpy, survey discovery pages, and paper workflow links."
+              desc="Coordinate tools, SIMBAD/Aladin, Gaia/SDSS, ATNF + psrqpy, survey discovery pages, and more — the daily driver page for pulsar work."
             />
           </div>
 
@@ -380,18 +402,18 @@ export function ForStudents({ theme }: { theme: Theme }) {
               theme={theme}
               href="https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html"
               title="Pulsars in Globular Clusters"
-              desc="The go-to list for globular cluster pulsars (plus references). Useful even when you’re ‘just browsing’ GC science."
+              desc="A living list of globular-cluster pulsars and references. Essential if you care about dense stellar systems, dynamics, and multi-pulsar clusters."
             />
           </div>
 
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Cross-match habit"
+              title="Catalogues as a habit"
               body={
                 <>
-                  The moment you see a candidate: check catalogues, look for counterparts, and confirm whether it’s already known.
-                  This is the fastest way to stop reinventing the wheel.
+                  When you see a new candidate, immediately ask: is this in a catalogue already? Is it in a cluster? Is there a counterpart at
+                  other wavelengths? Getting into the habit of checking catalogues makes you much faster and prevents rediscoveries.
                 </>
               }
             />
@@ -403,7 +425,7 @@ export function ForStudents({ theme }: { theme: Theme }) {
               body={
                 <>
                   Keep an eye on major survey discovery pages (FAST, MeerKAT/TRAPUM, GBNCC, LOFAR, etc.).
-                  They’re great for learning what “real” discovery announcements look like.
+                  Reading the short discovery notes is a light-weight way to learn which systems excite the community and why.
                 </>
               }
             />
@@ -411,11 +433,11 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="GC work has its own ecosystem"
+              title="Globular clusters as laboratories"
               body={
                 <>
-                  Once you’re in clusters: literature, naming, and discovery conventions matter.
-                  The GC list becomes a constant open tab.
+                  Globular clusters are dense stellar environments with rich pulsar populations.
+                  Once you work in clusters, the GC list and its references become a constant open tab and a guide to the literature.
                 </>
               }
             />
@@ -427,8 +449,8 @@ export function ForStudents({ theme }: { theme: Theme }) {
         theme={theme}
         id="papers"
         eyebrow="04 • writing"
-        title="Paper workflow that doesn’t hurt"
-        subtitle="A practical, student-friendly way to stay current and write cleanly — without turning your life into tabs."
+        title="Reading, writing, and small projects"
+        subtitle="How to stay in touch with the literature and grow from ‘I read a paper’ to ‘I can design a small pulsar project’."
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
           <div className="lg:col-span-4">
@@ -437,8 +459,8 @@ export function ForStudents({ theme }: { theme: Theme }) {
               title="ADS + arXiv"
               body={
                 <>
-                  ADS for searching and citation hygiene; arXiv for daily awareness.
-                  If you’re overwhelmed: track one keyword list and one collaboration list.
+                  ADS is the search engine and citation manager for astronomy papers; arXiv is the daily news feed.
+                  If you feel overwhelmed, follow one keyword (e.g. &quot;pulsar timing&quot;) and one collaboration (e.g. &quot;EPTA/NANOGrav&quot;).
                 </>
               }
             />
@@ -446,10 +468,11 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Overleaf"
+              title="Writing tools"
               body={
                 <>
-                  Use Overleaf when you need collaboration speed. Otherwise: write locally + git for long-term sanity.
+                  For your first paper or report, tools like Overleaf are convenient for collaboration. As projects grow, writing locally with
+                  version control becomes invaluable — especially when you revisit work years later.
                 </>
               }
             />
@@ -457,36 +480,34 @@ export function ForStudents({ theme }: { theme: Theme }) {
           <div className="lg:col-span-4">
             <Card
               theme={theme}
-              title="Journal targets"
+              title="Small project ideas"
               body={
                 <>
-                  Keep the “where do we submit?” question boring. Have 1–2 default journals per project type.
-                  It reduces decision friction.
+                  Recreate a discovery plot from a published paper; explore how dispersion smears a pulse as you vary DM; or use a public timing
+                  dataset to fit a simple model. Small, focused projects build intuition much faster than only reading. But if you would like to get a reading project, ask your advisor or mail me!
                 </>
               }
             />
           </div>
 
           <div className="lg:col-span-12">
-            <div className={cn("rounded-[28px] border p-6 sm:p-7", isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5")}>
-              <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
-                One rule that helps
-              </div>
+            {/* <div className={cn("rounded-[28px] border p-6 sm:p-7", isDark ? "border-white/12 bg-white/5" : "border-black/10 bg-black/5")}> */}
+            {/* <div className={cn("text-[11px] font-semibold tracking-[0.28em] uppercase", isDark ? "text-white/60" : "text-black/55")}>
+                One habit that helps
+              </div> */}
               <div className={cn("mt-3 text-base sm:text-lg leading-relaxed", isDark ? "text-white/70" : "text-black/70")}>
-                Keep a “lab notebook” log: what you tried, what changed, what worked, what you’re unsure about. This makes meetings and writing 10× easier.
-              </div>
+                <LinkCard
+                  theme={theme}
+                  href=""
+                  title="My Obsidian Method"
+                  desc="Keep a notebook: what you tried, what changed, what worked, and what you&apos;re unsure about. It makes meetings, debugging,
+                and writing dramatically easier — and turns your learning process into something you can review and improve. I use Obsidian to do this. If you want to read more about my notetaking method, check out this blog post."
+                />
+              {/* </div> */}
             </div>
           </div>
         </div>
       </Section>
-
-      <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pb-16">
-          <div className={cn("text-xs", isDark ? "text-white/55" : "text-black/55")}>
-            Tip: if you want this to become “interactive onboarding”, we can add a staged checklist with saved progress (localStorage) and “recommended next link”.
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

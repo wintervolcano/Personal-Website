@@ -52,6 +52,12 @@ function Hero({
   const tx2 = useTransform(xSpring, [0, vw || 1], [14, -14]);
   const ty2 = useTransform(ySpring, [0, vh || 1], [10, -10]);
 
+  // Slightly different motion for each name so they "shear" apart.
+  const txFazal = useTransform(xSpring, [0, vw || 1], [-10, 10]);
+  const tyFazal = useTransform(ySpring, [0, vh || 1], [-6, 6]);
+  const txKareem = useTransform(xSpring, [0, vw || 1], [8, -8]);
+  const tyKareem = useTransform(ySpring, [0, vh || 1], [4, -4]);
+
   const navigate = useNavigate();
 
   const goLearnMore = (e?: React.MouseEvent) => {
@@ -94,17 +100,48 @@ function Hero({
               aria-hidden
             >
               <h1 className="text-[clamp(3.6rem,10.2vw,10.6rem)] leading-[0.88] font-black tracking-[-0.055em]">
-                Fazal
-                <br />
-                Kareem
+                <motion.span
+                  style={reduced || isMobile ? undefined : { x: txFazal, y: tyFazal }}
+                  className="block"
+                >
+                  <span style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
+                    Fazal
+                  </span>
+                </motion.span>
+                <motion.span
+                  style={reduced || isMobile ? undefined : { x: txKareem, y: tyKareem }}
+                  className="block"
+                >
+                  <span style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
+                    Kareem
+                  </span>
+                </motion.span>
               </h1>
             </motion.div>
 
             <motion.div style={reduced || isMobile ? undefined : { x: tx, y: ty }}>
-              <h1 className={cn("text-[clamp(3.9rem,10.8vw,11.4rem)] leading-[0.88] font-black tracking-[-0.06em]", isDark ? "text-white" : "text-black")}>
-                Fazal
-                <br />
-                Kareem
+              <h1
+                className={cn(
+                  "text-[clamp(3.9rem,10.8vw,11.4rem)] leading-[0.88] font-black tracking-[-0.06em]",
+                  isDark ? "text-white" : "text-black"
+                )}
+              >
+                <motion.span
+                  style={reduced || isMobile ? undefined : { x: txFazal, y: tyFazal }}
+                  className="block"
+                >
+                  <span style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
+                    Fazal
+                  </span>
+                </motion.span>
+                <motion.span
+                  style={reduced || isMobile ? undefined : { x: txKareem, y: tyKareem }}
+                  className="block"
+                >
+                  <span style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
+                    Kareem
+                  </span>
+                </motion.span>
               </h1>
             </motion.div>
 

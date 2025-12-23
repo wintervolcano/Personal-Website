@@ -29,8 +29,15 @@ export function CardGrid({
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className={cn("text-lg font-extrabold tracking-[-0.02em]", isDark ? "text-white" : "text-black")}>{it.t}</div>
-              <div className={cn("mt-2 text-sm leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>{it.d}</div>
+              <div className={cn("text-lg sm:text-xl font-extrabold tracking-[-0.02em]", isDark ? "text-white" : "text-black")}>{it.t}</div>
+              <div
+                className={cn(
+                  "mt-2 text-[0.95rem] sm:text-base leading-relaxed",
+                  isDark ? "text-white/65" : "text-black/65"
+                )}
+              >
+                {it.d}
+              </div>
               {it.tag ? (
                 <div
                   className={cn(

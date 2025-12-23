@@ -393,7 +393,7 @@ export function Footer({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
 
   return (
-    <footer className={cn("relative w-full", isDark ? "bg-black" : "bg-white")}>
+    <footer className={cn("relative w-full overflow-hidden", isDark ? "bg-black" : "bg-white")}>
       {/* Overlay is a direct child of the footer (anchors to footer only) */}
       <FooterPSRBHOverlay theme={theme} />
 

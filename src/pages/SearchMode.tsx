@@ -1034,7 +1034,7 @@ export function SearchMode({
     const sub = isDark ? "text-white/65" : "text-black/65";
 
     return (
-        <div className={cn("min-h-[100svh] w-full", "bg-white text-black")}>
+        <div className={cn("min-h-[100svh] w-full text-justify", "bg-white text-black")}>
             <div className="mx-auto max-w-[1400px] px-4 sm:px-8 py-10 sm:py-14">
                 <div className="flex items-center justify-between gap-4">
                     <button
@@ -1072,14 +1072,48 @@ export function SearchMode({
 
                 <div
                     className={cn(
-                        "mt-6 text-base sm:text-2xl leading-relaxed max-w-[200ch]",
+                        "mt-6 space-y-4 text-base sm:text-2xl leading-relaxed max-w-[100ch]",
                         sub
                     )}
                 >
-                    Search Mode is a playful “instrument overlay” that turns the site into a sky map.
-                    Most places are noise. A few places hide planted periodic signals. Your loop is:
-                    scan → capture → click the correct peak to confirm. This page stays in{" "}
-                    <b>Browse Mode</b> so it feels like learning, not hunting.
+                    <p>
+                        Search Mode is a small training tool for pulsar searches. It turns the site into a simple “instrument
+                        overlay”: most places are noise, a few places hide periodic signals. Your loop is to scan the noisy
+                        data, spot a promising peak in the Fourier spectrum, and lock it to reveal a pulsar.
+                    </p>
+
+                    <p>
+                        If you already work with pulsar search pipelines, you can scroll straight to the demo panel below — the UI
+                        should feel familiar. For everyone else, here’s the short version of what is being simulated.
+                    </p>
+
+                    <p>
+                        In a real search, a radio telescope records a time series: intensity as a function of time and
+                        frequency. The first question is “does anything repeat?”. We use a fast Fourier transform (FFT) to turn
+                        the time series into a spectrum of power versus frequency; a periodic signal that is almost invisible in
+                        the raw squiggles often shows up as a peak in that spectrum.
+                    </p>
+
+                    <p>
+                        When an FFT peak looks promising, the next step is to <strong>fold</strong> the data: you cut the time
+                        series into chunks one period long and stack them. If the period is right, the pulses line up and the
+                        average profile sharpens; if it is wrong, the signal smears away. Folding boosts signal‑to‑noise and
+                        lets you inspect stability across time and frequency.
+                    </p>
+
+                    <p>
+                        Real searches do this at scale. Specialised programs search over many trial periods and dispersion
+                        measures, producing **millions** of candidate plots. Machine‑learning models and ranking scores bring this
+                        down to thousands that humans actually look at. Each confirmed pulsar sits on top of a lot of telescope
+                        time, compute, and careful inspection.
+                    </p>
+
+                    <p>
+                        Search Mode compresses that entire story into a toy: a single time series, a single FFT panel, a handful
+                        of synthetic signals tied to real TRAPUM discoveries, and a simulated stats bar that hints at the hidden
+                        cost of real detections. This page stays in <strong>Browse Mode</strong> so you can read and try the demo
+                        without turning the full overlay on.
+                    </p>
                 </div>
 
                 {/* Try-it demo (panel-local Search Mode toggle) */}

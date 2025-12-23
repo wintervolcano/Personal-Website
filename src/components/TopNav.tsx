@@ -38,12 +38,20 @@ export function TopNav({
           <div className="flex items-center justify-between gap-4">
             <button
               onClick={() => setPage("home")}
-              className={cn("text-left leading-none select-none", isDark ? "text-white" : "text-black")}
+              className="flex items-center gap-3 text-left leading-none select-none"
               aria-label="Go home"
               data-nolock
             >
-              <div className="text-xs font-semibold tracking-[0.28em] uppercase opacity-70">FAZAL KAREEM</div>
-              <div className="text-[11px] tracking-[0.25em] uppercase opacity-50">Radio • Pulsars • Gravity</div>
+              <img
+                src="/logo.png"
+                alt="Fazal Kareem"
+                className="h-8 w-auto max-w-[140px] object-contain"
+                style={{ filter: isDark ? "none" : "invert(1)" }}
+              />
+              {/* <div className={cn(isDark ? "text-white" : "text-black")}>
+                <div className="text-xs font-semibold tracking-[0.28em] uppercase opacity-70">FAZAL KAREEM</div>
+                <div className="text-[11px] tracking-[0.25em] uppercase opacity-50">Radio • Pulsars • Gravity</div>
+              </div> */}
             </button>
 
             <div className="hidden lg:flex items-center gap-2" data-nolock>

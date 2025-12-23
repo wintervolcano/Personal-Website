@@ -2,7 +2,7 @@
 title: Reading a candidate plot in 90 seconds
 date: 2025-12-18
 description: A fast mental checklist for triage: harmonics, DM response, and suspicious symmetry.
-tags: [pulsars, candidates, pipelines]
+tags: [science]
 ---
 
 When I'm skimming candidates, I try to answer three questions quickly:

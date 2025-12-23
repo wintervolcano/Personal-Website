@@ -291,7 +291,16 @@ export function SearchOverlay({
     setToast({ id, msg });
     window.setTimeout(() => {
       setToast((t) => (t && t.id === id ? null : t));
-    }, 2200);
+    }, 5000);
+  };
+
+  const showRepeatToast = () => {
+    const msg = "You already detected this pulsar — nice re-detection!";
+    const id = Date.now();
+    setToast({ id, msg });
+    window.setTimeout(() => {
+      setToast((t) => (t && t.id === id ? null : t));
+    }, 5000);
   };
 
   // -------- Session discovery tracking --------
@@ -1011,6 +1020,18 @@ export function SearchOverlay({
       setStatus("hit");
       const id = (pulsar as any).id as string;
 
+       // If this pulsar was already discovered in this session,
+       // don't increment global or session counters again.
+       const alreadyFound = sessionSet.has(id);
+
+       if (alreadyFound) {
+         const existing = logbook.find((e) => e.id === id);
+         const rank = existing?.rank ?? 1;
+         showRepeatToast();
+         setTimeout(() => onSolved(pulsar, rank), 500);
+         return;
+       }
+
       // Global rank via KV (fallback to local session counter on failure)
       let rank = 1;
       const remoteRank = await recordDetection(id);
@@ -1055,9 +1076,28 @@ export function SearchOverlay({
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[60]">
-      {/* Instrument strip */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0" data-ui="search-overlay">
+    <>
+      {/* Global toast, rendered above modal / overlay */}
+      <AnimatePresence>
+        {toast ? (
+          <motion.div
+            key={toast.id}
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -8, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="pointer-events-none fixed inset-x-0 top-15 z-[80] flex justify-center px-3"
+          >
+            <div className="inline-flex max-w-[92%] sm:max-w-[70%] rounded-full border border-white/14 bg-white/100 backdrop-blur px-4 py-2 text-xs font-semibold tracking-[0.12em] uppercase text-black/80">
+              {toast.msg}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* Instrument strip (below DiscoveryModal) */}
+      <div className="pointer-events-none fixed inset-0 z-[60]">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" data-ui="search-overlay">
         <div className="mx-auto max-w-[1800px] px-4 sm:px-8 pb-5">
           <motion.div
             initial={{ y: 18, opacity: 0 }}
@@ -1085,24 +1125,6 @@ export function SearchOverlay({
                     className="pointer-events-auto h-[140px] w-full cursor-crosshair"
                     data-nolock
                   />
-                  {/* Toast INSIDE FFT panel */}
-                  <AnimatePresence>
-                    {toast ? (
-                      <motion.div
-                        key={toast.id}
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 8, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-3"
-                      >
-                        <div className="inline-flex max-w-[92%] sm:max-w-[70%] rounded-full border border-white/14 bg-black/85 backdrop-blur px-4 py-2 text-xs font-semibold tracking-[0.12em] uppercase text-white/80">
-                          {toast.msg}
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                  
                 </div>
                 <div className="mt-2 text-[11px] tracking-[0.22em] uppercase text-white/55">
                   Panel B: power spectrum • click peaks after capture
@@ -1278,7 +1300,8 @@ export function SearchOverlay({
             ) : null}
           </AnimatePresence>
         </div>
+        </div>
       </div>
-      </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { cn } from "./lib/cn";
 import { loadCollection, type MdDoc } from "./lib/content";
@@ -303,6 +304,8 @@ export default function App() {
 
       {/* Optional: keep modal only for research posts for now */}
       <PostModal theme={theme} open={postOpen} doc={activePost} onClose={() => setPostOpen(false)} />
+
+      <Analytics />
     </div>
   );
 }

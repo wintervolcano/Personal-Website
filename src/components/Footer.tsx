@@ -1,5 +1,5 @@
 // Footer.tsx
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { Theme } from "./themeToggle";
 import { ArrowUpRight, Github, Linkedin, Mail, Twitter } from "lucide-react";
@@ -315,6 +315,18 @@ function SpacetimeGrid({
  */
 function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
+  const [hover, setHover] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // parameters
   const rP = 12;
@@ -331,8 +343,15 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
   const box = (orbitR + rP + rBH) * 2 + 32;
 
   return (
-    <div className="pointer-events-none absolute right-4 bottom-34 sm:right-8 sm:bottom-24 lg:right-20 lg:bottom-20 z-[5] opacity-90" aria-hidden>
-      <div className="relative" style={{ width: box, height: box }}>
+    <div className="absolute right-4 bottom-34 sm:right-8 sm:bottom-24 lg:right-20 lg:bottom-20 z-[5] opacity-90">
+      <div
+        className="relative"
+        style={{ width: box, height: box }}
+        onMouseEnter={() => {
+          if (!isMobile) setHover(true);
+        }}
+        onMouseLeave={() => setHover(false)}
+      >
         {/* ✅ Grid lives INSIDE overlay so it can use box + orbitSec */}
         <SpacetimeGrid theme={theme} width={box * 1} height={box * 1} orbitSec={orbitSec} />
 
@@ -349,8 +368,8 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
 
         {/* orbital rotation (binary + wells rotate together because grid is time-driven by orbitSec) */}
         <motion.div
-          className="absolute left-1/2 top-1/2"
-          style={{ width: 1, height: 1, scaleY: 0.70, }}
+          className="absolute left-1/2 top-1/2 pointer-events-none"
+          style={{ width: 1, height: 1, scaleY: 0.7 }}
           animate={{ rotate: 360 }}
           transition={{ duration: orbitSec, repeat: Infinity, ease: "linear" }}
         >
@@ -384,6 +403,38 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
             </motion.div>
           </div>
         </motion.div>
+
+        {/* Hover popup: glasmorphic card */}
+        {hover && !isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 0.8, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="pointer-events-none absolute top-1/2 right-full ml-3 -translate-y-1/2 w-[420px] max-w-[420px]"
+          >
+            <div
+              className={cn(
+                "rounded-2xl border px-4 py-3 text-[11px] leading-snug",
+                "backdrop-blur-md shadow-lg"
+              )}
+              style={{
+                borderColor: isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)",
+                backgroundColor: isDark ? "rgba(15,23,42,0.80)" : "rgba(248,250,252,0.85)",
+                color: isDark ? "rgba(248,250,252,0.92)" : "rgba(15,23,42,0.9)",
+              }}
+            >
+              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase mb-1">
+                Pulsar · Black hole
+              </div>
+              <div className="whitespace-pre-line">
+                A pulsar black hole binary is the holy grail of pulsar astronomy,
+                I wish to one day discover one but for now,
+                I'll have this near my name
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

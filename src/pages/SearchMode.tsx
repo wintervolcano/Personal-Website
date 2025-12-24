@@ -760,7 +760,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                             Step 3
                         </div>
                         <div className="mt-1">
-                            The FFT panel now shows a frozen spectrum. Click a narrow peak to see if it’s the planted pulsar. You can try multiple times without re-capturing. But if you want to recapture another part of the sky, press escape or the reset button. 
+                            The FFT panel now shows a frozen spectrum. Click a narrow peak to see if it’s the planted pulsar. You can try multiple times without re-capturing. But if you want to recapture another part of the sky, press escape or the reset button.
                         </div>
                     </div>
                 )}
@@ -776,7 +776,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                             Step 4
                         </div>
                         <div className="mt-1">
-                            Nice — you’ve found the demo pulsar! On the site, each confirmed detection reveals the detection plot and increments your session tally. 
+                            Nice — you’ve found the demo pulsar! On the site, each confirmed detection reveals the detection plot and increments your session tally.
                         </div>
                     </div>
                 )}
@@ -1115,7 +1115,7 @@ export function SearchMode({
 
                     <p>
                         Search Mode compresses that entire story into a toy: a single time series, a single FFT panel, a handful
-                        of synthetic signals tied to real TRAPUM discoveries, and a simulated stats bar that hints at the hidden
+                        of synthetic signals tied to real <a href="https://www.trapum.org" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-75 transition-opacity">TRAPUM</a> discoveries, and a simulated stats bar that hints at the hidden
                         cost of real detections. This page stays in <strong>Browse Mode</strong> so you can read and try the demo
                         without turning the full overlay on.
                     </p>

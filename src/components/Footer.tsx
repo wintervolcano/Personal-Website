@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { Theme } from "./themeToggle";
-import { ArrowUpRight, Github, Linkedin, Mail, Twitter } from "lucide-react";
+import { ArrowUpRight, Github, Instagram, Linkedin, Mail, Twitter } from "lucide-react";
 import { motion, useAnimationFrame } from "framer-motion";
 
 function Social({ theme, href, label, Icon }: { theme: Theme; href: string; label: string; Icon: any }) {
@@ -466,6 +466,7 @@ export function Footer({ theme }: { theme: Theme }) {
                   <Social theme={theme} href="https://github.com/wintervolcano" label="GitHub" Icon={Github} />
                   <Social theme={theme} href="https://x.com/fazkareem12" label="Twitter" Icon={Twitter} />
                   <Social theme={theme} href="https://www.linkedin.com/in/fazkareem/" label="LinkedIn" Icon={Linkedin} />
+                  <Social theme={theme} href="https://www.instagram.com/fazzz_lightyear/" label="Insta" Icon={Instagram} />
                 </div>
               </div>
 

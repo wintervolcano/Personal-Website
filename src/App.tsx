@@ -224,7 +224,8 @@ export default function App() {
   return (
     <div
       className={cn(
-        "min-h-[100svh] flex flex-col overflow-x-hidden",
+        "flex flex-col overflow-x-hidden",
+        !isMobile && "min-h-[100svh]",
         isDark ? "bg-black text-white" : "bg-white text-black"
       )}
     >
@@ -273,8 +274,8 @@ export default function App() {
 
       <Footer theme={theme} />
 
-      {/* In Search Mode, add a “gutter” after the footer so it can scroll fully above the FFT panel */}
-      {isDark ? (
+      {/* In Search Mode, add a “gutter” after the footer so it can scroll fully above the FFT panel (desktop/tablet only) */}
+      {isDark && !isMobile ? (
         <div
           aria-hidden
           className="h-[220px] sm:h-[210px] md:h-[190px]"

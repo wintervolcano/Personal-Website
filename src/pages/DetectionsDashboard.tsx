@@ -6,9 +6,6 @@ type PulsarSummary = {
   id: string;
   name: string;
   count: number;
-  lastTs: string | null;
-  lastCountry: string | null;
-  lastPage: string | null;
 };
 
 type DetectionEvent = {
@@ -17,6 +14,8 @@ type DetectionEvent = {
   country: string;
   userAgent?: string;
   ts: string;
+   name: string;
+   page?: string | null;
 };
 
 type SummaryResponse = {
@@ -32,7 +31,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<SummaryResponse | null>(null);
   const [filter, setFilter] = useState("");
-  const [sortKey, setSortKey] = useState<"count" | "id" | "name" | "lastTs">("count");
+  const [sortKey, setSortKey] = useState<"count" | "id" | "name" | "ts">("count");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
@@ -49,18 +48,18 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
 
   const isDark = theme === "dark";
 
-  const rows = useMemo(() => {
-    if (!data) return [];
+  const rows: DetectionEvent[] = useMemo(() => {
+    if (!data || !data.events) return [];
     const q = filter.trim().toLowerCase();
-    let r = data.pulsars.filter((p) => p.count > 0);
+    let r = data.events.slice();
     if (q) {
       r = r.filter((p) => {
         const fields = [
           p.id,
           p.name,
-          p.lastCountry || "",
-          p.lastPage || "",
-          p.lastTs || "",
+          p.country || "",
+          p.page || "",
+          p.ts || "",
         ];
         return fields.some((f) => f.toLowerCase().includes(q));
       });
@@ -76,9 +75,9 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
       if (sortKey === "name") {
         return a.name.localeCompare(b.name);
       }
-      if (sortKey === "lastTs") {
-        const ta = a.lastTs ? Date.parse(a.lastTs) : 0;
-        const tb = b.lastTs ? Date.parse(b.lastTs) : 0;
+      if (sortKey === "ts") {
+        const ta = a.ts ? Date.parse(a.ts) : 0;
+        const tb = b.ts ? Date.parse(b.ts) : 0;
         return tb - ta;
       }
       return 0;
@@ -88,7 +87,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
     return r;
   }, [data, filter, sortKey, sortDir]);
 
-  function toggleSort(key: "count" | "id" | "name" | "lastTs") {
+  function toggleSort(key: "count" | "id" | "name" | "ts") {
     setSortKey((prevKey) => {
       if (prevKey === key) {
         setSortDir((prevDir) => (prevDir === "desc" ? "asc" : "desc"));
@@ -134,7 +133,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
     }
   }
 
-  const hasData = !!data && data.pulsars && data.pulsars.length > 0;
+  const hasData = !!data && data.events && data.events.length > 0;
 
   return (
     <SectionShell
@@ -194,10 +193,10 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Filter by ID, name, country, page…"
-                className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-white/80 dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
+                className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-white dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
               />
             </div>
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-white/80 dark:bg-black/60">
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-white dark:bg-black/60">
               <table className="min-w-full text-left text-xs sm:text-sm">
                 <thead className="border-b border-black/10 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.04]">
                   <tr>
@@ -218,9 +217,9 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                     <th className="px-3 py-2 font-semibold">Page</th>
                     <th
                       className="px-3 py-2 font-semibold cursor-pointer select-none"
-                      onClick={() => toggleSort("lastTs")}
+                      onClick={() => toggleSort("ts")}
                     >
-                      Last detection
+                      Time
                     </th>
                     <th
                       className="px-3 py-2 font-semibold text-right cursor-pointer select-none"
@@ -239,17 +238,17 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                       <td className="px-3 py-2 text-black/60 dark:text-white/60">{idx + 1}</td>
                       <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">{p.id}</td>
                       <td className="px-3 py-2">{p.name}</td>
-                      <td className="px-3 py-2">{p.lastCountry || "—"}</td>
+                      <td className="px-3 py-2">{p.country || "—"}</td>
                       <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">
-                        {p.lastPage || "—"}
+                        {p.page || "—"}
                       </td>
                       <td className="px-3 py-2 text-xs sm:text-[13px] text-black/70 dark:text-white/75">
-                        {p.lastTs
+                        {p.ts
                           ? (() => {
-                              try {
-                                return new Date(p.lastTs).toLocaleString();
+                            try {
+                                return new Date(p.ts).toLocaleString();
                               } catch {
-                                return p.lastTs;
+                                return p.ts;
                               }
                             })()
                           : "—"}

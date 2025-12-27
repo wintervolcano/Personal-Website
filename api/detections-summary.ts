@@ -2,13 +2,17 @@ import { kv } from "@vercel/kv";
 import { PULSARS } from "../src/lib/pulsars";
 import { getTrapumPulsars } from "../src/lib/trapumPulsars";
 
-type DetectionEvent = {
+type StoredDetectionEvent = {
   id: string;
   count: number;
   country: string;
   userAgent?: string;
   ts: string;
   page?: string | null;
+};
+
+export type DetectionEvent = StoredDetectionEvent & {
+  name: string;
 };
 
 export default async function handler(req: any, res: any) {
@@ -66,8 +70,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Merge "static" pulsars and TRAPUM detections into one ID set so the
-    // dashboard shows detections from both sources.
+    // Merge "static" pulsars and TRAPUM detections into one ID set
+    // so we can attach human-readable names to each detection.
     const idMap = new Map<string, { id: string; name: string }>();
 
     for (const p of PULSARS) {
@@ -86,75 +90,68 @@ export default async function handler(req: any, res: any) {
       // If TRAPUM data isn't available server-side, we still return the static set.
     }
 
-    // Load the most recent detection events (if any) for richer diagnostics.
-    let events: DetectionEvent[] = [];
+    // Load full detection log as a JSON array.
+    let storedEvents: StoredDetectionEvent[] = [];
     try {
-      const rawEvents = await kv.lrange<string>("pulsar:detections:events", 0, 199);
-      events =
-        rawEvents
-          ?.map((s) => {
-            try {
-              return JSON.parse(s) as DetectionEvent;
-            } catch {
-              return null;
-            }
-          })
-          .filter((e): e is DetectionEvent => !!e) ?? [];
-    } catch {
-      // If the log key doesn't exist yet or KV doesn't support lists, just omit events.
-      events = [];
-    }
-
-    // Build a quick lookup of the most recent event per pulsar ID.
-    const latestById = new Map<string, DetectionEvent>();
-    for (const ev of events) {
-      const prev = latestById.get(ev.id);
-      if (!prev || ev.ts > prev.ts) {
-        latestById.set(ev.id, ev);
-      }
-    }
-
-    const items = await Promise.all(
-      Array.from(idMap.values()).map(async ({ id, name }) => {
-        const key = `pulsar:detections:${id}`;
-        const count = (await kv.get<number>(key)) ?? 0;
-
-        let lastTs: string | null = null;
-        let lastCountry: string | null = null;
-        let lastPage: string | null = null;
-        try {
-          const lastRaw = await kv.get<string>(`pulsar:detections:last:${id}`);
-          if (typeof lastRaw === "string") {
-            const ev = JSON.parse(lastRaw) as DetectionEvent;
-            lastTs = ev.ts || null;
-            lastCountry = ev.country || null;
-            lastPage = (ev.page as string | null) ?? null;
-          } else {
-            const ev = latestById.get(id);
-            if (ev) {
-              lastTs = ev.ts || null;
-              lastCountry = ev.country || null;
-              lastPage = (ev.page as string | null) ?? null;
-            }
-          }
-        } catch {
-          const ev = latestById.get(id);
-          if (ev) {
-            lastTs = ev.ts || null;
-            lastCountry = ev.country || null;
-            lastPage = (ev.page as string | null) ?? null;
-          }
+      const raw = await kv.get<string>("pulsar:detections:events");
+      if (typeof raw === "string") {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          storedEvents = parsed
+            .map((x): StoredDetectionEvent | null => {
+              if (!x || typeof x !== "object") return null;
+              const id = (x as any).id;
+              const ts = (x as any).ts;
+              if (typeof id !== "string" || typeof ts !== "string") return null;
+              return {
+                id,
+                ts,
+                count: typeof (x as any).count === "number" ? (x as any).count : 0,
+                country: typeof (x as any).country === "string" ? (x as any).country : "unknown",
+                userAgent: typeof (x as any).userAgent === "string" ? (x as any).userAgent : undefined,
+                page:
+                  typeof (x as any).page === "string"
+                    ? (x as any).page
+                    : (x as any).page == null
+                    ? null
+                    : String((x as any).page),
+              };
+            })
+            .filter((x): x is StoredDetectionEvent => !!x);
         }
+      }
+    } catch {
+      storedEvents = [];
+    }
 
-        return { id, name, count, lastTs, lastCountry, lastPage };
+    // Attach names and sort newest-first.
+    const events: DetectionEvent[] = storedEvents
+      .map((ev) => {
+        const meta = idMap.get(ev.id);
+        return {
+          ...ev,
+          name: meta?.name ?? ev.id,
+        };
       })
-    );
+      .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
 
-    items.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+    // Aggregate counts per pulsar for the summary table.
+    const counts = new Map<string, number>();
+    for (const ev of storedEvents) {
+      counts.set(ev.id, (counts.get(ev.id) ?? 0) + 1);
+    }
+
+    const pulsars = Array.from(idMap.values())
+      .map(({ id, name }) => ({
+        id,
+        name,
+        count: counts.get(id) ?? 0,
+      }))
+      .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
 
     res.status(200).json({
-      totalDetections: items.reduce((sum, x) => sum + x.count, 0),
-      pulsars: items,
+      totalDetections: storedEvents.length,
+      pulsars,
       events,
     });
   } catch (e) {

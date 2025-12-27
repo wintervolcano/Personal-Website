@@ -57,8 +57,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === "POST") {
       const count = await kv.incr(key);
 
-      // lightweight event entry so the internal dashboard can
-      // show when / where detections happened.
+      // lightweight event entry so the internal dashboard can show when / where detections happened.
       try {
         const headers = req.headers || {};
         const country =
@@ -76,14 +75,26 @@ export default async function handler(req: any, res: any) {
           page: page || null,
         };
 
-        const eventKey = "pulsar:detections:events";
-        // Newest first; keep only the last ~1000 entries to bound memory.
-        await kv.lpush(eventKey, JSON.stringify(event));
-        await kv.ltrim(eventKey, 0, 999);
-
-        // Per-pulsar "last detection" snapshot (easier for the dashboard to read).
-        const lastKey = `pulsar:detections:last:${id}`;
-        await kv.set(lastKey, JSON.stringify(event));
+        // Append to a JSON-array log stored in KV so every detection
+        // is available to the dashboard, without relying on list commands.
+        try {
+          const logKey = "pulsar:detections:events";
+          let existing: unknown = await kv.get<string>(logKey);
+          let arr: any[] = [];
+          if (typeof existing === "string") {
+            try {
+              const parsed = JSON.parse(existing);
+              if (Array.isArray(parsed)) arr = parsed;
+            } catch {
+              // ignore corrupt logs
+            }
+          }
+          arr.unshift(event);
+          if (arr.length > 1000) arr = arr.slice(0, 1000);
+          await kv.set(logKey, JSON.stringify(arr));
+        } catch {
+          // ignore logging failures
+        }
       } catch {
         // Ignore logging failures; never block the user-facing action.
       }

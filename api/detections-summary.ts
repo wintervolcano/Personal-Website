@@ -34,12 +34,21 @@ export default async function handler(req: any, res: any) {
   const token = typeof rawToken === "string" ? rawToken.trim() : rawToken;
 
   if (!expected) {
-    res.status(401).json({ error: "Server missing PULSAR_DASHBOARD_TOKEN" });
+    res.status(401).json({
+      error: "Server missing PULSAR_DASHBOARD_TOKEN",
+      expectedLength: 0,
+      tokenLength: typeof token === "string" ? token.length : null,
+    });
     return;
   }
 
   if (!token || token !== expected) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({
+      error: "Unauthorized",
+      reason: !token ? "missing_token" : "mismatch",
+      expectedLength: expected.length,
+      tokenLength: typeof token === "string" ? token.length : null,
+    });
     return;
   }
 

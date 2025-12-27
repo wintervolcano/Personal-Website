@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv";
 import { PULSARS } from "../src/lib/pulsars";
+import { getTrapumPulsars } from "../src/lib/trapumPulsars";
 
 type DetectionEvent = {
   id: string;
@@ -64,12 +65,31 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    // Merge "static" pulsars and TRAPUM detections into one ID set so the
+    // dashboard shows detections from both sources.
+    const idMap = new Map<string, { id: string; name: string }>();
+
+    for (const p of PULSARS) {
+      if (!idMap.has(p.id)) idMap.set(p.id, { id: p.id, name: p.name });
+    }
+    try {
+      const trapum = getTrapumPulsars();
+      for (const t of trapum) {
+        const id = (t as any).slug as string;
+        const name = (t as any).name as string;
+        if (id && !idMap.has(id)) {
+          idMap.set(id, { id, name });
+        }
+      }
+    } catch {
+      // If TRAPUM data isn't available server-side, we still return the static set.
+    }
+
     const items = await Promise.all(
-      PULSARS.map(async (p) => {
-        const id = p.id;
+      Array.from(idMap.values()).map(async ({ id, name }) => {
         const key = `pulsar:detections:${id}`;
         const count = (await kv.get<number>(key)) ?? 0;
-        return { id, name: p.name, count };
+        return { id, name, count };
       })
     );
 

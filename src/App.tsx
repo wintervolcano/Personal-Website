@@ -219,8 +219,10 @@ export default function App() {
 
   const overlayPageKey = useMemo(() => pageKeyForOverlay(location.pathname), [location.pathname]);
 
-  // ✅ Do not render SearchOverlay on the Search Mode page
+  // Do not render SearchOverlay on the Search Mode page
   const isSearchModePage = useMemo(() => location.pathname.startsWith("/search-mode"), [location.pathname]);
+  // Do not render SearchOverlay on internal-only routes
+  const isInternalPage = useMemo(() => location.pathname.startsWith("/internal"), [location.pathname]);
 
   return (
     <div
@@ -286,8 +288,8 @@ export default function App() {
         />
       ) : null}
 
-      {/* SearchOverlay on ALL non-mobile pages (including blog posts), but not on /search-mode */}
-      {!isSearchModePage && !isMobile && (
+      {/* SearchOverlay on ALL non-mobile pages (including blog posts), but not on /search-mode or internal pages */}
+      {!isSearchModePage && !isInternalPage && !isMobile && (
         <SearchOverlay
           theme={theme}
           pageKey={overlayPageKey}

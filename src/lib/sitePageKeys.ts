@@ -27,6 +27,9 @@ function toKebabCase(s: string) {
 function toKeyFromPageFile(file: string) {
   const f = normalizeSlashes(file);
 
+  // Explicitly ignore internal-only pages such as the detections dashboard.
+  if (f.toLowerCase().includes("detectionsdashboard.tsx")) return null;
+
   let rel = f;
   // Vite glob keys (relative) e.g. "../pages/Home.tsx"
   rel = rel.replace(/^(\.\.\/)+pages\//, "");

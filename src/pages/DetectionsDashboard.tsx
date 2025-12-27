@@ -168,7 +168,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
       theme={theme}
       eyebrow="Internal"
       title="Pulsar detection dashboard"
-      subtitle="Private diagnostics view for Search Mode. Paste your admin token to see how often each pulsar has been detected and where recent detections are coming from."
+      subtitle="Private diagnostics view for Search Mode."
     >
       <form
         onSubmit={fetchSummary}

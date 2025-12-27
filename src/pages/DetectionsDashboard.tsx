@@ -49,9 +49,31 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
 
   const rows: DetectionEvent[] = useMemo(() => {
-    if (!data || !data.events) return [];
+    if (!data) return [];
+
+    // Prefer the full per-detection log if it exists; otherwise synthesize
+    // one row per pulsar from the summary counts so the table always renders.
+    let source: DetectionEvent[] | null = null;
+    if (data.events && data.events.length > 0) {
+      source = data.events;
+    } else if (data.pulsars && data.pulsars.length > 0) {
+      source = data.pulsars
+        .filter((p) => p.count > 0)
+        .map((p): DetectionEvent => ({
+          id: p.id,
+          name: p.name,
+          count: p.count,
+          country: "",
+          ts: "",
+          userAgent: undefined,
+          page: null,
+        }));
+    }
+
+    if (!source) return [];
+
     const q = filter.trim().toLowerCase();
-    let r = data.events.slice();
+    let r = source.slice();
     if (q) {
       r = r.filter((p) => {
         const fields = [
@@ -133,7 +155,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
     }
   }
 
-  const hasData = !!data && data.events && data.events.length > 0;
+  const hasData = rows.length > 0;
 
   return (
     <SectionShell

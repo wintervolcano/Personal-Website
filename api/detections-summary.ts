@@ -93,7 +93,10 @@ export default async function handler(req: any, res: any) {
     // Load full detection log as a JSON array.
     let storedEvents: StoredDetectionEvent[] = [];
     try {
-      const raw = await kv.get<string>("pulsar:detections:events");
+      // Read from the v2 JSON-array log. Older deployments wrote a Redis list
+      // under "pulsar:detections:events", which isn't compatible with kv.get,
+      // so we use a fresh key here.
+      const raw = await kv.get<string>("pulsar:detections:events:v2");
       if (typeof raw === "string") {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {

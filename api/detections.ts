@@ -78,7 +78,9 @@ export default async function handler(req: any, res: any) {
         // Append to a JSON-array log stored in KV so every detection
         // is available to the dashboard, without relying on list commands.
         try {
-          const logKey = "pulsar:detections:events";
+          // Use a new key suffix so we don't conflict with the older
+          // list-based log that used the same prefix.
+          const logKey = "pulsar:detections:events:v2";
           let existing: unknown = await kv.get<string>(logKey);
           let arr: any[] = [];
           if (typeof existing === "string") {

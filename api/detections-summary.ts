@@ -138,23 +138,24 @@ export default async function handler(req: any, res: any) {
       })
       .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
 
-    // Aggregate counts per pulsar for the summary table.
-    const counts = new Map<string, number>();
-    for (const ev of storedEvents) {
-      counts.set(ev.id, (counts.get(ev.id) ?? 0) + 1);
-    }
-
-    const pulsars = Array.from(idMap.values())
-      .map(({ id, name }) => ({
-        id,
-        name,
-        count: counts.get(id) ?? 0,
-      }))
-      .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
-
     res.status(200).json({
       totalDetections: storedEvents.length,
-      pulsars,
+      pulsars: await (async () => {
+        const entries = Array.from(idMap.values());
+        const items = await Promise.all(
+          entries.map(async ({ id, name }) => {
+            try {
+              const c = await kv.get<number>(`pulsar:detections:${id}`);
+              const count = typeof c === "number" && Number.isFinite(c) ? c : 0;
+              return { id, name, count };
+            } catch {
+              return { id, name, count: 0 };
+            }
+          })
+        );
+        items.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+        return items;
+      })(),
       events,
     });
   } catch (e) {

@@ -19,11 +19,22 @@ export default async function handler(req: any, res: any) {
   const tokenFromHeader = req.headers["x-admin-token"];
 
   let tokenFromQuery: string | null = null;
+  // Vercel / Node may expose query both on req.url and req.query; support both.
   try {
-    const url = new URL(req.url);
-    tokenFromQuery = url.searchParams.get("token");
+    if (req.url) {
+      const url = new URL(req.url, "http://localhost");
+      tokenFromQuery = url.searchParams.get("token");
+    }
   } catch {
-    // ignore
+    // ignore URL parsing issues
+  }
+  if (!tokenFromQuery && req.query && typeof req.query === "object") {
+    const q = (req as any).query;
+    if (typeof q.token === "string") {
+      tokenFromQuery = q.token;
+    } else if (Array.isArray(q.token) && q.token.length > 0) {
+      tokenFromQuery = q.token[0];
+    }
   }
 
   const rawToken =

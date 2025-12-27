@@ -5,8 +5,25 @@ import { kv } from "@vercel/kv";
 // Also appends a small event record (time + country) to a rolling log in KV.
 // GET /api/detections?id=<pulsarId> returns the current { id, count } without incrementing.
 export default async function handler(req: any, res: any) {
-  const url = new URL(req.url);
-  const idParam = url.searchParams.get("id") || (req.query && req.query.id);
+  let idParam: string | null = null;
+  try {
+    if (req.url) {
+      const url = new URL(req.url, "http://localhost");
+      idParam = url.searchParams.get("id");
+    }
+  } catch {
+    // ignore URL parsing errors; we'll fall back to req.query below
+  }
+
+  if (!idParam && req.query && typeof req.query === "object") {
+    const q = req.query as any;
+    if (typeof q.id === "string") {
+      idParam = q.id;
+    } else if (Array.isArray(q.id) && q.id.length > 0) {
+      idParam = q.id[0];
+    }
+  }
+
   const id = typeof idParam === "string" ? idParam.trim() : "";
 
   if (!id) {

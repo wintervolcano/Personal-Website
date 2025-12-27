@@ -26,6 +26,26 @@ export default async function handler(req: any, res: any) {
 
   const id = typeof idParam === "string" ? idParam.trim() : "";
 
+  // Optional page key (where the detection occurred)
+  let pageParam: string | null = null;
+  try {
+    if (req.url) {
+      const url = new URL(req.url, "http://localhost");
+      pageParam = url.searchParams.get("page");
+    }
+  } catch {
+    // ignore
+  }
+  if (!pageParam && req.query && typeof req.query === "object") {
+    const q = req.query as any;
+    if (typeof q.page === "string") {
+      pageParam = q.page;
+    } else if (Array.isArray(q.page) && q.page.length > 0) {
+      pageParam = q.page[0];
+    }
+  }
+  const page = typeof pageParam === "string" ? pageParam.trim() : "";
+
   if (!id) {
     res.status(400).json({ error: "Missing id" });
     return;
@@ -53,12 +73,17 @@ export default async function handler(req: any, res: any) {
           country,
           userAgent: ua,
           ts: new Date().toISOString(),
+          page: page || null,
         };
 
         const eventKey = "pulsar:detections:events";
         // Newest first; keep only the last ~1000 entries to bound memory.
         await kv.lpush(eventKey, JSON.stringify(event));
         await kv.ltrim(eventKey, 0, 999);
+
+        // Per-pulsar "last detection" snapshot (easier for the dashboard to read).
+        const lastKey = `pulsar:detections:last:${id}`;
+        await kv.set(lastKey, JSON.stringify(event));
       } catch {
         // Ignore logging failures; never block the user-facing action.
       }

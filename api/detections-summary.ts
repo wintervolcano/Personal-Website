@@ -8,6 +8,7 @@ type DetectionEvent = {
   country: string;
   userAgent?: string;
   ts: string;
+  page?: string | null;
 };
 
 export default async function handler(req: any, res: any) {
@@ -85,16 +86,6 @@ export default async function handler(req: any, res: any) {
       // If TRAPUM data isn't available server-side, we still return the static set.
     }
 
-    const items = await Promise.all(
-      Array.from(idMap.values()).map(async ({ id, name }) => {
-        const key = `pulsar:detections:${id}`;
-        const count = (await kv.get<number>(key)) ?? 0;
-        return { id, name, count };
-      })
-    );
-
-    items.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
-
     // Load the most recent detection events (if any) for richer diagnostics.
     let events: DetectionEvent[] = [];
     try {
@@ -113,6 +104,53 @@ export default async function handler(req: any, res: any) {
       // If the log key doesn't exist yet or KV doesn't support lists, just omit events.
       events = [];
     }
+
+    // Build a quick lookup of the most recent event per pulsar ID.
+    const latestById = new Map<string, DetectionEvent>();
+    for (const ev of events) {
+      const prev = latestById.get(ev.id);
+      if (!prev || ev.ts > prev.ts) {
+        latestById.set(ev.id, ev);
+      }
+    }
+
+    const items = await Promise.all(
+      Array.from(idMap.values()).map(async ({ id, name }) => {
+        const key = `pulsar:detections:${id}`;
+        const count = (await kv.get<number>(key)) ?? 0;
+
+        let lastTs: string | null = null;
+        let lastCountry: string | null = null;
+        let lastPage: string | null = null;
+        try {
+          const lastRaw = await kv.get<string>(`pulsar:detections:last:${id}`);
+          if (typeof lastRaw === "string") {
+            const ev = JSON.parse(lastRaw) as DetectionEvent;
+            lastTs = ev.ts || null;
+            lastCountry = ev.country || null;
+            lastPage = (ev.page as string | null) ?? null;
+          } else {
+            const ev = latestById.get(id);
+            if (ev) {
+              lastTs = ev.ts || null;
+              lastCountry = ev.country || null;
+              lastPage = (ev.page as string | null) ?? null;
+            }
+          }
+        } catch {
+          const ev = latestById.get(id);
+          if (ev) {
+            lastTs = ev.ts || null;
+            lastCountry = ev.country || null;
+            lastPage = (ev.page as string | null) ?? null;
+          }
+        }
+
+        return { id, name, count, lastTs, lastCountry, lastPage };
+      })
+    );
+
+    items.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
 
     res.status(200).json({
       totalDetections: items.reduce((sum, x) => sum + x.count, 0),

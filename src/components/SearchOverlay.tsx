@@ -1057,7 +1057,7 @@ export function SearchOverlay({
 
       // Global rank via KV (fallback to local session counter on failure)
       let rank = 1;
-      const remoteRank = await recordDetection(id);
+      const remoteRank = await recordDetection(id, pageKey);
       if (remoteRank != null && Number.isFinite(remoteRank)) {
         rank = remoteRank;
       } else {

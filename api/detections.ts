@@ -75,15 +75,24 @@ export default async function handler(req: any, res: any) {
           page: page || null,
         };
 
-        // Append to a JSON-array log stored in KV so every detection
-        // is available to the dashboard, without relying on list commands.
+        // Append to a Redis list log (newest first) so every detection
+        // is available to the dashboard in order.
         try {
-          // Use a new key suffix so we don't conflict with the older
-          // list-based log that used the same prefix.
+          const listKey = "pulsar:detections:events";
+          await kv.lpush(listKey, JSON.stringify(event));
+          await kv.ltrim(listKey, 0, 999);
+        } catch {
+          // ignore list logging failures
+        }
+
+        // Also keep a JSON-array mirror under a v2 key as a fallback.
+        try {
           const logKey = "pulsar:detections:events:v2";
-          let existing: unknown = await kv.get<string>(logKey);
+          const existing = await kv.get(logKey);
           let arr: any[] = [];
-          if (typeof existing === "string") {
+          if (Array.isArray(existing)) {
+            arr = existing;
+          } else if (typeof existing === "string") {
             try {
               const parsed = JSON.parse(existing);
               if (Array.isArray(parsed)) arr = parsed;
@@ -93,9 +102,9 @@ export default async function handler(req: any, res: any) {
           }
           arr.unshift(event);
           if (arr.length > 1000) arr = arr.slice(0, 1000);
-          await kv.set(logKey, JSON.stringify(arr));
+          await kv.set(logKey, arr);
         } catch {
-          // ignore logging failures
+          // ignore JSON-array logging failures
         }
       } catch {
         // Ignore logging failures; never block the user-facing action.

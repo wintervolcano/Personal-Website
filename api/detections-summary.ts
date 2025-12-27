@@ -90,38 +90,79 @@ export default async function handler(req: any, res: any) {
       // If TRAPUM data isn't available server-side, we still return the static set.
     }
 
-    // Load full detection log as a JSON array.
+    // Load full detection log. Prefer the Redis list if present; fall back
+    // to the JSON-array mirror (v2 key) otherwise.
     let storedEvents: StoredDetectionEvent[] = [];
     try {
-      // Read from the v2 JSON-array log. Older deployments wrote a Redis list
-      // under "pulsar:detections:events", which isn't compatible with kv.get,
-      // so we use a fresh key here.
-      const raw = await kv.get<string>("pulsar:detections:events:v2");
-      if (typeof raw === "string") {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          storedEvents = parsed
-            .map((x): StoredDetectionEvent | null => {
-              if (!x || typeof x !== "object") return null;
-              const id = (x as any).id;
-              const ts = (x as any).ts;
-              if (typeof id !== "string" || typeof ts !== "string") return null;
-              return {
-                id,
-                ts,
-                count: typeof (x as any).count === "number" ? (x as any).count : 0,
-                country: typeof (x as any).country === "string" ? (x as any).country : "unknown",
-                userAgent: typeof (x as any).userAgent === "string" ? (x as any).userAgent : undefined,
-                page:
-                  typeof (x as any).page === "string"
-                    ? (x as any).page
-                    : (x as any).page == null
-                    ? null
-                    : String((x as any).page),
-              };
+      // First try the list log.
+      try {
+        const rawList = await kv.lrange<string>("pulsar:detections:events", 0, 999);
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          storedEvents = rawList
+            .map((s): StoredDetectionEvent | null => {
+              try {
+                const x = JSON.parse(s);
+                if (!x || typeof x !== "object") return null;
+                const id = (x as any).id;
+                const ts = (x as any).ts;
+                if (typeof id !== "string" || typeof ts !== "string") return null;
+                return {
+                  id,
+                  ts,
+                  count: typeof (x as any).count === "number" ? (x as any).count : 0,
+                  country: typeof (x as any).country === "string" ? (x as any).country : "unknown",
+                  userAgent: typeof (x as any).userAgent === "string" ? (x as any).userAgent : undefined,
+                  page:
+                    typeof (x as any).page === "string"
+                      ? (x as any).page
+                      : (x as any).page == null
+                      ? null
+                      : String((x as any).page),
+                };
+              } catch {
+                return null;
+              }
             })
             .filter((x): x is StoredDetectionEvent => !!x);
         }
+      } catch {
+        // ignore list read errors and fall through to v2 mirror
+      }
+
+      // If the list is empty/unavailable, fall back to the v2 JSON-array key.
+      if (!storedEvents.length) {
+        const raw = await kv.get("pulsar:detections:events:v2");
+        const arr =
+          Array.isArray(raw) ? raw : typeof raw === "string" ? (() => {
+            try {
+              const parsed = JSON.parse(raw);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [];
+            }
+          })() : [];
+
+        storedEvents = arr
+          .map((x): StoredDetectionEvent | null => {
+            if (!x || typeof x !== "object") return null;
+            const id = (x as any).id;
+            const ts = (x as any).ts;
+            if (typeof id !== "string" || typeof ts !== "string") return null;
+            return {
+              id,
+              ts,
+              count: typeof (x as any).count === "number" ? (x as any).count : 0,
+              country: typeof (x as any).country === "string" ? (x as any).country : "unknown",
+              userAgent: typeof (x as any).userAgent === "string" ? (x as any).userAgent : undefined,
+              page:
+                typeof (x as any).page === "string"
+                  ? (x as any).page
+                  : (x as any).page == null
+                  ? null
+                  : String((x as any).page),
+            };
+          })
+          .filter((x): x is StoredDetectionEvent => !!x);
       }
     } catch {
       storedEvents = [];

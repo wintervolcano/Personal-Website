@@ -87,6 +87,10 @@ function pathFromPageKey(k: PageKey): string {
 export default function App() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "light";
+    const ref = document.referrer || "";
+    const sameSite =
+      ref.startsWith("https://www.fazalkareem.com") || ref.startsWith("https://fazalkareem.com");
+    if (!sameSite) return "light";
     const stored = window.localStorage.getItem("fk-theme");
     return stored === "dark" ? "dark" : "light";
   });

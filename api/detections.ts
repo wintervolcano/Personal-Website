@@ -2,6 +2,7 @@ import { kv } from "@vercel/kv";
 
 // POST /api/detections?id=<pulsarId>
 // Increments the global detection count for that pulsar and returns { id, count }.
+// Also appends a small event record (time + country) to a rolling log in KV.
 // GET /api/detections?id=<pulsarId> returns the current { id, count } without incrementing.
 export default async function handler(req: any, res: any) {
   const url = new URL(req.url);
@@ -18,6 +19,33 @@ export default async function handler(req: any, res: any) {
   try {
     if (req.method === "POST") {
       const count = await kv.incr(key);
+
+      // lightweight event entry so the internal dashboard can
+      // show when / where detections happened.
+      try {
+        const headers = req.headers || {};
+        const country =
+          (headers["x-vercel-ip-country"] as string | undefined) ||
+          (headers["cf-ipcountry"] as string | undefined) ||
+          "unknown";
+        const ua = (headers["user-agent"] as string | undefined) || "unknown";
+
+        const event = {
+          id,
+          count,
+          country,
+          userAgent: ua,
+          ts: new Date().toISOString(),
+        };
+
+        const eventKey = "pulsar:detections:events";
+        // Newest first; keep only the last ~1000 entries to bound memory.
+        await kv.lpush(eventKey, JSON.stringify(event));
+        await kv.ltrim(eventKey, 0, 999);
+      } catch {
+        // Ignore logging failures; never block the user-facing action.
+      }
+
       res.status(200).json({ id, count });
       return;
     }
@@ -33,4 +61,3 @@ export default async function handler(req: any, res: any) {
     res.status(500).json({ error: "KV error", detail: String(e) });
   }
 }
-

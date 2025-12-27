@@ -2101,7 +2101,7 @@ export function SearchMode({
                     </h2>
                     <p>
                         A radio telescope does not directly output “pulsars” or “no pulsars”. It records a{" "}
-                        <strong>time series</strong>: signal intensity measured at regular time steps. At each step we record one
+                        <strong>time series</strong> (well not really, but this description is good for now): signal intensity measured at regular time steps. At each step we record one
                         number, so the data look like a long sequence:
                         <br />
                         <code className="mt-1 inline-block px-1 rounded bg-black/5 text-[0.9em]">

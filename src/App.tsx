@@ -33,6 +33,7 @@ import ResearchPost from "./pages/ResearchPost";
 import ProjectsPost from "./pages/ProjectsPost";
 import BlogPost from "./pages/BlogPost";
 import ResourcePost from "./pages/ResourcePost";
+import { DetectionsDashboard } from "./pages/DetectionsDashboard";
 
 // ✅ Auto page key list (blogs + any new pages) for distributing pulsars site-wide
 import { SITE_PAGE_KEYS } from "./lib/sitePageKeys";
@@ -265,6 +266,8 @@ export default function App() {
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />
                 <Route path="/resources/for-media" element={<ForMedia theme={theme} />} />
                 <Route path="/gallery" element={<Gallery theme={theme} />} />
+                {/* Internal-only diagnostics page; no link from nav */}
+                <Route path="/internal/detections" element={<DetectionsDashboard theme={theme} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </PageTransition>

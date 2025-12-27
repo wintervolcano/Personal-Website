@@ -188,7 +188,7 @@ export function About({ theme }: { theme: Theme }) {
         <div className="lg:col-span-7 xl:col-span-8 space-y-5 max-w-none">
           <p
             className={cn(
-              "text-base sm:text-lg leading-relaxed max-w-[90ch]",
+              "text-base sm:text-lg leading-relaxed max-w-[90ch] text-justify",
               isDark ? "text-white/70" : "text-black/70"
             )}
           >
@@ -198,7 +198,7 @@ export function About({ theme }: { theme: Theme }) {
           </p>
           <p
             className={cn(
-              "text-base sm:text-lg leading-relaxed max-w-[90ch]",
+              "text-base sm:text-lg leading-relaxed max-w-[90ch] text-justify",
               isDark ? "text-white/70" : "text-black/70"
             )}
           >
@@ -211,7 +211,7 @@ export function About({ theme }: { theme: Theme }) {
           </p>
           <p
             className={cn(
-              "text-base sm:text-lg leading-relaxed max-w-[90ch]",
+              "text-base sm:text-lg leading-relaxed max-w-[90ch] text-justify",
               isDark ? "text-white/70" : "text-black/70"
             )}
           >
@@ -222,7 +222,7 @@ export function About({ theme }: { theme: Theme }) {
           </p>
           <p
             className={cn(
-              "text-base sm:text-lg leading-relaxed max-w-[90ch]",
+              "text-base sm:text-lg leading-relaxed max-w-[90ch] text-justify",
               isDark ? "text-white/70" : "text-black/70"
             )}
           >
@@ -234,7 +234,7 @@ export function About({ theme }: { theme: Theme }) {
 
           <p
             className={cn(
-              "mt-6 text-base sm:text-lg leading-relaxed max-w-[90ch]",
+              "mt-6 text-base sm:text-lg leading-relaxed max-w-[90ch] text-justify",
               isDark ? "text-white/70" : "text-black/70"
             )}
           >

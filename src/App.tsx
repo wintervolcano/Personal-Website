@@ -11,6 +11,7 @@ import { type Theme } from "./components/themeToggle";
 import { Footer } from "./components/Footer";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { DiscoveryModal } from "./components/DiscoveryModal";
+import { ConfettiOverlay, type ConfettiLevel } from "./components/ConfettiOverlay";
 import type { Pulsar } from "./lib/pulsars";
 import { SearchMode } from "./pages/SearchMode";
 import { Gallery } from "./pages/Gallery";
@@ -109,6 +110,8 @@ export default function App() {
     dataTB: number;
   } | null>(null);
 
+  const [confettiLevel, setConfettiLevel] = useState<ConfettiLevel | null>(null);
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -126,6 +129,11 @@ export default function App() {
     setDiscoveryRank(rank);
     setDiscoveryStats(stats ?? null);
     setDiscoveryOpen(true);
+
+     const diff = (p as any).difficulty as "easy" | "medium" | "hard" | undefined;
+     if (diff === "medium" || diff === "hard") {
+       setConfettiLevel(diff);
+     }
   };
 
   const handleOpenDetection = (p: Pulsar, rank: number) => {
@@ -307,6 +315,13 @@ export default function App() {
         stats={discoveryStats ?? undefined}
         onClose={() => setDiscoveryOpen(false)}
       />
+
+      {confettiLevel && (
+        <ConfettiOverlay
+          level={confettiLevel}
+          onDone={() => setConfettiLevel(null)}
+        />
+      )}
 
       {/* Optional: keep modal only for research posts for now */}
       <PostModal theme={theme} open={postOpen} doc={activePost} onClose={() => setPostOpen(false)} />

@@ -53,24 +53,26 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
 
     // Prefer the full per-detection log if it exists; otherwise synthesize
     // one row per pulsar from the summary counts so the table always renders.
-    let source: DetectionEvent[] | null = null;
+    let source: DetectionEvent[] = [];
     if (data.events && data.events.length > 0) {
       source = data.events;
     } else if (data.pulsars && data.pulsars.length > 0) {
       source = data.pulsars
         .filter((p) => p.count > 0)
-        .map((p): DetectionEvent => ({
-          id: p.id,
-          name: p.name,
-          count: p.count,
-          country: "",
-          ts: "",
-          userAgent: undefined,
-          page: null,
-        }));
+        .map(
+          (p): DetectionEvent => ({
+            id: p.id,
+            name: p.name,
+            count: p.count,
+            country: "",
+            ts: "",
+            userAgent: undefined,
+            page: null,
+          })
+        );
     }
 
-    if (!source) return [];
+    if (!source.length) return [];
 
     const q = filter.trim().toLowerCase();
     let r = source.slice();
@@ -155,7 +157,11 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
     }
   }
 
-  const hasData = rows.length > 0;
+  const hasAnySource =
+    !!data &&
+    ((data.events && data.events.length > 0) ||
+      (data.pulsars && data.pulsars.some((p) => p.count > 0)));
+  const hasRows = rows.length > 0;
 
   return (
     <SectionShell
@@ -199,7 +205,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
         {error ? <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</p> : null}
       </form>
 
-      {hasData ? (
+      {hasAnySource ? (
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <section className="lg:col-span-2">
             <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
@@ -215,10 +221,10 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Filter by ID, name, country, page…"
-                className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-white dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
+                className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-black/5 dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
               />
             </div>
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-white dark:bg-black/60">
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-black/60">
               <table className="min-w-full text-left text-xs sm:text-sm">
                 <thead className="border-b border-black/10 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.04]">
                   <tr>
@@ -254,8 +260,8 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                 <tbody>
                   {rows.map((p, idx) => (
                     <tr
-                      key={p.id}
-                      className={idx % 2 === 0 ? "bg-transparent" : "bg-black/[0.015] dark:bg-white/[0.02]"}
+                      key={`${p.id}-${p.ts || idx}`}
+                      className={idx % 2 === 0 ? "bg-transparent" : "bg-black/[0.03] dark:bg-white/[0.02]"}
                     >
                       <td className="px-3 py-2 text-black/60 dark:text-white/60">{idx + 1}</td>
                       <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">{p.id}</td>
@@ -280,9 +286,11 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
                   ))}
                 </tbody>
               </table>
-              {rows.length === 0 ? (
+              {!hasRows ? (
                 <div className="px-4 py-6 text-sm text-black/60 dark:text-white/60">
-                  No detections recorded yet.
+                  {rows.length === 0 && data && (data.events?.length || data.pulsars?.some((p) => p.count > 0))
+                    ? "No detections match this filter."
+                    : "No detections recorded yet."}
                 </div>
               ) : null}
             </div>

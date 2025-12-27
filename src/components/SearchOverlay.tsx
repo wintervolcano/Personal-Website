@@ -335,12 +335,22 @@ export function SearchOverlay({
       .map((p): Pulsar & { trapum: TrapumPulsar } => {
         const period_ms = p.period_ms as number;
         const f0_hz = period_ms > 0 ? 1000 / period_ms : 200;
+        const snr =
+          p.discovery && typeof p.discovery.discovery_snr === "number"
+            ? (p.discovery.discovery_snr as number)
+            : null;
+        let difficulty: "easy" | "medium" | "hard" = "medium";
+        if (snr != null) {
+          if (snr < 12) difficulty = "hard";
+          else if (snr < 17) difficulty = "medium";
+          else difficulty = "easy";
+        }
         return {
           id: p.slug,
           name: p.name,
           f0_hz,
           period_ms,
-          difficulty: "medium",
+          difficulty,
           fold_png_url: p.discovery.discovery_plot_url ?? "",
           trapum: p,
         } as Pulsar & { trapum: TrapumPulsar };

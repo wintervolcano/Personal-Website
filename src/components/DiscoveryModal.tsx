@@ -43,6 +43,7 @@ export function DiscoveryModal({
     | undefined;
 
   const primaryAssoc = trapum?.associations && trapum.associations[0];
+  const difficulty = (pulsar as any).difficulty as "easy" | "medium" | "hard" | undefined;
 
   /* ----------------------------- */
   /* Canvas helpers + download     */
@@ -160,6 +161,28 @@ export function DiscoveryModal({
                     >
                       You are #{rank}
                     </div>
+                    {difficulty && (
+                      <div
+                        className="rounded-full px-4 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase"
+                        style={{
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          backgroundColor:
+                            difficulty === "hard"
+                              ? "rgba(239,68,68,0.2)"
+                              : difficulty === "medium"
+                              ? "rgba(245,158,11,0.2)"
+                              : "rgba(16,185,129,0.15)",
+                          color:
+                            difficulty === "hard"
+                              ? "rgba(248,113,113,0.95)"
+                              : difficulty === "medium"
+                              ? "rgba(252,211,77,0.95)"
+                              : "rgba(110,231,183,0.95)",
+                        }}
+                      >
+                        Difficulty: {difficulty}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

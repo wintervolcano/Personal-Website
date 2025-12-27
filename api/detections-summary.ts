@@ -15,7 +15,7 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const expected = process.env.PULSAR_DASHBOARD_TOKEN;
+  const expected = (process.env.PULSAR_DASHBOARD_TOKEN || "").trim();
   const tokenFromHeader = req.headers["x-admin-token"];
 
   let tokenFromQuery: string | null = null;
@@ -26,12 +26,19 @@ export default async function handler(req: any, res: any) {
     // ignore
   }
 
-  const token =
+  const rawToken =
     (typeof tokenFromHeader === "string" && tokenFromHeader) ||
     (Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : null) ||
     tokenFromQuery;
 
-  if (!expected || !token || token !== expected) {
+  const token = typeof rawToken === "string" ? rawToken.trim() : rawToken;
+
+  if (!expected) {
+    res.status(401).json({ error: "Server missing PULSAR_DASHBOARD_TOKEN" });
+    return;
+  }
+
+  if (!token || token !== expected) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

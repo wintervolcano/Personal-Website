@@ -343,7 +343,13 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
   const box = (orbitR + rP + rBH) * 2 + 32;
 
   return (
-    <div className="absolute right-4 bottom-34 sm:right-8 sm:bottom-24 lg:right-20 lg:bottom-20 z-[5] opacity-90">
+    <div
+      className={cn(
+        "absolute right-8 bottom-27 sm:right-8 sm:bottom-24 z-[5] opacity-90",
+        // Using percentages keeps it inside the footer even on ultra-wide monitors.
+        "md:right-[12%] lg:right-[8%] xl:right-[12%]"
+      )}
+    >
       <div
         className="relative"
         style={{ width: box, height: box }}

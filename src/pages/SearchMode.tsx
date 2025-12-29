@@ -836,7 +836,7 @@ function TryItDemo({ theme }: { theme: Theme }) {
                             Step 1
                         </div>
                         <div className="mt-1">
-                            Click this toggle to switch the demo into{" "}
+                            Click the toggle on this panel to switch the demo into{" "}
                             <span className="font-semibold">Search Mode</span>.
                         </div>
                     </div>
@@ -2078,6 +2078,27 @@ export function SearchMode({
                         FFTs, folding, search algorithms and how that all maps onto this site’s Search Mode.
                     </p>
 
+                    <h2 className="mt-6 text-xl sm:text-2xl font-extrabold tracking-[-0.02em] text-black">
+                        The Search Mode on this site
+                    </h2>
+                    <p>
+                        The point of Search Mode is not that this site is secretly running real pulsar searches in the browser.
+                        Those are done by big back‑end pipelines on telescope clusters. Instead, Search Mode borrows the{" "}
+                        <strong>structure</strong> of a pulsar search to give you a tactile sense of how much work sits behind a single detection.
+                    </p>
+                    <p>
+                        In a real survey, computers do the boring parts: they perform FFTs (read more below) on millions of windows, scan every
+                        spectrum for narrow peaks, fold huge volumes of data, and rank <strong>millions</strong> of candidates
+                        down to a short list humans can inspect. Clicking an FFT peak in this demo is a stand‑in for what the
+                        code is constantly doing automatically on real data. The difference is that here you get to{" "}
+                        <strong>feel</strong> that decision rather than it being hidden in a loop. If you didn't understand a word you just read, and you want to understand it, <strong>keep reading!</strong>. If you just want to try the demo, scroll down to the interactive panel.
+                    </p>
+
+                    <p>
+                        This page stays in <strong>Browse Mode</strong>, so you can read this explanation and experiment with the demo without turning the full site‑wide overlay on. The demo on this page will turn on search mode for just that panel and turn dark. When you are ready for the full experience,
+                        Search Mode reuses the same ideas at the scale of the whole portfolio.
+                    </p>
+
                     {/* 1. Pulsars */}
                     <h2 className="mt-4 text-xl sm:text-2xl font-extrabold tracking-[-0.02em] text-black">
                         1. What is a pulsar?
@@ -2256,23 +2277,6 @@ export function SearchMode({
                         </p>
                     </figure>
 
-                    {/* 7. Mapping the metaphor onto this Search Mode */}
-                    <h2 className="mt-6 text-xl sm:text-2xl font-extrabold tracking-[-0.02em] text-black">
-                        7. How this maps onto the Search Mode on this site
-                    </h2>
-                    <p>
-                        The point of Search Mode is not that this site is secretly running real pulsar searches in the browser.
-                        Those are done by big back‑end pipelines on telescope clusters. Instead, Search Mode borrows the{" "}
-                        <strong>shape</strong> of a pulsar search to give you a tactile sense of how much work sits behind a single
-                        detection.
-                    </p>
-                    <p>
-                        In a real survey, computers do the boring parts: they perform FFTs on millions of windows, scan every
-                        spectrum for narrow peaks, fold huge volumes of data, and rank <strong>millions</strong> of candidates
-                        down to a short list humans can inspect. Clicking an FFT peak in this demo is a stand‑in for what the
-                        code is constantly doing automatically on real data. The difference is that here you get to{" "}
-                        <strong>feel</strong> that decision rather than it being hidden in a loop.
-                    </p>
                     <p>
                         The overlay UI of moving a cursor over synthetic “sky”, capturing a spectrum, clicking a peak to reveal a
                         pulsar is therefore a tiny, human‑scale version of the real thing. It compresses:
@@ -2296,12 +2300,7 @@ export function SearchMode({
                     </ul>
                     <p>
                         So when you toggle Search Mode, wander across the page, and lock onto a peak, you are not running a full
-                        survey, but the interaction mirrors the core loop of one: scan, detect, fold, confirm. The goal is to show you the scale and structure of pulsar searches, not to faithfully reproduce every algorithm. 
-                    </p>
-
-                    <p>
-                        This page stays in <strong>Browse Mode</strong>, so you can read this explanation and experiment with the demo without turning the full site‑wide overlay on. The demo on this page will turn on search mode for just that panel and turn dark. When you are ready for the full experience,
-                        Search Mode reuses the same ideas at the scale of the whole portfolio.
+                        survey, but the interaction mirrors the core loop of one: scan, detect, fold, confirm. The goal is to show you the scale and structure of pulsar searches, not to faithfully reproduce every algorithm.
                     </p>
                 </div>
 

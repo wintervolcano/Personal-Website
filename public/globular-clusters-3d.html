@@ -7,7 +7,12 @@
   <title>Globular Clusters & Pulsars | 3D Explorer v2 Pro</title>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     :root {
       --bg0: #060708;
       --bg1: #0a0b0d;
@@ -338,7 +343,7 @@
     #panel .body {
       padding: 14px;
       overflow: auto;
-      max-height: calc(100vh - 100px - 64px);
+      max-height: calc(100vh - 234px);
       background: rgba(12, 14, 22, .40);
     }
 
@@ -728,6 +733,31 @@
       background: rgba(255, 255, 255, .09)
     }
 
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: rgba(10, 12, 18, .85);
+      color: var(--text);
+      font-size: .78rem;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index: 120;
+    }
+
+    #toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     @media (max-width: 768px) {
       #topbar {
         top: 10px;
@@ -781,6 +811,7 @@
     <button id="btn-info" title="About this tool" style="pointer-events: auto !important">?</button>
 
     <div id="status">Loading…</div>
+    <div id="toast"></div>
 
     <!-- Tools drawer -->
     <aside id="drawer" class="glass" aria-hidden="true">
@@ -882,7 +913,7 @@
             <select id="p-color">
               <option value="period">Spin period</option>
               <option value="dm">DM</option>
-              <option value="binary">Binary flag</option>
+              <option value="binary" selected>Binary flag</option>
               <option value="none">None</option>
             </select>
             <small>Only affects pulsars shown near the selected cluster.</small>
@@ -950,7 +981,8 @@
         <button class="close" id="info-close">✕</button>
         <h3>Globular Clusters & Pulsars 3D Explorer</h3>
         <p>This interactive visualization shows globular clusters (yellow/gold) and their pulsars (pink) within the
-          Milky Way galaxy. The galaxy is obviously fake particle simulation and it only added for orientation. The distances are scaled but relative.</p>
+          Milky Way galaxy. The galaxy is obviously fake particle simulation and it only added for orientation. The
+          distances are scaled but relative.</p>
 
         <p><strong>Features:</strong></p>
         <ul>
@@ -977,17 +1009,20 @@
           <li><strong>Escape:</strong> Unpin current cluster and return to previous view</li>
           <li><strong>Enter:</strong> Execute search</li>
           <li><strong>ASTRONOMER button:</strong> Open advanced tools panel</li>
-          <li><strong>Spin slider:</strong> Adjust pulsar rotation speed visually. Log scaled for better visualization</li>
+          <li><strong>Spin slider:</strong> Adjust pulsar rotation speed visually. Log scaled for better visualization
+          </li>
         </ul>
 
         <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px;">
           Created for astronomical visualization and research. Data is updated regularly from live sources.
         </p>
-        
+
         <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px; text-align: center;">
-          Made with ❤️ by Fazal Kareem.
-          <a href="https://github.com/wintervolcano" target="_blank" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent);">
-            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="width: 16px; height: 16px; vertical-align: middle; margin-left: 4px;" />
+          Made with ❤️ Fazal Kareem.
+          <a href="https://github.com/wintervolcano" target="_blank"
+            style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent);">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub"
+              style="width: 16px; height: 16px; vertical-align: middle; margin-left: 4px;" />
           </a>
         </p>
         </p>
@@ -1093,7 +1128,7 @@
     import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
     const CONFIG = {
-      apiBase: "https://gc-worker.fazalabdulkareem12.workers.dev",
+      apiBase: "http://localhost:8787",
       scaleFactor: 90,
       R0_kpc: 8.2,
       RADIUS_EXAGGERATION: 6.0,
@@ -1130,6 +1165,7 @@
     const drawer = el("drawer");
     const infoModal = el("info-modal");
     const status = el("status");
+    const toast = el("toast");
     const prov = el("prov");
     const search = el("search");
 
@@ -1155,6 +1191,18 @@
       altaz: el("ui-altaz"),
       lstha: el("ui-lstha"),
     };
+
+    // Toast helper
+    let toastTimer = null;
+    function showToast(message) {
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add("visible");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("visible");
+      }, 3500);
+    }
 
     // State
     let clusters = [];
@@ -1183,7 +1231,7 @@
     };
 
     const pulsarStyle = {
-      colorBy: "period",
+      colorBy: "binary",
       spinScale: 0.35,
     };
 
@@ -1316,16 +1364,23 @@
       return { altDeg: THREE.MathUtils.radToDeg(alt), azDeg: THREE.MathUtils.radToDeg(az) };
     }
 
-    // Coordinate transform
+    // Coordinate transform: Galactic (l,b, Rsun) -> Galactocentric Cartesian (GC at origin, Sun at +X)
     function lbToVec3(lDeg, bDeg, rsun_kpc) {
       const l = THREE.MathUtils.degToRad(lDeg);
       const b = THREE.MathUtils.degToRad(bDeg);
-      const d = rsun_kpc * CONFIG.scaleFactor;
-      const x = d * Math.cos(b) * Math.cos(l);
-      const y = d * Math.sin(b);
-      const z = d * Math.cos(b) * Math.sin(l);
-      // scene mapping: X=+x, Y=+y, Z=-z (to match prior look)
-      return new THREE.Vector3(x, y, -z);
+
+      // Heliocentric coordinates in Galactic frame
+      const xHelio = rsun_kpc * Math.cos(b) * Math.cos(l);
+      const yHelio = rsun_kpc * Math.cos(b) * Math.sin(l);
+      const zHelio = rsun_kpc * Math.sin(b);
+
+      // Shift to Galactocentric frame (GC at origin, Sun at +R0)
+      const xGC = (CONFIG.R0_kpc - xHelio) * CONFIG.scaleFactor;
+      const yGC = (yHelio) * CONFIG.scaleFactor;
+      const zGC = (zHelio) * CONFIG.scaleFactor;
+
+      // Scene mapping: X = x_gc, Y = z_gc, Z = -y_gc
+      return new THREE.Vector3(xGC, zGC, -yGC);
     }
 
     // Add this function near your other helper functions
@@ -1333,8 +1388,8 @@
       const scaleBar = el("scale-bar");
       const scaleLabel = el("scale-label");
 
-      // Get camera distance to origin
-      const cameraDistance = camera.position.length();
+      // Get camera distance to Sun (heliocentric distance)
+      const cameraDistance = camera.position.distanceTo(sunPos);
 
       // Calculate appropriate scale based on distance
       // We'll show different scales based on how far we're zoomed out
@@ -1768,16 +1823,16 @@
     }
 
     // Pulsar functions (exact match to v6)
-    function omegaDisplayFromPeriodMs(ms, scale = 1.0){
-        if (!ms || !Number.isFinite(ms) || ms <= 0) {
-          const rps = 0.3 + Math.random() * 1.4;
-          return 2 * Math.PI * rps;
-        }
-        const Ps = ms / 1000;
-        let rps = 1 / Math.max(0.001, Ps);
-        // Apply scale factor (p-spin slider value, typically 0.35)
-        rps = clamp(rps * scale, 0.10, 8.0);
+    function omegaDisplayFromPeriodMs(ms, scale = 1.0) {
+      if (!ms || !Number.isFinite(ms) || ms <= 0) {
+        const rps = 0.3 + Math.random() * 1.4;
         return 2 * Math.PI * rps;
+      }
+      const Ps = ms / 1000;
+      let rps = 1 / Math.max(0.001, Ps);
+      // Apply scale factor (p-spin slider value, typically 0.35)
+      rps = clamp(rps * scale, 0.10, 8.0);
+      return 2 * Math.PI * rps;
     }
 
     function randomUnitVector() {
@@ -1811,70 +1866,70 @@
     }
 
     function addPulsarVisual(clusterPos, visualSize, p) {
-        const col = pulsarColor(p);
-        const root = new THREE.Group();
-        root.position.copy(clusterPos);
-        root.position.add(new THREE.Vector3(
-          (Math.random() - 0.5) * visualSize * 0.85,
-          (Math.random() - 0.5) * visualSize * 0.55,
-          (Math.random() - 0.5) * visualSize * 0.85
-        ));
+      const col = pulsarColor(p);
+      const root = new THREE.Group();
+      root.position.copy(clusterPos);
+      root.position.add(new THREE.Vector3(
+        (Math.random() - 0.5) * visualSize * 0.85,
+        (Math.random() - 0.5) * visualSize * 0.55,
+        (Math.random() - 0.5) * visualSize * 0.85
+      ));
 
-        const spinAxis = randomUnitVector();
-        root.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), spinAxis);
+      const spinAxis = randomUnitVector();
+      root.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), spinAxis);
 
-        const spin = new THREE.Group();
-        root.add(spin);
+      const spin = new THREE.Group();
+      root.add(spin);
 
-        const obliq = THREE.MathUtils.degToRad(clamp(6 + 60 * Math.random(), 6, 70));
-        const mag = new THREE.Group();
-        mag.rotation.x = obliq;
-        spin.add(mag);
+      const obliq = THREE.MathUtils.degToRad(clamp(6 + 60 * Math.random(), 6, 70));
+      const mag = new THREE.Group();
+      mag.rotation.x = obliq;
+      spin.add(mag);
 
-        const core = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: starSprite,
-          color: col,
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          opacity: 0.92,
-          depthWrite: false
-        }));
-        const coreSize = Math.max(1.6, visualSize * 0.20);
-        core.scale.set(coreSize, coreSize, 1);
-        mag.add(core);
+      const core = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: starSprite,
+        color: col,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.92,
+        depthWrite: false
+      }));
+      const coreSize = Math.max(1.6, visualSize * 0.20);
+      core.scale.set(coreSize, coreSize, 1);
+      mag.add(core);
 
-        const beamLen = Math.max(12.0, visualSize * 1.35);
-        const beamRad = Math.max(0.55, visualSize * 0.10);
-        const beamGeom = new THREE.ConeGeometry(beamRad, beamLen, 20, 1, true);
-        const beamMat = new THREE.MeshBasicMaterial({
-          color: col,
-          transparent: true,
-          opacity: 0.14,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        });
+      const beamLen = Math.max(12.0, visualSize * 1.35);
+      const beamRad = Math.max(0.55, visualSize * 0.10);
+      const beamGeom = new THREE.ConeGeometry(beamRad, beamLen, 20, 1, true);
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: col,
+        transparent: true,
+        opacity: 0.14,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
 
-        const beam1 = new THREE.Mesh(beamGeom, beamMat.clone());
-        beam1.position.y = beamLen / 2;
-        mag.add(beam1);
+      const beam1 = new THREE.Mesh(beamGeom, beamMat.clone());
+      beam1.position.y = beamLen / 2;
+      mag.add(beam1);
 
-        const beam2 = new THREE.Mesh(beamGeom, beamMat.clone());
-        beam2.rotation.x = Math.PI;
-        beam2.position.y = -beamLen / 2;
-        mag.add(beam2);
+      const beam2 = new THREE.Mesh(beamGeom, beamMat.clone());
+      beam2.rotation.x = Math.PI;
+      beam2.position.y = -beamLen / 2;
+      mag.add(beam2);
 
-        const phase0 = Math.random() * Math.PI * 2;
-        const omega = omegaDisplayFromPeriodMs(p.period_ms, pulsarStyle.spinScale);
+      const phase0 = Math.random() * Math.PI * 2;
+      const omega = omegaDisplayFromPeriodMs(p.period_ms, pulsarStyle.spinScale);
 
-        // Store the period and pulsar data for later updates
-        pulsarSystems.push({
-          root, spin, beams: [beam1, beam2], core, omega, phase: phase0,
-          periodMs: p.period_ms, // Store the period
-          pulsarData: p // Store the whole pulsar data object
-        });
-        clustersGroup.add(root);
-      }
+      // Store the period and pulsar data for later updates
+      pulsarSystems.push({
+        root, spin, beams: [beam1, beam2], core, omega, phase: phase0,
+        periodMs: p.period_ms, // Store the period
+        pulsarData: p // Store the whole pulsar data object
+      });
+      clustersGroup.add(root);
+    }
 
     // Pulsar key for cluster
     function pulsarKeyForCluster(c) {
@@ -2511,33 +2566,46 @@
     // Pulsar UI
     el("p-color").addEventListener("input", (e) => {
       pulsarStyle.colorBy = e.target.value;
-      // Rebuild pulsar visuals with new colors
-      if (pinned) {
-        const pos = lbToVec3(pinned.l, pinned.b, pinned.rsun_kpc);
-        const { coreR } = computeClusterRadii(pinned);
-        // Clear existing pulsars and rebuild
-        pulsarSystems.length = 0;
-        const psrs = pulsarsForCluster(pinned);
-        const count = Math.min(psrs.length, 8);
-        for (let i = 0; i < count; i++) {
-          addPulsarVisual(pos, coreR * 1.65, psrs[i]);
-        }
+      // Update colors on existing pulsar visuals instead of adding more
+      for (const ps of pulsarSystems) {
+        const col = pulsarColor(ps.pulsarData);
+        ps.core.material.color.copy(col);
+        ps.beams[0].material.color.copy(col);
+        ps.beams[1].material.color.copy(col);
       }
+      // Explain the mapping via toast
+      let msg;
+      switch (pulsarStyle.colorBy) {
+        case "binary":
+          msg = "Pulsars: cyan = binary, magenta = isolated.";
+          break;
+        case "dm":
+          msg = "Pulsars: DM colour — cyan = low DM, amber = high DM.";
+          break;
+        case "period":
+          msg = "Pulsars: spin period — orange = slow, blue = fast.";
+          break;
+        case "none":
+        default:
+          msg = "Pulsars: uniform magenta colour (no encoding).";
+          break;
+      }
+      showToast(msg);
       syncURLStateDebounced();
     });
 
     el("p-spin").addEventListener("input", (e) => {
-        const newScale = Number(e.target.value);
-        pulsarStyle.spinScale = newScale;
+      const newScale = Number(e.target.value);
+      pulsarStyle.spinScale = newScale;
 
-        // Update all pulsarSystems with the new scale
-        for (const ps of pulsarSystems) {
-          // Recalculate omega using the stored period and new scale
-          ps.omega = omegaDisplayFromPeriodMs(ps.periodMs, newScale);
-        }
+      // Update all pulsarSystems with the new scale
+      for (const ps of pulsarSystems) {
+        // Recalculate omega using the stored period and new scale
+        ps.omega = omegaDisplayFromPeriodMs(ps.periodMs, newScale);
+      }
 
-        syncURLStateDebounced();
-      });
+      syncURLStateDebounced();
+    });
 
     // Perf UI
     el("perf-quality").addEventListener("input", (e) => { perf.quality = e.target.value; applyPerf(); syncURLStateDebounced(); });
@@ -2629,6 +2697,9 @@
 
     // Apply URL state first, then load data
     applyStateFromURL();
+    // Sync UI controls with restored state
+    el("p-color").value = pulsarStyle.colorBy;
+    el("p-spin").value = String(pulsarStyle.spinScale);
     loadData({ noCache: false }).then(() => {
       applyPendingCompare();
     });

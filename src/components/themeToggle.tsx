@@ -20,8 +20,8 @@ export function ThemeToggle({
       ? "Dark Mode"
       : "Light Mode"
     : isDark
-      ? "Search Mode"
-      : "Browse Mode";
+      ? "Search Mode On"
+      : "Search Mode Off";
 
   return (
     <button

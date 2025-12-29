@@ -1128,7 +1128,7 @@
     import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
     const CONFIG = {
-      apiBase: "http://localhost:8787",
+      apiBase: "https://gc-worker.fazalabdulkareem12.workers.dev",
       scaleFactor: 90,
       R0_kpc: 8.2,
       RADIUS_EXAGGERATION: 6.0,
@@ -1192,16 +1192,11 @@
       lstha: el("ui-lstha"),
     };
 
-    // Toast helper
-    let toastTimer = null;
+    // Toast helper (used as persistent legend)
     function showToast(message) {
       if (!toast) return;
       toast.textContent = message;
       toast.classList.add("visible");
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove("visible");
-      }, 3500);
     }
 
     // State
@@ -2563,17 +2558,7 @@
       syncURLStateDebounced();
     });
 
-    // Pulsar UI
-    el("p-color").addEventListener("input", (e) => {
-      pulsarStyle.colorBy = e.target.value;
-      // Update colors on existing pulsar visuals instead of adding more
-      for (const ps of pulsarSystems) {
-        const col = pulsarColor(ps.pulsarData);
-        ps.core.material.color.copy(col);
-        ps.beams[0].material.color.copy(col);
-        ps.beams[1].material.color.copy(col);
-      }
-      // Explain the mapping via toast
+    function updatePulsarColorLegend() {
       let msg;
       switch (pulsarStyle.colorBy) {
         case "binary":
@@ -2591,6 +2576,19 @@
           break;
       }
       showToast(msg);
+    }
+
+    // Pulsar UI
+    el("p-color").addEventListener("input", (e) => {
+      pulsarStyle.colorBy = e.target.value;
+      // Update colors on existing pulsar visuals instead of adding more
+      for (const ps of pulsarSystems) {
+        const col = pulsarColor(ps.pulsarData);
+        ps.core.material.color.copy(col);
+        ps.beams[0].material.color.copy(col);
+        ps.beams[1].material.color.copy(col);
+      }
+      updatePulsarColorLegend();
       syncURLStateDebounced();
     });
 
@@ -2700,6 +2698,7 @@
     // Sync UI controls with restored state
     el("p-color").value = pulsarStyle.colorBy;
     el("p-spin").value = String(pulsarStyle.spinScale);
+    updatePulsarColorLegend();
     loadData({ noCache: false }).then(() => {
       applyPendingCompare();
     });

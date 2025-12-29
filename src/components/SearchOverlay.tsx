@@ -1217,10 +1217,7 @@ export function SearchOverlay({
                   <div className="text-xs text-white/70 mt-1">
                     {locked ? (
                       <>
-                        Captured:{" "}
-                        <span className="text-white font-semibold">
-                          {lockedPulsarRef.current ? (lockedPulsarRef.current as any).name : "noise"}
-                        </span>{" "}
+                        Captured
                         <span className="text-white/50">• click an FFT peak to attempt detection</span>
                       </>
                     ) : (

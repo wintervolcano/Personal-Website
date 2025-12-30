@@ -5,7 +5,7 @@ description: "A methods paper about doing wideband timing across separated uGMRT
 tags: [pulsars, timing, methods, uGMRT, InPTA, TEMPO2]
 ---
 
-Wideband timing is one of those ideas that quietly changes how you work once you start using it. Instead of measuring a separate time of arrival in each frequency channel and then stitching everything together, you fit a frequency dependent pulse portrait directly and solve, per epoch, for a single ToA and a single DM (and the nuisance terms needed to make that fit honest). It is efficient, it is internally consistent, and it makes it much harder for profile evolution to masquerade as timing structure.
+Wideband timing is one of those ideas that quietly changes how you work once you start using it. Instead of measuring a separate time of arrival in each frequency channel and then stitching everything together, you fit a frequency dependent pulse portrait directly and solve, per epoch, for a single ToA and a single DM (and the noise terms needed to make that fit honest). It is efficient, it is internally consistent, and it makes it much harder for profile evolution to masquerade as timing structure.
 
 The catch is that wideband timing is usually described for one continuous band, like a clean chunk of spectrum from ν_low to ν_high. With the upgraded GMRT, many of our PTA style observations are not like that. They are simultaneous in two bands with a substantial gap in between, commonly Band 3 and Band 5. In practice that means the pulse shape can evolve a lot between the two bands, and the gap breaks the mental picture of a single smooth portrait.
 

@@ -183,15 +183,17 @@ export default function ResearchPost({
                             ul: ({ children }) => <ul className="mt-5 list-disc pl-6 space-y-2">{children}</ul>,
                             ol: ({ children }) => <ol className="mt-5 list-decimal pl-6 space-y-2">{children}</ol>,
                             hr: () => <div className={cn("my-10 h-px w-full", isDark ? "bg-white/10" : "bg-black/10")} />,
-                            a: ({ href, children, ...props }) => {
+                            a: ({ href, title, children, ...props }) => {
                                 const url = href || "#";
-                                const external = /^https?:\/\//.test(url);
+                                const externalHttp = /^https?:\/\//.test(url);
+                                const forceExternal = title === "external" || title === "new-tab" || title === "newtab";
+                                const openInNewTab = externalHttp || forceExternal;
                                 return (
                                     <a
                                         href={url}
                                         {...props}
-                                        target={external ? "_blank" : undefined}
-                                        rel={external ? "noreferrer" : undefined}
+                                        target={openInNewTab ? "_blank" : undefined}
+                                        rel={openInNewTab ? "noreferrer" : undefined}
                                         className={cn(
                                             "underline decoration-[0.08em] underline-offset-[0.22em] transition-opacity",
                                             isDark ? "decoration-white/40 hover:opacity-90" : "decoration-black/35 hover:opacity-90"

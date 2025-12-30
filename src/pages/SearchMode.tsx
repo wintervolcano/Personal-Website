@@ -2065,7 +2065,7 @@ export function SearchMode({
                     )}
                 >
                     <p>
-                        Search Mode in this portfolio is inspired by one of the most beautiful detective stories in astrophysics:
+                        Search Mode on this website is inspired by one of the most beautiful detective stories in astrophysics:
                         how we search for pulsars in the noise of the universe. A pulsar search is the process radio astronomers
                         use to sift through huge streams of telescope data to find the <strong>regular heartbeats of dead stars.</strong> This page
                         walks through how those searches work and then connects that logic directly to the Search Mode you can

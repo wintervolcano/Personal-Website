@@ -327,17 +327,20 @@ export function About({ theme }: { theme: Theme }) {
               snapshots from observing runs, coffee runs and legends.
             </div>
           </div>
-          <button
+          <motion.button
             type="button"
             onClick={() => navigate("/gallery")}
             className={cn(
               "mt-2 inline-flex items-center justify-center rounded-full px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase",
-              isDark ? "border border-white/40 text-white/80 hover:bg-white/10" : "border border-black/40 text-black/80 hover:bg-black/5"
+              isDark ? "bg-white text-black border-white hover:bg-white/90" : "bg-black text-white border-black hover:bg-black/90"
             )}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            data-nolock
           >
             Open gallery
             <ArrowUpRight className="ml-2 h-4 w-4" />
-          </button>
+          </motion.button>
         </div>
 
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -7,6 +7,7 @@ import { usePageMeta } from "../lib/usePageMeta";
 import type { Theme } from "../components/themeToggle";
 import { HeroPulsars } from "../components/HeroPulsars";
 import { CardGrid } from "../components/CardGrid";
+import { ArrowUpRight } from "lucide-react";
 
 function KPI({ theme, title, value }: { theme: Theme; title: string; value: string }) {
   const isDark = theme === "dark";
@@ -182,17 +183,18 @@ function Hero({
                   type="button"
                   onClick={goLearnMore}
                   className={cn(
-                    "inline-flex items-center rounded-full border px-4 py-3 text-s font-semibold tracking-[0.18em] uppercase transition-all",
+                    "inline-flex items-center gap-2 rounded-full border px-4 py-3 text-s font-semibold tracking-[0.18em] uppercase transition-all",
                     "will-change-transform",
-                    "hover:-translate-y-[1px] active:translate-y-0",
+                    "hover:-translate-y-[3px] active:translate-y-0",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                     isDark
-                      ? "border-white/14 bg-white/5 text-white/85 hover:bg-white/10 hover:border-white/20 focus-visible:ring-white/40 focus-visible:ring-offset-black"
-                      : "border-black/10 bg-black text-white hover:bg-black/90 hover:border-black/30 focus-visible:ring-black/30 focus-visible:ring-offset-white"
+                      ? "border-transparent bg-[linear-gradient(135deg,#22d3ee,#a855f7)] text-white shadow-[0_0_30px_rgba(34,211,238,0.55)] hover:brightness-110 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-black"
+                      : "border-transparent bg-[linear-gradient(135deg,#4f46e5,#ec4899)] text-white shadow-[0_0_26px_rgba(79,70,229,0.45)] hover:brightness-110 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-white"
                   )}
                   data-nolock
                 >
-                  What is Search Mode?
+                  <span>What is Search Mode?</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
@@ -320,7 +322,7 @@ export function Home({
               items={[
                 {
                   k: "p1",
-                  t: "3D Globular Cluster Pulsars",
+                  t: "Globular Clusters 3D Explorer",
                   d: "A 3 dimensional interactive map of Globular Clusters and their pulsars.",
                   tag: "Tools",
                   onClick: () => window.open("/globular-clusters", "_blank", "noopener,noreferrer"),
@@ -356,7 +358,7 @@ export function Home({
             </div>
             <div className="lg:col-span-5">
               <p className={cn("text-base leading-relaxed", isDark ? "text-white/65" : "text-black/65")}>
-                Powered by markdown files in <span className={cn("font-semibold", isDark ? "text-white" : "text-black")}>src/content/</span>.
+                Powered by markdown files from my obsidian.
               </p>
             </div>
           </div>

@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://fazalkareem.com/sitemap.xml
-
+Sitemap: https://www.fazalkareem.com/sitemap.xml

@@ -3,7 +3,9 @@
         "trapum:build": "node scripts/build-trapum-pulsars.mjs --trapum ./trapum.org --out ./src/data/trapum_pulsars.json --outImages ./public/trapum/discoveries",
         "dev": "vite",
         "build": "vite build",
-        "build:trapum": "npm run trapum:build && npm run build"
+        "build:trapum": "npm run trapum:build && npm run build",
+        "compress:gallery": "bash ./scripts/compress-gallery.sh",
+        "gallery:webp": "bash ./scripts/gallery-to-webp.sh"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.1.18",

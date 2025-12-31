@@ -106,10 +106,12 @@ type Stats = {
 function difficultyKnobs(p: Pulsar) {
   const base = (p as any).difficulty as "easy" | "medium" | "hard" | undefined;
   const d = base || "medium";
-  const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.2 : 1.0;
-  const decoys = d === "easy" ? 1 : d === "medium" ? 3 : 5;
-  const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.009;
-  const peakW = d === "easy" ? 0.0052 : d === "medium" ? 0.0041 : 0.0032;
+  // Hard pulsars have slightly weaker, narrower peaks and more decoys,
+  // which effectively increases "noise" relative to the signal.
+  const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.2 : 0.70;
+  const decoys = d === "easy" ? 1 : d === "medium" ? 3 : 7;
+  const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.008;
+  const peakW = d === "easy" ? 0.0052 : d === "medium" ? 0.0041 : 0.0025;
   return { base: d, peakAmp, decoys, tol, peakW };
 }
 function peakPosFor(p: Pulsar) {
@@ -172,7 +174,8 @@ export function SearchOverlay({
   const fftRef = useRef<HTMLCanvasElement | null>(null);
 
   const GRID_X = 8;
-  const GRID_Y = 6;
+  // Many vertical bands so pulsars are not confined to a handful of horizontal stripes.
+  const GRID_Y = 24;
   const CELL_COUNT = GRID_X * GRID_Y;
 
   const [allowedCellIndices, setAllowedCellIndices] = useState<number[]>(() => {
@@ -200,12 +203,13 @@ export function SearchOverlay({
 
     const recompute = () => {
       const w = window.innerWidth || 1;
-      const vh = window.innerHeight || 1;
+      const doc = document.documentElement;
+      const docH = doc.scrollHeight || window.innerHeight || 1;
 
-      const top = Math.min(SAFE_TOP_PX, Math.max(0, vh - 1));
-      const bottom = Math.min(SAFE_BOTTOM_PX, Math.max(0, vh - 1));
+      const top = SAFE_TOP_PX;
+      const bottom = SAFE_BOTTOM_PX;
       const bandTop = top;
-      const bandBottom = vh - bottom;
+      const bandBottom = Math.max(bandTop + 1, docH - bottom);
       const bandH = Math.max(1, bandBottom - bandTop);
 
       const forbidden = new Set<number>();
@@ -214,12 +218,17 @@ export function SearchOverlay({
         'a,button,input,textarea,select,summary,[role="button"],[role="link"],[tabindex]:not([tabindex="-1"]),[data-ui="nav"],[data-ui="search-overlay"],[data-nolock]';
       const nodes = Array.from(document.querySelectorAll<HTMLElement>(selectors));
 
+      const scrollY = window.scrollY || doc.scrollTop || 0;
+
       for (const el of nodes) {
         const rect = el.getBoundingClientRect();
         if (!rect.width || !rect.height) continue;
 
-        const overlapTop = Math.max(rect.top, bandTop);
-        const overlapBottom = Math.min(rect.bottom, bandBottom);
+        const absTop = rect.top + scrollY;
+        const absBottom = rect.bottom + scrollY;
+
+        const overlapTop = Math.max(absTop, bandTop);
+        const overlapBottom = Math.min(absBottom, bandBottom);
         if (overlapBottom <= overlapTop) continue;
 
         const colStart = Math.floor(clamp01(rect.left / w) * GRID_X);
@@ -247,12 +256,9 @@ export function SearchOverlay({
     recompute();
 
     const onResize = () => recompute();
-    const onScroll = () => recompute();
     window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onScroll);
     };
   }, [CELL_COUNT, GRID_X, GRID_Y]);
 
@@ -307,7 +313,7 @@ export function SearchOverlay({
   // -------- Session discovery tracking --------
   const [logbook, setLogbook] = useState<LogEntry[]>(() => {
     try {
-      const raw = sessionStorage.getItem(LOGBOOK_KEY);
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(LOGBOOK_KEY) : null;
       const arr = raw ? (JSON.parse(raw) as unknown) : [];
       if (!Array.isArray(arr)) return [];
       return arr
@@ -320,7 +326,7 @@ export function SearchOverlay({
 
   const [sessionIds, setSessionIds] = useState<string[]>(() => {
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(SESSION_KEY) : null;
       const arr = raw ? (JSON.parse(raw) as unknown) : [];
       return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
     } catch {
@@ -461,7 +467,7 @@ export function SearchOverlay({
       set.add(pulsarId);
       const arr = Array.from(set);
       try {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(arr));
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(arr));
       } catch {
         // ignore
       }
@@ -493,6 +499,15 @@ export function SearchOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
+  // Reset when DiscoveryModal requests capture reset
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => reset();
+    window.addEventListener("fk-reset-capture", handler as any);
+    return () => window.removeEventListener("fk-reset-capture", handler as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ESC reset + L logbook
   useEffect(() => {
     if (!isActive) return;
@@ -514,18 +529,15 @@ export function SearchOverlay({
 
   const computeCellFromXY = (mx: number, my: number) => {
     const w = window.innerWidth || 1;
-    const vh = window.innerHeight || 1;
-
-    const top = Math.min(SAFE_TOP_PX, Math.max(0, vh - 1));
-    const bottom = Math.min(SAFE_BOTTOM_PX, Math.max(0, vh - 1));
-
-    // Use full document height so vertical cells are distributed over the entire page,
-    // not just the current viewport.
     const doc = document.documentElement;
     const scrollY = window.scrollY || doc.scrollTop || 0;
-    const docH = doc.scrollHeight || vh;
+    const docH = doc.scrollHeight || window.innerHeight || 1;
+
+    const top = SAFE_TOP_PX;
+    const bottom = SAFE_BOTTOM_PX;
     const effH = Math.max(1, docH - top - bottom);
 
+    // Normalized coordinates across the whole document, excluding top/bottom safety bands.
     const cx = clamp01(mx / w);
     const cy = clamp01((scrollY + my - top) / effH);
 
@@ -664,14 +676,16 @@ export function SearchOverlay({
     if (!hot) return 0;
 
     const w = window.innerWidth || 1;
-    const h = window.innerHeight || 1;
+    const doc = document.documentElement;
+    const scrollY = window.scrollY || doc.scrollTop || 0;
+    const docH = doc.scrollHeight || window.innerHeight || 1;
 
-    const top = Math.min(SAFE_TOP_PX, Math.max(0, h - 1));
-    const bottom = Math.min(SAFE_BOTTOM_PX, Math.max(0, h - 1));
-    const effH = Math.max(1, h - top - bottom);
+    const top = SAFE_TOP_PX;
+    const bottom = SAFE_BOTTOM_PX;
+    const effH = Math.max(1, docH - top - bottom);
 
     const nx = clamp01(s.mouseX / w);
-    const ny = clamp01((s.mouseY - top) / effH);
+    const ny = clamp01((scrollY + s.mouseY - top) / effH);
 
     const lx = nx * GRID_X - s.cellX;
     const ly = ny * GRID_Y - s.cellY;

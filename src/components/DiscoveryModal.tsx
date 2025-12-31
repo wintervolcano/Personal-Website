@@ -23,6 +23,15 @@ export function DiscoveryModal({
 }) {
   if (!open || !pulsar) return null;
 
+  const requestCaptureReset = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.dispatchEvent(new Event("fk-reset-capture"));
+    } catch {
+      // ignore
+    }
+  };
+
   const [imageExpanded, setImageExpanded] = useState(false);
   const downloadCardRef = useRef<HTMLDivElement | null>(null);
 
@@ -86,6 +95,7 @@ export function DiscoveryModal({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        requestCaptureReset();
         onClose();
       }
     };
@@ -99,7 +109,10 @@ export function DiscoveryModal({
         <div
           className="absolute inset-0"
           style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
-          onClick={onClose}
+          onClick={() => {
+            requestCaptureReset();
+            onClose();
+          }}
         />
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
           <div className="mx-auto max-w-[1200px] px-2 sm:px-8 py-10">
@@ -122,7 +135,10 @@ export function DiscoveryModal({
                 style={{ borderColor: "rgba(255,255,255,0.1)" }}
               >
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    requestCaptureReset();
+                    onClose();
+                  }}
                   className="absolute right-6 top-6 rounded-full px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] uppercase"
                   style={{
                     border: "1px solid rgba(255,255,255,0.2)",

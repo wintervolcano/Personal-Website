@@ -59,6 +59,7 @@ function pageKeyFromPath(pathname: string): PageKey {
   if (pathname.startsWith("/publications")) return "publications";
   if (pathname.startsWith("/resources")) return "resources";
   if (pathname.startsWith("/blog")) return "blog"; // includes /blog/:slug
+   if (pathname.startsWith("/gallery")) return "gallery";
   if (pathname.startsWith("/about")) return "about";
   return "home";
 }
@@ -77,6 +78,8 @@ function pathFromPageKey(k: PageKey): string {
       return "/resources";
     case "blog":
       return "/blog";
+    case "gallery":
+      return "/gallery";
     case "about":
       return "/about";
     default:
@@ -274,7 +277,16 @@ export default function App() {
                 <Route path="/blog/:slug" element={<BlogPost theme={theme} posts={blogDocs} />} />
                 <Route path="/about" element={<About theme={theme} />} />
                 <Route path="/personal-recommendations" element={<PersonalRecommendations theme={theme} />} />
-                <Route path="/search-mode" element={<SearchMode theme={theme} setTheme={setTheme} />} />
+                <Route
+                  path="/search-mode"
+                  element={
+                    <SearchMode
+                      theme={theme}
+                      setTheme={setTheme}
+                      onDemoSolved={(p, stats) => handleSolved(p, 1, stats)}
+                    />
+                  }
+                />
                 <Route path="/site-philosophy" element={<Philosophy theme={theme} />} />
                 <Route path="/resources/for-astronomers" element={<ForAstronomers theme={theme} />} />
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />

@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+/* Global font stack for readability */
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+}

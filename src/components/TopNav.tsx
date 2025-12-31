@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, BookOpen, FlaskConical, FileText, Layers3, Search, User, Home, Pen } from "lucide-react";
+import { BookOpen, FlaskConical, FileText, Layers3, Images, User, Home, Pen } from "lucide-react";
 import { cn } from "../lib/cn";
 import { ThemeToggle, type Theme } from "./themeToggle";
 
@@ -11,6 +11,7 @@ export const PAGES = [
   { key: "publications", label: "Publications", icon: FileText },
   { key: "resources", label: "Resources", icon: BookOpen },
   { key: "blog", label: "Blog", icon: Pen },
+  { key: "gallery", label: "Gallery", icon: Images },
   { key: "about", label: "About", icon: User },
 ] as const;
 
@@ -86,17 +87,6 @@ export function TopNav({
 
             <div className="flex items-center gap-3" data-nolock>
               <ThemeToggle theme={theme} setTheme={setTheme} isMobile={isMobile} />
-              <a
-                href="mailto:fkareem@mpifr-bonn.mpg.de"
-                className={cn(
-                  "hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-2",
-                  "text-xs font-semibold tracking-[0.18em] uppercase transition-colors",
-                  isDark ? "border-white/15 text-white/80 hover:text-white" : "border-black/10 text-black/70 hover:text-black"
-                )}
-                data-nolock
-              >
-                Contact <ArrowUpRight className="h-4 w-4" />
-              </a>
             </div>
           </div>
 

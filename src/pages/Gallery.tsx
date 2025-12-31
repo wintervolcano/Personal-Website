@@ -116,6 +116,30 @@ const GALLERY_ITEMS: GalleryItem[] = [
 export function Gallery({ theme }: { theme: Theme }) {
     const isDark = theme === "dark";
 
+    const LOCAL_LIKES_KEY = "fk_gallery_likes";
+
+    const readLocalLikes = (): Set<string> => {
+        if (typeof window === "undefined") return new Set();
+        try {
+            const raw = window.localStorage.getItem(LOCAL_LIKES_KEY);
+            if (!raw) return new Set();
+            const arr = JSON.parse(raw) as unknown;
+            if (!Array.isArray(arr)) return new Set();
+            return new Set(arr.filter((x) => typeof x === "string"));
+        } catch {
+            return new Set();
+        }
+    };
+
+    const writeLocalLikes = (ids: Set<string>) => {
+        if (typeof window === "undefined") return;
+        try {
+            window.localStorage.setItem(LOCAL_LIKES_KEY, JSON.stringify(Array.from(ids)));
+        } catch {
+            // ignore storage errors
+        }
+    };
+
     const [likesById, setLikesById] = useState<
         Record<string, { likes: number; liked: boolean }>
     >({});
@@ -142,13 +166,15 @@ export function Gallery({ theme }: { theme: Theme }) {
 
     useEffect(() => {
         const ids = GALLERY_ITEMS.map((g) => g.id);
+        const localLikes = readLocalLikes();
         fetchGalleryLikes(ids).then((snap) => {
             setLikesById(
                 ids.reduce((acc, id) => {
                     const row = snap[id];
+                    const likedLocal = localLikes.has(id);
                     acc[id] = {
                         likes: row?.likes ?? 0,
-                        liked: !!row?.likedByMe,
+                        liked: likedLocal || !!row?.likedByMe,
                     };
                     return acc;
                 }, {} as Record<string, { likes: number; liked: boolean }>)
@@ -157,10 +183,17 @@ export function Gallery({ theme }: { theme: Theme }) {
     }, []);
 
     const handleToggleLike = async (id: string) => {
+        const local = readLocalLikes();
         setLikesById((prev) => {
             const current = prev[id] ?? { likes: 0, liked: false };
             const nextLiked = !current.liked;
             const delta = nextLiked ? 1 : -1;
+
+            // Persist liked state for this browser
+            if (nextLiked) local.add(id);
+            else local.delete(id);
+            writeLocalLikes(local);
+
             return {
                 ...prev,
                 [id]: {
@@ -212,6 +245,8 @@ export function Gallery({ theme }: { theme: Theme }) {
                                         <img
                                             src={item.src}
                                             alt={item.title}
+                                            loading="lazy"
+                                            decoding="async"
                                             className={cn(
                                                 "h-full w-full object-cover",
                                                 // Only apply grayscale + hover zoom on devices

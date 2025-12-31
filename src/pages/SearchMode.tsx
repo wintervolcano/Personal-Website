@@ -6,6 +6,8 @@ import { cn } from "../lib/cn";
 import { usePrefersReducedMotion } from "../lib/motion";
 import { usePageMeta } from "../lib/usePageMeta";
 import { ThemeToggle, type Theme } from "../components/themeToggle";
+import type { Pulsar } from "../lib/pulsars";
+import { getTrapumPulsars, type TrapumPulsar } from "../lib/trapumPulsars";
 
 /* -------------------------
    Shared tiny utilities
@@ -183,10 +185,11 @@ type DemoTarget = {
 };
 
 function difficultyKnobs(d: DemoTarget["difficulty"]) {
-    const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.25 : 1.05;
-    const decoys = d === "easy" ? 2 : d === "medium" ? 4 : 6;
-    const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.01;
-    const peakW = d === "easy" ? 0.0065 : d === "medium" ? 0.005 : 0.0038;
+    // Hard demo targets are more "noisy": weaker, narrower peaks and extra decoys.
+    const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.25 : 0.9;
+    const decoys = d === "easy" ? 2 : d === "medium" ? 4 : 7;
+    const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.009;
+    const peakW = d === "easy" ? 0.0065 : d === "medium" ? 0.005 : 0.0034;
     return { peakAmp, decoys, tol, peakW };
 }
 
@@ -304,7 +307,13 @@ function synthFFT(opts: {
 // -------------------------
 //  Try-it demo component
 // -------------------------
-function TryItDemo({ theme }: { theme: Theme }) {
+function TryItDemo({
+    theme,
+    onDemoSolved,
+}: {
+    theme: Theme;
+    onDemoSolved?: (p: Pulsar, stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }) => void;
+}) {
     const reduced = usePrefersReducedMotion();
 
     // Local Browse/Search mode just for this panel
@@ -351,9 +360,46 @@ function TryItDemo({ theme }: { theme: Theme }) {
         candidates: 14320,
     });
 
+    // Use one real TRAPUM pulsar (with discovery plot and metadata) as the demo target.
+    const demoPulsar = useMemo((): (Pulsar & { trapum: TrapumPulsar }) | null => {
+        const all = getTrapumPulsars();
+        if (!all || !all.length) return null;
+        // Prefer a specific slug if present, otherwise take the first one.
+        const tp = all.find((p) => p.slug === "J1736-4444B") ?? all[0];
+        if (!tp) return null;
+
+        const period_ms = typeof tp.period_ms === "number" ? tp.period_ms : 3.0;
+        const f0_hz = period_ms > 0 ? 1000 / period_ms : 200;
+
+        const snr =
+            tp.discovery && typeof tp.discovery.discovery_snr === "number"
+                ? (tp.discovery.discovery_snr as number)
+                : null;
+        let difficulty: "easy" | "medium" | "hard" = "medium";
+        if (snr != null) {
+            if (snr < 12) difficulty = "hard";
+            else if (snr < 17) difficulty = "medium";
+            else difficulty = "easy";
+        }
+
+        return {
+            id: tp.slug,
+            name: tp.name,
+            f0_hz,
+            period_ms,
+            difficulty,
+            fold_png_url: tp.discovery?.discovery_plot_url ?? undefined,
+            trapum: tp,
+        };
+    }, []);
+
     const target: DemoTarget = useMemo(
-        () => ({ name: "DEMO PSR J1713+0747", f0_hz: 218.8, difficulty: "medium" }),
-        []
+        () => ({
+            name: demoPulsar?.name ?? "Demo pulsar",
+            f0_hz: demoPulsar?.f0_hz ?? 218.8,
+            difficulty: demoPulsar?.difficulty ?? "medium",
+        }),
+        [demoPulsar]
     );
     const knobs = useMemo(() => difficultyKnobs(target.difficulty), [target.difficulty]);
     const peakPos = useMemo(() => peakPosForF0(target.f0_hz), [target.f0_hz]);
@@ -382,6 +428,15 @@ function TryItDemo({ theme }: { theme: Theme }) {
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
+    }, []);
+
+    // External capture reset (from DiscoveryModal)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const handler = () => reset();
+        window.addEventListener("fk-reset-capture", handler as any);
+        return () => window.removeEventListener("fk-reset-capture", handler as any);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Mouse tracking inside panel
@@ -764,6 +819,18 @@ function TryItDemo({ theme }: { theme: Theme }) {
             setShowHint(false);
             setToast("✅ Detection confirmed — nice catch.");
             window.setTimeout(() => setToast(null), 1600);
+            if (onDemoSolved && demoPulsar) {
+                const c = computeRef.current;
+                const stats = {
+                    candidates: c.candidates,
+                    cpuHrs: c.cpuHrs,
+                    gpuHrs: c.gpuHrs,
+                    dataTB: c.diskTB,
+                };
+
+                // Demo should never affect real rankings; always show as #1 in the modal.
+                window.setTimeout(() => onDemoSolved(demoPulsar, stats), 240);
+            }
         } else {
             setStatus("miss");
             const lines = [
@@ -1988,9 +2055,11 @@ function FoldingLighthouseDemo({ theme }: { theme: Theme }) {
 export function SearchMode({
     theme,
     setTheme,
+    onDemoSolved,
 }: {
     theme: Theme;
     setTheme: (t: Theme) => void;
+    onDemoSolved?: (p: Pulsar, stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }) => void;
 }) {
     const reduced = usePrefersReducedMotion();
     const navigate = useNavigate();
@@ -2306,7 +2375,7 @@ export function SearchMode({
 
                 {/* Try-it demo (panel-local Search Mode toggle) */}
                 <div className="mt-10">
-                    <TryItDemo theme={effectiveTheme} />
+                    <TryItDemo theme={effectiveTheme} onDemoSolved={onDemoSolved} />
                 </div>
 
                 {/* <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6">

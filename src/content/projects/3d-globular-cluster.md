@@ -9,7 +9,7 @@ If you work with globular clusters a lot, it is very easy to lose track of where
 
 So I wrote a 3D explorer.
 
-The **[Globular Cluster 3D Explorer](/globular-clusters-3d.html "external")** page on this site is a self contained Three.js scene that puts the Milky Way (a fake rendition to get spatial orientation), its globular clusters and their pulsars into a single interactive view that runs in the browser. All the data comes from published catalogs like **[Baumgardt & Vasiliev (2021)](https://ui.adsabs.harvard.edu/abs/2021MNRAS.505.5957B/abstract)** for cluster properties and Paulo C. C. Freire's **[globular cluster pulsar database](https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html)** for pulsar parameters.
+The **[Globular Cluster 3D Explorer](/globular-cluster-explorer "external")** page on this site is a self contained Three.js scene that puts the Milky Way (a fake rendition to get spatial orientation), its globular clusters and their pulsars into a single interactive view that runs in the browser. All the data comes from published catalogs like **[Baumgardt & Vasiliev (2021)](https://ui.adsabs.harvard.edu/abs/2021MNRAS.505.5957B/abstract)** for cluster properties and Paulo C. C. Freire's **[globular cluster pulsar database](https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html)** for pulsar parameters.
 
 ## Why I built this
 

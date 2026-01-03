@@ -325,7 +325,7 @@ export function Home({
                   t: "Globular Clusters 3D Explorer",
                   d: "A 3 dimensional interactive map of Globular Clusters and their pulsars.",
                   tag: "Tools",
-                  onClick: () => window.open("/globular-clusters", "_blank", "noopener,noreferrer"),
+                  onClick: () => window.open("/globular-cluster-explorer", "_blank", "noopener,noreferrer"),
                 },
                 {
                   k: "p2",

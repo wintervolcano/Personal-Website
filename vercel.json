@@ -1,7 +1,7 @@
 {
     "rewrites": [
         {
-            "source": "/globular-clusters",
+            "source": "/globular-cluster-explorer",
             "destination": "/globular-clusters-3d.html"
         },
         {

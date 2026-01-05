@@ -288,7 +288,7 @@ export function Home({
   };
 
   usePageMeta(
-    "Fazal Kareem – Radio, pulsars, gravity",
+    "Fazal Kareem – Personal Site",
     "Personal site of Fazal Kareem, a PhD researcher in radio astronomy working on pulsars in globular clusters, timing arrays, and strong‑field gravity."
   );
 

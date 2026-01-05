@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+const SITE_ORIGIN = "https://www.fazalkareem.com";
+
 export function usePageMeta(title: string, description?: string) {
   useEffect(() => {
     if (title) {
@@ -14,6 +16,20 @@ export function usePageMeta(title: string, description?: string) {
         document.head.appendChild(tag);
       }
       tag.content = description;
+    }
+
+    // Per-page canonical: https://www.fazalkareem.com + current path
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname || "/";
+      const canonicalUrl = `${SITE_ORIGIN}${path}`;
+
+      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "canonical";
+        document.head.appendChild(link);
+      }
+      link.href = canonicalUrl;
     }
   }, [title, description]);
 }

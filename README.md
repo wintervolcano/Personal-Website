@@ -42,5 +42,4 @@ npm run build
 
 ## Environment variables
 
-- `PULSAR_DASHBOARD_TOKEN` secures `/api/detections-summary`.
 - Vercel KV variables are required for likes and detection endpoints in `api/` when running against KV.

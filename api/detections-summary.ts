@@ -96,7 +96,7 @@ export default async function handler(req: any, res: any) {
       for await (const key of kv.scanIterator({ match: `${prefix}*`, count: 1000 })) {
         if (typeof key !== "string" || !key.startsWith(prefix)) continue;
         const id = key.slice(prefix.length);
-        if (!id || id === "events" || id.startsWith("events:")) continue;
+        if (!id || id === "events" || id.startsWith("events:") || id.startsWith("visitor:")) continue;
         if (!idMap.has(id)) {
           idMap.set(id, { id, name: id });
         }

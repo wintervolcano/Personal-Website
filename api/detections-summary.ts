@@ -90,6 +90,21 @@ export default async function handler(req: any, res: any) {
       // If TRAPUM data is not available server-side, return the static set.
     }
 
+    // Include any IDs that exist in KV but are not in the static lists.
+    try {
+      const prefix = "pulsar:detections:";
+      for await (const key of kv.scanIterator({ match: `${prefix}*`, count: 1000 })) {
+        if (typeof key !== "string" || !key.startsWith(prefix)) continue;
+        const id = key.slice(prefix.length);
+        if (!id || id === "events" || id.startsWith("events:")) continue;
+        if (!idMap.has(id)) {
+          idMap.set(id, { id, name: id });
+        }
+      }
+    } catch {
+      // Ignore scan failures and keep the static list.
+    }
+
     // Load the full detection log. Prefer the Redis list if present, fall back
     // to the JSON array mirror (v2 key) otherwise.
     let storedEvents: StoredDetectionEvent[] = [];
@@ -180,7 +195,6 @@ export default async function handler(req: any, res: any) {
       .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
 
     res.status(200).json({
-      totalDetections: storedEvents.length,
       pulsars: await (async () => {
         const entries = Array.from(idMap.values());
         const items = await Promise.all(

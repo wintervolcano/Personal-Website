@@ -19,7 +19,6 @@ type DetectionEvent = {
 };
 
 type SummaryResponse = {
-  totalDetections: number;
   pulsars: PulsarSummary[];
   events?: DetectionEvent[];
 };

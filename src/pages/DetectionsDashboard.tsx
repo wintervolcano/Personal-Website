@@ -215,7 +215,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
             <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-black/60 dark:text-white/60">
               Total detections
             </p>
-            <div className="mt-3 text-5xl sm:text-6xl lg:text-7xl font-semibold text-black dark:text-white">
+            <div className="mt-3 text-5xl sm:text-6xl lg:text-7xl font-semibold text-black">
               {totalDetections.toLocaleString()}
             </div>
             <p className="mt-2 text-xs sm:text-sm text-black/60 dark:text-white/60">
@@ -229,7 +229,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
               </h3>
               <p className="mt-2 text-sm text-black/60 dark:text-white/60">
                 Total detections:{" "}
-                <span className="font-semibold text-black dark:text-white">
+                <span className="font-semibold text-black">
                   {totalDetections.toLocaleString()}
                 </span>
               </p>

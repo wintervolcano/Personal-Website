@@ -1058,28 +1058,9 @@ export function SearchOverlay({
       setStatus("hit");
       const id = (pulsar as any).id as string;
 
-      // If this pulsar was already discovered in this session, do not increment
-      // global or session counters again.
       const alreadyFound = sessionSet.has(id);
 
-      if (alreadyFound) {
-        const existing = logbook.find((e) => e.id === id);
-        const rank = existing?.rank ?? 1;
-        showRepeatToast();
-        setTimeout(
-          () =>
-            onSolved(pulsar, rank, {
-              candidates: statsUi.candidates,
-              cpuHrs: statsUi.cpuHrs,
-              gpuHrs: statsUi.gpuHrs,
-              dataTB: statsUi.dataTB,
-            }),
-          500
-        );
-        return;
-      }
-
-      // Global rank via KV, fallback to local session counter on failure.
+      // Rank from KV, fallback to local session counter on failure.
       let rank = 1;
       const remoteRank = await recordDetection(id, pageKey);
       if (remoteRank != null && Number.isFinite(remoteRank)) {
@@ -1095,13 +1076,35 @@ export function SearchOverlay({
         }
       }
 
+      if (alreadyFound) {
+        showRepeatToast();
+        // Keep logbook consistent even after reloads.
+        setLogbook((prev) => {
+          if (prev.some((x) => x && x.id === id)) return prev;
+          const next: LogEntry[] = [{ id, rank, ts: Date.now() }, ...prev];
+          try { window.localStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore storage errors */ }
+          return next;
+        });
+        setTimeout(
+          () =>
+            onSolved(pulsar, rank, {
+              candidates: statsUi.candidates,
+              cpuHrs: statsUi.cpuHrs,
+              gpuHrs: statsUi.gpuHrs,
+              dataTB: statsUi.dataTB,
+            }),
+          500
+        );
+        return;
+      }
+
       commitDiscovery(id);
 
       // Keep one entry per pulsar in this session (prevents duplicate spam).
       setLogbook((prev) => {
         if (prev.some((x) => x && x.id === id)) return prev;
         const next: LogEntry[] = [{ id, rank, ts: Date.now() }, ...prev];
-        try { sessionStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore storage errors */ }
+        try { window.localStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore storage errors */ }
         return next;
       });
 
@@ -1123,11 +1126,8 @@ export function SearchOverlay({
 
   if (!isActive) return null;
 
-  // Display list: prefer logbook (rank-preserving), fallback to session IDs.
-  const displayLog = (logbook.length
-    ? logbook
-    : sessionIds.map((id) => ({ id, rank: 1, ts: 0 }))
-  )
+  // Display list: use logbook so ranks stay stable across reloads.
+  const displayLog = logbook
     .filter((e) => e && typeof e.id === "string")
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 

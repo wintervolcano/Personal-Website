@@ -1,4 +1,48 @@
 import { kv } from "@vercel/kv";
+import crypto from "crypto";
+
+const VISITOR_COOKIE = "fk_did";
+
+function parseCookies(header: string | undefined): Record<string, string> {
+  if (!header) return {};
+  return header.split(";").reduce<Record<string, string>>((acc, part) => {
+    const [rawKey, ...rest] = part.split("=");
+    const key = rawKey?.trim();
+    if (!key) return acc;
+    acc[key] = decodeURIComponent(rest.join("=").trim());
+    return acc;
+  }, {});
+}
+
+function ensureVisitorId(req: any, res: any) {
+  const cookies = parseCookies(req?.headers?.cookie);
+  const existing = cookies[VISITOR_COOKIE];
+  if (existing) return existing;
+
+  const id =
+    (typeof crypto.randomUUID === "function" && crypto.randomUUID()) ||
+    `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+  const isProd = process.env.NODE_ENV === "production";
+  const parts = [
+    `${VISITOR_COOKIE}=${encodeURIComponent(id)}`,
+    "Path=/",
+    "Max-Age=31536000",
+    "SameSite=Lax",
+    "HttpOnly",
+  ];
+  if (isProd) parts.push("Secure");
+
+  const cookieValue = parts.join("; ");
+  const existingHeader = res.getHeader?.("Set-Cookie");
+  if (existingHeader) {
+    const arr = Array.isArray(existingHeader) ? existingHeader : [existingHeader];
+    res.setHeader("Set-Cookie", [...arr, cookieValue]);
+  } else {
+    res.setHeader("Set-Cookie", cookieValue);
+  }
+
+  return id;
+}
 
 // POST /api/detections?id=<pulsarId>.
 // Increments the global detection count for that pulsar and returns { id, count }.
@@ -55,7 +99,20 @@ export default async function handler(req: any, res: any) {
 
   try {
     if (req.method === "POST") {
+      const visitorId = ensureVisitorId(req, res);
+      const visitorKey = `pulsar:detections:visitor:${id}:${visitorId}`;
+      const storedRank = await kv.get<number>(visitorKey);
+      if (typeof storedRank === "number" && Number.isFinite(storedRank) && storedRank > 0) {
+        res.status(200).json({ id, count: storedRank });
+        return;
+      }
+
       const count = await kv.incr(key);
+      try {
+        await kv.set(visitorKey, count);
+      } catch {
+        // Ignore per-visitor rank storage failures.
+      }
 
       // Lightweight event entry so the internal dashboard can show when and where detections happened.
       try {

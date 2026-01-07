@@ -1,4 +1,4 @@
-// src/components/SearchOverlay.tsx
+// Search overlay UI and logic.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSARS as BASE_PULSARS, type Pulsar } from "../lib/pulsars";
@@ -20,7 +20,7 @@ function gauss(x: number, mu: number, sigma: number) {
   return Math.exp(-0.5 * z * z);
 }
 function hashToUint32(s: string) {
-  // FNV-1a 32-bit
+  // FNV-1a hash, 32-bit.
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -87,8 +87,8 @@ type ScanState = {
 
 type HotspotInfo = {
   pulsar: Pulsar;
-  hx: number; // inside-tile [0..1]
-  hy: number; // inside-tile [0..1]
+  hx: number; // inside tile [0..1]
+  hy: number; // inside tile [0..1]
 };
 
 type Stats = {
@@ -129,10 +129,9 @@ const MISS_LINES = [
 ];
 
 /**
- * If your lib currently has fewer than 100 pulsars, we deterministically
- * synthesize additional ones so the distribution logic works immediately.
- * When you add real pulsars to ../lib/pulsars, these synthetic ones naturally
- * get pushed out.
+ * If your library currently has fewer than 100 pulsars, we deterministically
+ * synthesize more so the distribution logic works right away.
+ * When you add real pulsars to ../lib/pulsars, the synthetic ones drop out.
  */
 function ensureMinPulsars(base: Pulsar[], minCount: number): Pulsar[] {
   if (base.length >= minCount) return base;
@@ -143,7 +142,7 @@ function ensureMinPulsars(base: Pulsar[], minCount: number): Pulsar[] {
   for (let i = out.length; i < minCount; i++) {
     const seed = hashToUint32(`fk:synth:pulsar:${i}`);
     const r = mulberry32(seed);
-    const f0 = 40 + r() * 820; // 40..860 Hz
+    const f0 = 40 + r() * 820; // 40 to 860 Hz
     const id = `SYNTH-${String(i).padStart(3, "0")}`;
     if (baseIds.has(id)) continue;
 
@@ -174,9 +173,9 @@ function shuffleDeterministic<T>(arr: T[], seed: number): T[] {
   return a;
 }
 
-// ---- Layout-safe region (keeps hotspots away from top nav + bottom overlay) ----
-const SAFE_TOP_PX = 96;   // approximate navbar height
-const SAFE_BOTTOM_PX = 220; // approx overlay + footer area
+// Layout-safe region to keep hotspots away from the top nav and bottom overlay.
+const SAFE_TOP_PX = 96; // approximate navbar height
+const SAFE_BOTTOM_PX = 220; // approx overlay and footer area
 
 export function SearchOverlay({
   theme,
@@ -190,8 +189,8 @@ export function SearchOverlay({
   onSolved: (p: Pulsar, rank: number) => void;
   onOpenDetection: (p: Pulsar, rank: number) => void;
   /**
-   * Pass ALL discoverable pages here (including blog/research slugs).
-   * When you add/remove pages, pulsars are automatically redistributed
+   * Pass all discoverable pages here (including blog and research slugs).
+   * When you add or remove pages, pulsars are redistributed automatically
    * with no manual salt changes.
    */
   sitePageKeys?: string[];
@@ -229,18 +228,18 @@ export function SearchOverlay({
   const [lockX, setLockX] = useState<number | null>(null);
   const [status, setStatus] = useState<"idle" | "locked" | "miss" | "hit">("idle");
 
-  // Freeze buffers after capture
+  // Freeze buffers after capture.
   const lockedSeedRef = useRef<number | null>(null);
-  const lockedPulsarRef = useRef<Pulsar | null>(null); // null = noise capture
+  const lockedPulsarRef = useRef<Pulsar | null>(null); // null means noise capture
   const frozenTSRef = useRef<number[] | null>(null);
   const frozenFFTRef = useRef<number[] | null>(null);
 
   const dirtyRef = useRef(true);
 
-  // Toast on miss
+  // Toast on miss.
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
 
-  // Logbook drawer
+  // Logbook drawer.
   const [logOpen, setLogOpen] = useState(false);
 
   const showMissToast = () => {
@@ -252,7 +251,7 @@ export function SearchOverlay({
     }, 2200);
   };
 
-  // -------- Session discovery tracking --------
+  // Session discovery tracking.
   const [logbook, setLogbook] = useState<LogEntry[]>(() => {
     try {
       const raw = sessionStorage.getItem(LOGBOOK_KEY);
@@ -277,7 +276,7 @@ export function SearchOverlay({
   });
   const sessionSet = useMemo(() => new Set(sessionIds), [sessionIds]);
 
-  // ---- Pulsar pool (>= 100) ----
+  // Pulsar pool (>= 100).
   const ALL_PULSARS = useMemo(() => ensureMinPulsars(BASE_PULSARS, 100), []);
   const pulsarById = useMemo(() => {
     const m = new Map<string, Pulsar>();
@@ -285,27 +284,27 @@ export function SearchOverlay({
     return m;
   }, [ALL_PULSARS]);
 
-  // ---- Page list + automatic redistribution salt ----
+  // Page list and automatic redistribution salt.
   const allPages = useMemo(() => {
     const base = (sitePageKeys && sitePageKeys.length ? sitePageKeys : [pageKey]).filter(Boolean);
     const set = new Set<string>(base);
     set.add(pageKey);
-    return Array.from(set).sort(); // stable order
+    return Array.from(set).sort(); // stable order.
   }, [sitePageKeys, pageKey]);
 
   const autoSaltSeed = useMemo(() => {
     const pageStr = allPages.join("|");
-    // include pulsar IDs so adding pulsars also redistributes.
+    // Include pulsar IDs so adding pulsars redistributes as well.
     const idStr = ALL_PULSARS.map((p) => (p as any).id as string).join("|");
     return hashToUint32(`fk:autoSalt:${pageStr}::${idStr}`);
   }, [allPages, ALL_PULSARS]);
 
-  // ---- Equal distribution: assign pulsar IDs across all pages ----
+  // Equal distribution: assign pulsar IDs across all pages.
   const pageAssignments = useMemo(() => {
     const pages = allPages;
     const ids = ALL_PULSARS.map((p) => (p as any).id as string);
 
-    // shuffle deterministically based on current site composition
+    // Shuffle deterministically based on current site composition.
     const shuffled = shuffleDeterministic(ids, hashToUint32(`fk:assign:${autoSaltSeed}`));
 
     const m = new Map<string, string[]>();
@@ -322,7 +321,7 @@ export function SearchOverlay({
         idx += n;
       }
     } else {
-      // fewer pulsars than pages: at least one per page (repeats unavoidable)
+      // Fewer pulsars than pages: at least one per page (repeats unavoidable).
       for (let i = 0; i < pages.length; i++) {
         m.set(pages[i], [shuffled[i % Math.max(1, shuffled.length)]]);
       }
@@ -332,7 +331,7 @@ export function SearchOverlay({
 
   const assignedIdsForPage = useMemo(() => pageAssignments.get(pageKey) ?? [], [pageAssignments, pageKey]);
 
-  // ---- Site-wide embedded IDs (for session found/left) ----
+  // Site-wide embedded IDs for session found and left.
   const siteEmbeddedIds = useMemo(() => {
     const ids = new Set<string>();
     const cap = Math.min(CELL_COUNT, allowedCellIndices.length);
@@ -351,7 +350,7 @@ export function SearchOverlay({
 
   const sessionLeft = Math.max(0, siteEmbeddedIds.size - sessionFound);
 
-  // Stats (simulated)
+  // Stats (simulated).
   const statsRef = useRef<Stats>({
     wallSec: 0,
     dataTB: 0,
@@ -380,7 +379,7 @@ export function SearchOverlay({
       const v = Number(window.localStorage.getItem(k) || "0");
       window.localStorage.setItem(k, String(v + 1));
     } catch {
-      // ignore
+      // Ignore storage errors.
     }
 
     setSessionIds((prev) => {
@@ -390,7 +389,7 @@ export function SearchOverlay({
       try {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(arr));
       } catch {
-        // ignore
+        // Ignore storage errors.
       }
       return arr;
     });
@@ -408,19 +407,19 @@ export function SearchOverlay({
     dirtyRef.current = true;
   };
 
-  // Reset when leaving search mode
+  // Reset when leaving Search Mode.
   useEffect(() => {
     if (!isActive) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  // Reset when pageKey changes
+  // Reset when pageKey changes.
   useEffect(() => {
     reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
-  // ESC reset + L logbook
+  // Esc reset and L logbook.
   useEffect(() => {
     if (!isActive) return;
     const onKey = (e: KeyboardEvent) => {
@@ -452,7 +451,7 @@ export function SearchOverlay({
     return { cellX, cellY, cellIndex };
   };
 
-  // ---- Hotspot map (one pulsar per chosen cell) ----
+  // Hotspot map (one pulsar per chosen cell).
   const hotspotMap = useMemo(() => {
     const ids = assignedIdsForPage;
     if (!ids.length) return new Map<number, HotspotInfo>();
@@ -483,7 +482,7 @@ export function SearchOverlay({
     return map;
   }, [assignedIdsForPage, allowedCellIndices, autoSaltSeed, pageKey, CELL_COUNT, pulsarById]);
 
-  // Mouse move updates scan state
+  // Mouse move updates scan state.
   useEffect(() => {
     if (!isActive) return;
     const onMove = (e: MouseEvent) => {
@@ -505,7 +504,7 @@ export function SearchOverlay({
     return () => window.removeEventListener("mousemove", onMove as any);
   }, [isActive, locked]);
 
-  // Click anywhere to CAPTURE (except UI)
+  // Click anywhere to capture (except UI).
   useEffect(() => {
     if (!isActive) return;
 
@@ -533,7 +532,7 @@ export function SearchOverlay({
       const hot = hotspotMap.get(cellIndex);
       lockedPulsarRef.current = hot ? hot.pulsar : null;
 
-      // IMPORTANT: lock seed is stable for the captured position (prevents FFT jump)
+      // Lock seed is stable for the captured position (prevents FFT jump).
       lockedSeedRef.current = hashToUint32(
         `fk:LOCK:${pageKey}:${autoSaltSeed}:${cellIndex}:${s0.nonce + 1}:${Math.floor(mx)}:${Math.floor(my)}`
       );
@@ -551,7 +550,7 @@ export function SearchOverlay({
     return () => window.removeEventListener("click", onClickCapture, true);
   }, [isActive, locked, pageKey, autoSaltSeed, hotspotMap]);
 
-  // Proximity to hotspot inside current tile
+  // Proximity to hotspot inside the current tile.
   const computeProximity = (s: ScanState) => {
     const hot = hotspotMap.get(s.cellIndex);
     if (!hot) return 0;
@@ -574,7 +573,7 @@ export function SearchOverlay({
     return Math.exp(-(dist * dist) / (sigma * sigma));
   };
 
-  // Build time series + FFT for a scan snapshot
+  // Build time series and FFT for a scan snapshot.
   const buildSignal = (s: ScanState, frozenSeed: number | null) => {
     const hot = hotspotMap.get(s.cellIndex);
     const targetPulsar = hot ? hot.pulsar : null;
@@ -588,7 +587,7 @@ export function SearchOverlay({
 
     const rng = mulberry32(baseSeed);
 
-    // ---- TIME SERIES: AR-ish noise + spikes + bursts (no obvious sinusoid) ----
+    // Time series: AR-ish noise plus spikes and bursts, no obvious sinusoid.
     let ts = locked ? frozenTSRef.current : null;
     if (!ts) {
       const N = 720;
@@ -626,7 +625,7 @@ export function SearchOverlay({
       if (locked) frozenTSRef.current = vals;
     }
 
-    // ---- FFT: noise + decoys always; real peak only near hotspot ----
+    // FFT: noise and decoys always, real peak only near the hotspot.
     let fft = locked ? frozenFFTRef.current : null;
     if (!fft) {
       const bins = 900;
@@ -692,7 +691,7 @@ export function SearchOverlay({
     return { ts, fft, targetPulsar, proximity, targetVisible };
   };
 
-  // Stats ticking (simulated)
+  // Stats ticking (simulated).
   const tickStats = (now: number) => {
     const last = lastTickRef.current || now;
     const dt = Math.max(0, Math.min(0.25, (now - last) / 100));
@@ -713,7 +712,7 @@ export function SearchOverlay({
     if (now % 100 < 16) setStatsUi({ ...s });
   };
 
-  // Draw loop
+  // Draw loop.
   useEffect(() => {
     if (!isActive) return;
 
@@ -770,7 +769,7 @@ export function SearchOverlay({
       const seed = locked ? (lockedSeedRef.current ?? null) : null;
       const sig = buildSignal(s, seed);
 
-      // TIME SERIES
+      // Time series.
       {
         const vals = sig.ts;
         let vmin = Infinity, vmax = -Infinity;
@@ -820,7 +819,7 @@ export function SearchOverlay({
         tsCtx.restore();
       }
 
-      // FFT
+      // FFT.
       {
         const vals = sig.fft;
 
@@ -917,11 +916,11 @@ export function SearchOverlay({
 
       commitDiscovery(id);
 
-      // keep one entry per pulsar in this session (prevents duplicate spam)
+      // Keep one entry per pulsar in this session (prevents duplicate spam).
       setLogbook((prev) => {
         if (prev.some((x) => x && x.id === id)) return prev;
         const next: LogEntry[] = [{ id, rank, ts: Date.now() }, ...prev];
-        try { sessionStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        try { sessionStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore storage errors */ }
         return next;
       });
 
@@ -944,7 +943,7 @@ export function SearchOverlay({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60]">
-      {/* Toast (miss feedback) */}
+      {/* Toast on miss */}
       <div className="pointer-events-none absolute left-0 right-0 bottom-[168px] sm:bottom-[176px]">
         <div className="mx-auto max-w-[1800px] px-4 sm:px-8">
           <AnimatePresence>
@@ -974,7 +973,7 @@ export function SearchOverlay({
             className="rounded-3xl border bg-black/90 backdrop-blur-xl border-white/14 overflow-hidden"
           >
             <div className="grid grid-cols-12 gap-3 p-3 sm:p-4">
-              {/* Time series */}
+              {/* Time series panel */}
               <div className="col-span-12 md:col-span-3">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas ref={tsRef} className="h-[140px] w-full" data-nolock />
@@ -984,7 +983,7 @@ export function SearchOverlay({
                 </div>
               </div>
 
-              {/* FFT */}
+              {/* FFT panel */}
               <div className="col-span-12 md:col-span-6">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas
@@ -999,7 +998,7 @@ export function SearchOverlay({
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Stats panel */}
               <div className="col-span-12 md:col-span-3">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <div className="mt-1 grid grid-cols-2 gap-3 text-xs px-3">

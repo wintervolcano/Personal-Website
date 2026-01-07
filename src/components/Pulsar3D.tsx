@@ -27,7 +27,7 @@ function Beam({
         pointerEvents: "none",
       }}
     >
-      {/* outer beam */}
+      {/* Outer beam */}
       <div
         style={{
           width: w,
@@ -40,7 +40,7 @@ function Beam({
           opacity: 0.98,
         }}
       />
-      {/* inner core beam */}
+      {/* Inner core beam */}
       <div
         style={{
           width: Math.max(4, Math.round(w * 0.33)),
@@ -161,7 +161,7 @@ function PulsarGlyph({ s, animated }: { s: PulsarSprite; animated: boolean }) {
 
   return (
     <div className="relative" style={{ width: box, height: box }}>
-      {/* Everything that must rotate together goes in THIS wrapper */}
+      {/* Everything that must rotate together goes in this wrapper */}
       <motion.div
         className="absolute inset-0"
         animate={animated ? { rotate: 360 } : { rotate: 0 }}
@@ -172,15 +172,15 @@ function PulsarGlyph({ s, animated }: { s: PulsarSprite; animated: boolean }) {
         }
         style={{ pointerEvents: "none" }}
       >
-        {/* magnetic field loops rotate EXACTLY with beams */}
+        {/* Magnetic field loops rotate with the beams */}
         <MagFieldLines size={box} tiltDeg={s.tiltDeg} />
 
-        {/* beams (locked to same rotation) */}
+        {/* Beams locked to the same rotation */}
         <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={0} tiltDeg={s.tiltDeg} />
         <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={180} tiltDeg={s.tiltDeg} />
       </motion.div>
 
-      {/* star sphere (stationary, centered) */}
+      {/* Star sphere, stationary and centered */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -193,7 +193,7 @@ function PulsarGlyph({ s, animated }: { s: PulsarSprite; animated: boolean }) {
         }}
       />
 
-      {/* halo (stationary) */}
+      {/* Halo, stationary */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -245,7 +245,7 @@ function BinaryGlyph({ s, animated }: { s: BinarySprite; animated: boolean }) {
             : { duration: 0 }
         }
       >
-        {/* pulsar body (white) */}
+        {/* Pulsar body (white) */}
         <div className="absolute left-0 top-0" style={{ transform: `translate(${s.orbitR}px, ${-s.orbitR * 0.10}px)` }}>
           <motion.div
             animate={animated ? { rotate: 360 } : { rotate: 0 }}
@@ -256,7 +256,7 @@ function BinaryGlyph({ s, animated }: { s: BinarySprite; animated: boolean }) {
             }
           >
             <div className="relative" style={{ width: s.rP * 2, height: s.rP * 2 }}>
-              {/* short-ish white beams */}
+              {/* Short white beams */}
               <Beam len={Math.round(s.orbitR * 2.0)} w={12} alpha={0.16} rotateDeg={0} tiltDeg={16} />
               <Beam len={Math.round(s.orbitR * 2.0)} w={12} alpha={0.16} rotateDeg={180} tiltDeg={16} />
 
@@ -275,7 +275,7 @@ function BinaryGlyph({ s, animated }: { s: BinarySprite; animated: boolean }) {
           </motion.div>
         </div>
 
-        {/* companion (still bright, but with darker shadow) */}
+        {/* Companion, still bright with a darker shadow */}
         <div className="absolute left-0 top-0" style={{ transform: `translate(${-s.orbitR}px, ${s.orbitR * 0.10}px)` }}>
           <div
             className="rounded-full"
@@ -294,24 +294,24 @@ function BinaryGlyph({ s, animated }: { s: BinarySprite; animated: boolean }) {
   );
 }
 
-/** ------- Mapping: pulsar parameters → hero-style sprite ------- */
+/** Mapping: pulsar parameters to hero-style sprite. */
 function spriteFromPulsar(p: Pulsar): PulsarSprite {
-  // Spin: fast MSPs => ~0.8s, slow => ~3.2s
+  // Spin: fast MSPs to about 0.8s, slow to about 3.2s.
   const spinSec = clamp01((p.period_ms - 1.2) / (18 - 1.2)) * (3.2 - 0.8) + 0.8;
 
-  // Beam length: f0 0..900 => 130..210 px
+  // Beam length: f0 0..900 to 130..210 px.
   const beamLen = Math.round(130 + clamp01(p.f0_hz / 900) * 80);
 
-  // Difficulty affects beam thickness + alpha
+  // Difficulty affects beam thickness and alpha.
   const diff = p.difficulty;
   const beamW = diff === "easy" ? 18 : diff === "medium" ? 15 : 12;
   const beamAlpha = diff === "easy" ? 0.30 : diff === "medium" ? 0.24 : 0.18;
 
-  // Tilt: stable per id
+  // Tilt: stable per id.
   const h = hashToUint32(`tilt:${p.id}`) % 1000;
   const tiltDeg = 12 + (h / 1000) * 22; // 12..34
 
-  // Radius: stable per id
+  // Radius: stable per id.
   const h2 = hashToUint32(`r:${p.id}`) % 1000;
   const r = 11 + Math.round((h2 / 1000) * 5); // 11..16
 
@@ -349,7 +349,7 @@ export function DiscoveryPulsarPanel({
   const ps = useMemo(() => spriteFromPulsar(pulsar), [pulsar]);
   const bs = useMemo(() => binaryFromPulsar(pulsar), [pulsar]);
 
-  // This panel is explicitly dark-styled (per your request)
+  // This panel is explicitly dark-styled (per your request).
   return (
     <div className="relative h-[240px] w-full rounded-2xl border border-white/14 bg-black overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.10),transparent_55%),radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.06),transparent_60%)]" />
@@ -358,7 +358,7 @@ export function DiscoveryPulsarPanel({
         {isBinary ? "BINARY (parameterized)" : "PULSAR (parameterized)"}
       </div>
 
-      {/* centered */}
+      {/* Centered */}
       <div className="absolute inset-0 grid place-items-center">
         {isBinary ? (
           <BinaryGlyph s={bs} animated={animated} />

@@ -7,7 +7,7 @@
   <title>Globular Clusters & Pulsars | 3D Explorer v2 Pro</title>
   <link rel="canonical" href="https://www.fazalkareem.com/globular-cluster-explorer" />
 
-  <!-- Vercel Web Analytics -->
+  <!-- Vercel web analytics -->
   <script>
     window.va =
       window.va ||
@@ -62,7 +62,7 @@
       inset: 0
     }
 
-    /* grid + noise overlay */
+    /* Grid and noise overlay */
     #ui-layer::before {
       content: "";
       position: fixed;
@@ -101,7 +101,7 @@
       box-shadow: var(--shadow), var(--glow);
     }
 
-    /* Scale bar at top */
+    /* Scale bar at the top */
     #scale-bar {
       position: absolute;
       top: 0;
@@ -127,7 +127,7 @@
       pointer-events: none;
     }
 
-    /* Topbar */
+    /* Top bar */
     #topbar {
       position: absolute;
       left: 50%;
@@ -500,7 +500,7 @@
       background: rgba(0, 0, 0, .12)
     }
 
-    /* Drawer (Tools) */
+    /* Tools drawer */
     #drawer {
       position: absolute;
       top: 100px;
@@ -806,7 +806,7 @@
 <body>
   <div id="canvas-container"></div>
 
-  <!-- Scale bar -->
+  <!-- Scale bar section -->
   <div id="scale-bar"></div>
   <div id="scale-label">300 parsecs</div>
 
@@ -1120,7 +1120,7 @@
       </div>
     </aside>
 
-    <!-- HUD -->
+    <!-- HUD overlay -->
     <div id="hud">
       <button class="btn" id="btn-reset">Reset View</button>
       <button class="btn" id="btn-sun">Locate Sun</button>
@@ -1158,7 +1158,7 @@
       galaxy: { diskStars: 110000, bulgeStars: 50000, dustPuffs: 16000 },
     };
 
-    // Coordinate transform matrices
+    // Coordinate transform matrices.
     const A0G = [
       [-0.0548755604162154, -0.8734370902348850, -0.4838350155487132],
       [0.4941094278755837, -0.4448296299600112, 0.7469822444972189],
@@ -1170,7 +1170,7 @@
       [-0.4838350155487132, 0.7469822444972189, 0.4559837761750669],
     ];
 
-    // DOM elements
+    // DOM elements.
     const el = (id) => document.getElementById(id);
     const panel = el("panel");
     const drawer = el("drawer");
@@ -1203,14 +1203,14 @@
       lstha: el("ui-lstha"),
     };
 
-    // Toast helper (used as persistent legend)
+    // Toast helper used as a persistent legend.
     function showToast(message) {
       if (!toast) return;
       toast.textContent = message;
       toast.classList.add("visible");
     }
 
-    // State
+    // State.
     let clusters = [];
     let clustersMeta = null;
     let pulsarByKey = {};
@@ -1220,7 +1220,7 @@
     let lastView = null;
     const compare = new Map();
 
-    // Settings
+    // Settings.
     const filters = {
       rsunMax: 200,
       psrMin: 0,
@@ -1246,7 +1246,7 @@
       showFps: false,
     };
 
-    // Scene setup
+    // Scene setup.
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x070a12, 0.00115);
 
@@ -1269,13 +1269,13 @@
     controls.minDistance = 0.7;
     controls.maxDistance = 7500;
 
-    // Lighting
+    // Lighting.
     scene.add(new THREE.AmbientLight(0xffffff, 0.38));
     const key = new THREE.DirectionalLight(0xffffff, 0.70);
     key.position.set(1, 1.2, 0.2);
     scene.add(key);
 
-    // Post-processing
+    // Post-processing.
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new UnrealBloomPass(
@@ -1285,7 +1285,7 @@
       CONFIG.bloom.threshold
     ));
 
-    // Helper functions
+    // Helper functions.
     function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
     function pcToScene(pc) { return (pc / 1000) * CONFIG.scaleFactor; }
 
@@ -1308,7 +1308,7 @@
       return `${sign}${String(d).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
     }
 
-    // Galactic to equatorial conversion
+    // Galactic to equatorial conversion.
     function galToEq(lDeg, bDeg) {
       const l = THREE.MathUtils.degToRad(lDeg);
       const b = THREE.MathUtils.degToRad(bDeg);
@@ -1327,7 +1327,7 @@
       return { raDeg, decDeg };
     }
 
-    // Time helpers
+    // Time helpers.
     function toJulianDate(date) {
       return (date.getTime() / 86400000) + 2440587.5;
     }
@@ -1343,17 +1343,17 @@
       return ((gmstDeg(toJulianDate(dateUTC)) + lonDeg) % 360 + 360) % 360;
     }
 
-    // Observer time
+    // Observer time.
     function observerTimeUTC() {
       const s = observer.timeLocal;
       if (!s) return new Date();
 
-      // Parse datetime-local value
-      const d = new Date(s + 'Z'); // Treat as UTC
+      // Parse datetime-local value.
+      const d = new Date(s + 'Z'); // Treat as UTC.
       return d;
     }
 
-    // RA/Dec to Alt/Az
+    // RA/Dec to Alt/Az.
     function eqToAltAz(raDeg, decDeg, dateUTC, latDeg, lonDeg) {
       const LST = lstDeg(dateUTC, lonDeg);
       let H = (LST - raDeg) * Math.PI / 180;
@@ -1370,35 +1370,35 @@
       return { altDeg: THREE.MathUtils.radToDeg(alt), azDeg: THREE.MathUtils.radToDeg(az) };
     }
 
-    // Coordinate transform: Galactic (l,b, Rsun) -> Galactocentric Cartesian (GC at origin, Sun at +X)
+    // Coordinate transform: Galactic (l, b, Rsun) to galactocentric Cartesian (GC at origin, Sun at +X).
     function lbToVec3(lDeg, bDeg, rsun_kpc) {
       const l = THREE.MathUtils.degToRad(lDeg);
       const b = THREE.MathUtils.degToRad(bDeg);
 
-      // Heliocentric coordinates in Galactic frame
+      // Heliocentric coordinates in the galactic frame.
       const xHelio = rsun_kpc * Math.cos(b) * Math.cos(l);
       const yHelio = rsun_kpc * Math.cos(b) * Math.sin(l);
       const zHelio = rsun_kpc * Math.sin(b);
 
-      // Shift to Galactocentric frame (GC at origin, Sun at +R0)
+      // Shift to the galactocentric frame (GC at origin, Sun at +R0).
       const xGC = (CONFIG.R0_kpc - xHelio) * CONFIG.scaleFactor;
       const yGC = (yHelio) * CONFIG.scaleFactor;
       const zGC = (zHelio) * CONFIG.scaleFactor;
 
-      // Scene mapping: X = x_gc, Y = z_gc, Z = -y_gc
+      // Scene mapping: X = x_gc, Y = z_gc, Z = -y_gc.
       return new THREE.Vector3(xGC, zGC, -yGC);
     }
 
-    // Add this function near your other helper functions
+    // Add this function near your other helper functions.
     function updateScaleBar() {
       const scaleBar = el("scale-bar");
       const scaleLabel = el("scale-label");
 
-      // Get camera distance to Sun (heliocentric distance)
+      // Get camera distance to the Sun (heliocentric distance).
       const cameraDistance = camera.position.distanceTo(sunPos);
 
-      // Calculate appropriate scale based on distance
-      // We'll show different scales based on how far we're zoomed out
+      // Calculate the appropriate scale based on distance.
+      // Show different scales based on how far we are zoomed out.
       let scaleValue, scalePc, barLength;
 
       if (cameraDistance < 300) {
@@ -1419,59 +1419,59 @@
         barLength = 100; // pixels
       }
 
-      // Update scale bar
+      // Update scale bar.
       scaleBar.style.width = `${barLength}px`;
       scaleLabel.textContent = `${scalePc} parsecs`;
 
-      // Also update the label with distance info
-      const labelDist = cameraDistance / CONFIG.scaleFactor; // Convert to kpc
+      // Also update the label with distance info.
+      const labelDist = cameraDistance / CONFIG.scaleFactor; // Convert to kpc.
       scaleLabel.title = `Camera distance: ${labelDist.toFixed(1)} kpc`;
     }
 
-    // Add to your state variables near planeVisible:
+    // Add to your state variables near planeVisible.
     let eclipticVisible = false;
 
-    // Add after the equator creation code:
+    // Add after the equator creation code.
     let ecliptic = null;
     function createEclipticPlane() {
-      // Ecliptic pole coordinates (J2000): RA = 18h 00m, Dec = 66°33'38.6"
-      // Convert to unit vector
+      // Ecliptic pole coordinates (J2000): RA = 18h 00m, Dec = 66 deg 33'38.6".
+      // Convert to a unit vector.
       const eclipticPoleEq = new THREE.Vector3(
         Math.cos(THREE.MathUtils.degToRad(66.560722)) * Math.cos(THREE.MathUtils.degToRad(270.0)),
         Math.cos(THREE.MathUtils.degToRad(66.560722)) * Math.sin(THREE.MathUtils.degToRad(270.0)),
         Math.sin(THREE.MathUtils.degToRad(66.560722))
       );
 
-      // Convert ecliptic pole from equatorial to galactic
+      // Convert the ecliptic pole from equatorial to galactic.
       const eclipticPoleGal = new THREE.Vector3(
         A0G[0][0] * eclipticPoleEq.x + A0G[0][1] * eclipticPoleEq.y + A0G[0][2] * eclipticPoleEq.z,
         A0G[1][0] * eclipticPoleEq.x + A0G[1][1] * eclipticPoleEq.y + A0G[1][2] * eclipticPoleEq.z,
         A0G[2][0] * eclipticPoleEq.x + A0G[2][1] * eclipticPoleEq.y + A0G[2][2] * eclipticPoleEq.z
       ).normalize();
 
-      // Ecliptic plane is perpendicular to the ecliptic pole
+      // Ecliptic plane is perpendicular to the ecliptic pole.
       const eclipticPlane = new THREE.GridHelper(2000, 20, 0xFF6B6B, 0xFF6B6B);
       eclipticPlane.material.transparent = true;
       eclipticPlane.material.opacity = 0.09;
       eclipticPlane.material.depthWrite = false;
 
-      // Rotate to align with ecliptic plane (perpendicular to ecliptic pole)
+      // Rotate to align with the ecliptic plane (perpendicular to the ecliptic pole).
       const quat = new THREE.Quaternion().setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
         eclipticPoleGal
       );
       eclipticPlane.quaternion.copy(quat);
 
-      // Position at the Sun (ecliptic plane goes through Sun)
+      // Position at the Sun (ecliptic plane goes through the Sun).
       eclipticPlane.position.copy(sunPos);
-      eclipticPlane.position.add(new THREE.Vector3(0, 2, 0)); // Slight offset for visibility
+      eclipticPlane.position.add(new THREE.Vector3(0, 2, 0)); // Slight offset for visibility.
 
       ecliptic = eclipticPlane;
       ecliptic.visible = eclipticVisible;
       scene.add(ecliptic);
     }
 
-    // Image URL
+    // Image URL.
     function imageSlugFromToken(clusterToken) {
       const s = String(clusterToken || "").trim();
       const m = s.match(/^NGC_(\d+)$/i);
@@ -1484,7 +1484,7 @@
       return `https://people.smp.uq.edu.au/HolgerBaumgardt/globular/fits/images/${slug}.jpg`;
     }
 
-    // Create sprite textures (exact match to v6)
+    // Create sprite textures, matching v6.
     function makeRadialSpriteTexture({ size = 256, stops }) {
       const c = document.createElement("canvas");
       c.width = c.height = size;
@@ -1548,7 +1548,7 @@
       ]
     });
 
-    // Create Milky Way (exact match to v6)
+    // Create the Milky Way, matching v6.
     function createMilkyWay() {
       const disk = new THREE.BufferGeometry();
       const bulge = new THREE.BufferGeometry();
@@ -1710,7 +1710,7 @@
       scene.add(core);
     }
 
-    // Create Sun
+    // Create Sun.
     const sunPos = new THREE.Vector3(CONFIG.R0_kpc * CONFIG.scaleFactor, 0, 0);
     const sun = new THREE.Sprite(new THREE.SpriteMaterial({
       map: starSprite,
@@ -1724,7 +1724,7 @@
     sun.position.copy(sunPos);
     scene.add(sun);
 
-    // Planes
+    // Planes.
     let planeVisible = false;
     const plane = new THREE.GridHelper(2000, 20, CONFIG.colors.plane, CONFIG.colors.plane);
     plane.material.transparent = true;
@@ -1744,7 +1744,7 @@
     equator.visible = equatorVisible;
     scene.add(equator);
 
-    // Sun line
+    // Sun line.
     let sunLineVisible = true;
     const sunLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({
       color: CONFIG.colors.line,
@@ -1754,20 +1754,20 @@
     sunLine.visible = sunLineVisible;
     scene.add(sunLine);
 
-    // Clusters group
+    // Clusters group.
     const clustersGroup = new THREE.Group();
     const pickTargets = [];
     const pulsarSystems = [];
     const searchIndex = new Map();
 
-    // Compute cluster radii
+    // Compute cluster radii.
     function computeClusterRadii(c) {
       const coreR = Math.max(0.55, pcToScene(c.rc_pc ?? 0) * CONFIG.RADIUS_EXAGGERATION);
       const halfLightR = Math.max(coreR * 1.5, pcToScene(c.rhl_pc ?? 0) * CONFIG.RADIUS_EXAGGERATION);
       return { coreR, halfLightR };
     }
 
-    // Add cluster visual (exact match to v6)
+    // Add cluster visual, matching v6.
     function addClusterVisual(pos, c) {
       const { coreR, halfLightR } = computeClusterRadii(c);
 
@@ -1828,7 +1828,7 @@
       return { coreR };
     }
 
-    // Pulsar functions (exact match to v6)
+    // Pulsar functions, matching v6.
     function omegaDisplayFromPeriodMs(ms, scale = 1.0) {
       if (!ms || !Number.isFinite(ms) || ms <= 0) {
         const rps = 0.3 + Math.random() * 1.4;
@@ -1836,7 +1836,7 @@
       }
       const Ps = ms / 1000;
       let rps = 1 / Math.max(0.001, Ps);
-      // Apply scale factor (p-spin slider value, typically 0.35)
+      // Apply scale factor (p-spin slider value, typically 0.35).
       rps = clamp(rps * scale, 0.10, 8.0);
       return 2 * Math.PI * rps;
     }
@@ -1850,7 +1850,7 @@
       return new THREE.Vector3(r * Math.cos(theta), z, r * Math.sin(theta));
     }
 
-    // Pulsar color function
+    // Pulsar color function.
     function pulsarColor(p) {
       const mode = pulsarStyle.colorBy;
       if (mode === "none") return new THREE.Color("#FF2BD6");
@@ -1864,7 +1864,7 @@
         const t = clamp((dm - 20) / 120, 0, 1);
         return new THREE.Color().lerpColors(new THREE.Color("#00FFE6"), new THREE.Color("#FFAA00"), t);
       }
-      // period
+      // Period.
       const P = Number(p.period_ms);
       if (!Number.isFinite(P)) return new THREE.Color("#A0C4FF");
       const t = clamp((Math.log10(P) - Math.log10(1.5)) / (Math.log10(30) - Math.log10(1.5)), 0, 1);
@@ -1928,16 +1928,16 @@
       const phase0 = Math.random() * Math.PI * 2;
       const omega = omegaDisplayFromPeriodMs(p.period_ms, pulsarStyle.spinScale);
 
-      // Store the period and pulsar data for later updates
+      // Store the period and pulsar data for later updates.
       pulsarSystems.push({
         root, spin, beams: [beam1, beam2], core, omega, phase: phase0,
         periodMs: p.period_ms, // Store the period
-        pulsarData: p // Store the whole pulsar data object
+        pulsarData: p // Store the full pulsar data object
       });
       clustersGroup.add(root);
     }
 
-    // Pulsar key for cluster
+    // Pulsar key for cluster.
     function pulsarKeyForCluster(c) {
       return (c.key || c.id || c.name || "").trim();
     }
@@ -1947,7 +1947,7 @@
       return pulsarByKey[k] || pulsarByKey[k.toUpperCase().replace(/\s+/g, " ").trim()] || [];
     }
 
-    // Filter function
+    // Filter function.
     function passesFilters(c) {
       const name = `${c.id ?? ""} ${c.name ?? ""}`.toLowerCase();
       if (filters.text && !name.includes(filters.text.toLowerCase())) return false;
@@ -1960,7 +1960,7 @@
       return true;
     }
 
-    // Build scene
+    // Build scene.
     function rebuildScene() {
       clustersGroup.clear();
       pickTargets.length = 0;
@@ -1990,7 +1990,7 @@
           addPulsarVisual(pos, coreR * 1.65, psrs[i]);
         }
 
-        // Add to search index
+        // Add to search index.
         const addKey = (s) => {
           const k = String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
           if (k) searchIndex.set(k, c);
@@ -2007,7 +2007,7 @@
       status.textContent = `Loaded: ${clusters.length} clusters | Shown: ${shown} | Click to select, Esc to unpin`;
     }
 
-    // Data loading
+    // Data loading.
     async function fetchJSON(url) {
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -2029,7 +2029,7 @@
         clusters = cjson.clusters || [];
         pulsarByKey = pjson.byKey || pjson.pulsarsByKey || {};
 
-        // Add normalized fallback keys
+        // Add normalized fallback keys.
         const norm = {};
         for (const [k, v] of Object.entries(pulsarByKey)) {
           const nk = String(k).toUpperCase().replace(/\s+/g, " ").trim();
@@ -2037,7 +2037,7 @@
         }
         Object.assign(pulsarByKey, norm);
 
-        // Update provenance
+        // Update provenance.
         const lines = [];
         if (clustersMeta) {
           lines.push(`Clusters: ${clustersMeta.source || "—"}`);
@@ -2051,7 +2051,7 @@
         }
         prov.textContent = lines.join("\n") || "—";
 
-        // Initialize observer time if not set
+        // Initialize observer time if not set.
         if (!observer.timeLocal) {
           const now = new Date();
           const year = now.getFullYear();
@@ -2074,7 +2074,7 @@
       }
     }
 
-    // Panel display
+    // Panel display.
     function showPanel(c, { pin = false } = {}) {
       const psrs = pulsarsForCluster(c);
 
@@ -2101,7 +2101,7 @@
       ui.rt.textContent = c.rt_pc == null ? "—" : `${Number(c.rt_pc).toFixed(2)} pc`;
       ui.mass.textContent = c.mass_msun == null ? "—" : `${(Number(c.mass_msun)).toExponential(2)} M☉`;
 
-      // Update coordinate display based on observer mode
+      // Update coordinate display based on observer mode.
       let coordText = "—";
       let coordTitle = "Alt/Az (observer)";
 
@@ -2113,7 +2113,7 @@
         coordText = `Alt ${aa.altDeg.toFixed(1)}° • Az ${aa.azDeg.toFixed(1)}°`;
         coordTitle = "Alt/Az (observer)";
 
-        // Update LST/HA in drawer
+        // Update LST/HA in the drawer.
         const lst = lstDeg(dateUTC, lon);
         const ha = ((lst - raDeg + 360) % 360);
         const haHours = (ha / 15).toFixed(2);
@@ -2174,7 +2174,7 @@
       panel.setAttribute("aria-hidden", "true");
     }
 
-    // Interaction
+    // Interaction.
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -2189,7 +2189,7 @@
       return hits[0].object.userData;
     }
 
-    // Fly-to animation
+    // Fly-to animation.
     let fly = null;
     function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
@@ -2238,7 +2238,7 @@
       );
     }
 
-    // Compare feature
+    // Compare feature.
     function compareKey(c) { return String(c.id || c.name || "").trim(); }
 
     function rebuildCompareUI() {
@@ -2292,7 +2292,7 @@
       a.remove();
     }
 
-    // Export functions
+    // Export functions.
     function exportFilteredCSV() {
       const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars"]];
       for (const c of clusters) {
@@ -2325,7 +2325,7 @@
       a.remove();
     }
 
-    // URL state management
+    // URL state management.
     let syncTimer = null;
     function syncURLStateDebounced() {
       if (syncTimer) clearTimeout(syncTimer);
@@ -2421,14 +2421,14 @@
       }
     }
 
-    // Overlay visibility
+    // Overlay visibility.
     function applyOverlayVisibility() {
       plane.visible = planeVisible;
       equator.visible = equatorVisible;
       sunLine.visible = sunLineVisible && !!(pinned || hovered);
       if (ecliptic) ecliptic.visible = eclipticVisible;
 
-      // Update pill states
+      // Update pill states.
       ["t-gal", "t-eq", "t-sunline", "t-ecliptic"].forEach(id => {
         const e = el(id);
         if (e) e.classList.remove("active");
@@ -2441,7 +2441,7 @@
       syncURLStateDebounced();
     }
 
-    // Performance settings
+    // Performance settings.
     function applyPerf() {
       const wantLow = perf.quality === "low";
       const pr = wantLow ? 1.0 : Math.min(2, window.devicePixelRatio);
@@ -2449,7 +2449,7 @@
       composer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // Event Listeners
+    // Event listeners.
     el("btn-refresh").addEventListener("click", async () => {
       await loadData({ noCache: true });
     });
@@ -2544,13 +2544,13 @@
     el("cmp-clear").addEventListener("click", () => { compare.clear(); rebuildCompareUI(); syncURLStateDebounced(); });
     el("cmp-export").addEventListener("click", exportCompareCSV);
 
-    // Filters UI
+    // Filters UI.
     el("f-rsun").addEventListener("input", (e) => { filters.rsunMax = Number(e.target.value || 200); rebuildScene(); syncURLStateDebounced(); });
     el("f-psrmin").addEventListener("input", (e) => { filters.psrMin = Number(e.target.value || 0); rebuildScene(); syncURLStateDebounced(); });
     el("f-mass").addEventListener("input", (e) => { filters.massMin = Number(e.target.value || 0); rebuildScene(); syncURLStateDebounced(); });
     el("f-text").addEventListener("input", (e) => { filters.text = String(e.target.value || ""); rebuildScene(); syncURLStateDebounced(); });
 
-    // Observer UI
+    // Observer UI.
     function syncObserverFromUI() {
       observer.lat = Number(el("o-lat").value || 0);
       observer.lon = Number(el("o-lon").value || 0);
@@ -2589,10 +2589,10 @@
       showToast(msg);
     }
 
-    // Pulsar UI
+    // Pulsar UI.
     el("p-color").addEventListener("input", (e) => {
       pulsarStyle.colorBy = e.target.value;
-      // Update colors on existing pulsar visuals instead of adding more
+      // Update colors on existing pulsar visuals instead of adding more.
       for (const ps of pulsarSystems) {
         const col = pulsarColor(ps.pulsarData);
         ps.core.material.color.copy(col);
@@ -2607,20 +2607,20 @@
       const newScale = Number(e.target.value);
       pulsarStyle.spinScale = newScale;
 
-      // Update all pulsarSystems with the new scale
+      // Update all pulsarSystems with the new scale.
       for (const ps of pulsarSystems) {
-        // Recalculate omega using the stored period and new scale
+        // Recalculate omega using the stored period and new scale.
         ps.omega = omegaDisplayFromPeriodMs(ps.periodMs, newScale);
       }
 
       syncURLStateDebounced();
     });
 
-    // Perf UI
+    // Performance UI.
     el("perf-quality").addEventListener("input", (e) => { perf.quality = e.target.value; applyPerf(); syncURLStateDebounced(); });
     el("perf-fps").addEventListener("input", (e) => { perf.showFps = (e.target.value === "on"); syncURLStateDebounced(); });
 
-    // Search
+    // Search.
     search.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       const q = String(search.value || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
@@ -2639,7 +2639,7 @@
       syncURLStateDebounced();
     });
 
-    // Mouse interaction
+    // Mouse interaction.
     renderer.domElement.addEventListener("mousemove", (e) => {
       if (pinned) return;
       const c = pickCluster(e);
@@ -2666,7 +2666,7 @@
       syncURLStateDebounced();
     });
 
-    // Close panel
+    // Close panel.
     el("close").addEventListener("click", () => {
       pinned = null;
       hovered = null;
@@ -2677,7 +2677,7 @@
       syncURLStateDebounced();
     });
 
-    // Escape key
+    // Escape key.
     window.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
       if (panel.classList.contains("visible")) {
@@ -2699,14 +2699,14 @@
       syncURLStateDebounced();
     });
 
-    // Initialize
+    // Initialize.
     createMilkyWay();
     createGalacticCenter();
     createEclipticPlane();
 
-    // Apply URL state first, then load data
+    // Apply URL state first, then load data.
     applyStateFromURL();
-    // Sync UI controls with restored state
+    // Sync UI controls with restored state.
     el("p-color").value = pulsarStyle.colorBy;
     el("p-spin").value = String(pulsarStyle.spinScale);
     updatePulsarColorLegend();
@@ -2714,7 +2714,7 @@
       applyPendingCompare();
     });
 
-    // Animation loop
+    // Animation loop.
     const clock = new THREE.Clock();
     let fpsLast = performance.now();
     let fpsFrames = 0;
@@ -2726,7 +2726,7 @@
       controls.update();
       updateScaleBar();
 
-      // Fly-to animation
+      // Fly-to animation.
       if (fly) {
         const t = clamp((performance.now() - fly.t0) / fly.ms, 0, 1);
         const e = easeInOut(t);
@@ -2736,7 +2736,7 @@
         if (t >= 1) fly = null;
       }
 
-      // Pulsar rotation
+      // Pulsar rotation.
       for (const p of pulsarSystems) {
         p.phase += dt * p.omega;
         p.spin.rotation.y = p.phase;
@@ -2745,7 +2745,7 @@
         p.beams[1].material.opacity = pulse;
       }
 
-      // FPS counter
+      // FPS counter.
       fpsFrames++;
       const tnow = performance.now();
       if (tnow - fpsLast > 500) {
@@ -2762,7 +2762,7 @@
     }
     animate();
 
-    // Resize handler
+    // Resize handler.
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -2771,7 +2771,7 @@
       applyPerf();
     });
 
-    // Initial status
+    // Initial status.
     status.textContent = "Ready. Hover over clusters to preview, click to select. Use ASTRONOMER panel for advanced tools.";
   </script>
 </body>

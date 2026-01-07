@@ -36,7 +36,7 @@ async function existsFile(p) {
 }
 
 /**
- * User may pass:
+ * pass:
  * - repo root
  * - apps/
  * - apps/discoveries/
@@ -46,7 +46,7 @@ async function existsFile(p) {
 async function findYamlDir(trapumHintAbs) {
     const candidates = [];
 
-    // search upward a bit (hint, parent, grandparent)
+    // Search upward a bit (hint, parent, grandparent).
     let cur = trapumHintAbs;
     for (let up = 0; up < 4; up++) {
         candidates.push(path.join(cur, "apps/discoveries/pulsars"));
@@ -55,14 +55,14 @@ async function findYamlDir(trapumHintAbs) {
         cur = path.dirname(cur);
     }
 
-    // and a couple of downward-ish options
+    // Also check a couple of downward options.
     candidates.push(path.join(trapumHintAbs, "apps", "discoveries", "pulsars"));
 
     for (const c of candidates) {
         if (await existsDir(c)) return c;
     }
 
-    // last resort: fast-glob search (bounded depth)
+    // Last resort: fast-glob search (bounded depth).
     const hits = await fg(["**/apps/discoveries/pulsars"], {
         cwd: trapumHintAbs,
         onlyDirectories: true,
@@ -81,7 +81,7 @@ function safeBasename(p) {
 
 function toISODate(s) {
     if (!s) return "";
-    // keep as-is if already "YYYY-MM-DD"
+    // Keep as-is if already YYYY-MM-DD.
     return String(s).trim();
 }
 
@@ -131,10 +131,10 @@ async function main() {
         );
     }
 
-    // The repo "root" is 3 levels up from .../apps/discoveries/pulsars
+    // The repo root is 3 levels up from .../apps/discoveries/pulsars.
     const trapumRoot = path.resolve(yamlDir, "../../..");
 
-    // Index all discovery plot PNGs once (anywhere in the repo)
+    // Index all discovery plot PNGs once (anywhere in the repo).
     const pngs = await fg(["**/*_discovery_plot.png"], {
         cwd: trapumRoot,
         onlyFiles: true,
@@ -142,7 +142,7 @@ async function main() {
         dot: false,
     });
 
-    const pngIndex = new Map(); // basename -> absolute path
+    const pngIndex = new Map(); // basename to absolute path
     for (const p of pngs) {
         pngIndex.set(path.basename(p), p);
     }
@@ -180,9 +180,9 @@ async function main() {
 
             await copyFileIfNeeded(srcPng, dstPng);
 
-            // This assumes outImages is inside Vite "public/"
-            // If you keep using: ./public/trapum/discoveries
-            // then the URL becomes: /trapum/discoveries/<file>
+            // This assumes outImages is inside Vite public/.
+            // If you keep using ./public/trapum/discoveries,
+            // then the URL becomes /trapum/discoveries/<file>.
             const relFromPublic = outImagesAbs.split(path.sep + "public" + path.sep)[1];
             plotUrl = relFromPublic ? `/${relFromPublic.replaceAll(path.sep, "/")}/${plotBase}` : `/${plotBase}`;
         } else if (plotBase) {
@@ -193,7 +193,7 @@ async function main() {
             slug,
             name: psr.name || slug,
             dm: psr.dm ?? null,
-            period_ms: psr.period ?? null, // note: TRAPUM YAML looks like ms already
+            period_ms: psr.period ?? null, // TRAPUM YAML looks like ms already
             binary: !!psr.binary,
 
             associations: assoc.map((a) => ({ name: a?.name || "", type: a?.type || "" })).filter((a) => a.name),
@@ -212,7 +212,7 @@ async function main() {
         });
     }
 
-    // Sort newest first if dates exist
+    // Sort newest first if dates exist.
     docs.sort((a, b) => (a.discovery.discovery_date < b.discovery.discovery_date ? 1 : a.discovery.discovery_date > b.discovery.discovery_date ? -1 : 0));
 
     await mkdirp(path.dirname(path.resolve(process.cwd(), outJson)));

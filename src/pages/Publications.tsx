@@ -79,7 +79,7 @@ function PubRow({ theme, p }: { theme: Theme; p: PublicationItem }) {
 export function Publications({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
 
-  // Put your IDs here (or read from env/config)
+  // Put your IDs here, or read them from env or config.
   const ORCID_ID = "0000-0003-2444-838X";
   const SCHOLAR_URL = "https://scholar.google.com/citations?user=XXXX";
 
@@ -90,7 +90,7 @@ export function Publications({ theme }: { theme: Theme }) {
 
   const selected = useMemo<PublicationItem[]>(
     () => [
-      // replace with real selections
+      // Replace with real selections.
       { id: "sel-1", title: "Improving DM estimates using low-frequency scatter-broadening estimates", year: 2024, venue: "MNRAS", type: "journal", source: "manual", url: "https://academic.oup.com/mnras/article/535/1/1184/7831684" },
       { id: "sel-2", title: "The second data release from the European Pulsar Timing Array - III. Search for gravitational wave signals", year: 2023, venue: "A&A", type: "journal", source: "manual", url: "https://inspirehep.net/literature/2672722" },
     ],
@@ -218,7 +218,7 @@ export function Publications({ theme }: { theme: Theme }) {
             </div>
           </div>
 
-          {/* Full list */}
+          {/* Full list section */}
           <div className="mt-6">
             <div className={cn("text-xs font-semibold tracking-[0.32em] uppercase px-4", isDark ? "text-white/60" : "text-black/55")}>
               Full list of Publications.
@@ -240,7 +240,7 @@ export function Publications({ theme }: { theme: Theme }) {
           </div>
 
 
-          {/* Selected + Talks + Search bar (top, as requested) */}
+          {/* Selected, talks, and search bar block */}
           <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <div className="lg:col-span-6">
               <Card theme={theme} title="Selected publications">

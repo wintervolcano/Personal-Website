@@ -70,7 +70,7 @@ function slugFromPath(path: string) {
   return name.replace(/\.md$/i, "");
 }
 
-// Vite v7 glob (raw import) ✅
+// Vite v7 glob for raw markdown imports.
 const BLOG_MODULES = import.meta.glob<string>("../content/blog/*.md", {
   query: "?raw",
   import: "default",

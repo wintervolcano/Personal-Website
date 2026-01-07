@@ -4,8 +4,8 @@ export type DetectionSnapshot = {
 };
 
 // Record a detection for a given pulsar ID.
-// Returns the global count (1 = first person, 2 = second, …),
-// or null if the backend isn't available.
+// Returns the global count (1 = first person, 2 = second, ...),
+// or null if the backend is not available.
 export async function recordDetection(id: string, page?: string): Promise<number | null> {
   try {
     const params = new URLSearchParams({ id });

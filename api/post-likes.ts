@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 
 // GET /api/post-likes?ids=id1,id2,...
-// Returns: [{ id, likes, likedByMe }]
+// Returns [{ id, likes, likedByMe }].
 export default async function handler(req: any, res: any) {
     if (req.method !== "GET") {
         res.status(405).json({ error: "Method not allowed" });
@@ -36,4 +36,3 @@ export default async function handler(req: any, res: any) {
 
     res.status(200).json(payload);
 }
-

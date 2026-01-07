@@ -1,4 +1,4 @@
-// src/components/SearchOverlay.tsx
+// Search overlay UI and logic.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { type Pulsar } from "../lib/pulsars";
@@ -22,7 +22,7 @@ function gauss(x: number, mu: number, sigma: number) {
   return Math.exp(-0.5 * z * z);
 }
 function hashToUint32(s: string) {
-  // FNV-1a 32-bit
+  // FNV-1a hash, 32-bit.
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -89,8 +89,8 @@ type ScanState = {
 
 type HotspotInfo = {
   pulsar: Pulsar;
-  hx: number; // inside-tile [0..1]
-  hy: number; // inside-tile [0..1]
+  hx: number; // inside tile [0..1]
+  hy: number; // inside tile [0..1]
 };
 
 type Stats = {
@@ -107,7 +107,7 @@ function difficultyKnobs(p: Pulsar) {
   const base = (p as any).difficulty as "easy" | "medium" | "hard" | undefined;
   const d = base || "medium";
   // Hard pulsars have slightly weaker, narrower peaks and more decoys,
-  // which effectively increases "noise" relative to the signal.
+  // which increases noise relative to the signal.
   const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.2 : 0.70;
   const decoys = d === "easy" ? 1 : d === "medium" ? 3 : 7;
   const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.008;
@@ -145,9 +145,9 @@ function shuffleDeterministic<T>(arr: T[], seed: number): T[] {
   return a;
 }
 
-// ---- Layout-safe region (keeps hotspots away from top nav + bottom overlay) ----
-const SAFE_TOP_PX = 96;   // approximate navbar height
-const SAFE_BOTTOM_PX = 220; // approx overlay + footer area
+// Layout-safe region to keep hotspots away from the top nav and bottom overlay.
+const SAFE_TOP_PX = 96; // approximate navbar height
+const SAFE_BOTTOM_PX = 220; // approx overlay and footer area
 
 export function SearchOverlay({
   theme,
@@ -161,8 +161,8 @@ export function SearchOverlay({
   onSolved: (p: Pulsar, rank: number, stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }) => void;
   onOpenDetection: (p: Pulsar, rank: number) => void;
   /**
-   * Pass ALL discoverable pages here (including blog/research slugs).
-   * When you add/remove pages, pulsars are automatically redistributed
+   * Pass all discoverable pages here (including blog and research slugs).
+   * When you add or remove pages, pulsars are redistributed automatically
    * with no manual salt changes.
    */
   sitePageKeys?: string[];
@@ -174,7 +174,7 @@ export function SearchOverlay({
   const fftRef = useRef<HTMLCanvasElement | null>(null);
 
   const GRID_X = 8;
-  // Many vertical bands so pulsars are not confined to a handful of horizontal stripes.
+  // Use many vertical bands so pulsars are not confined to a few horizontal stripes.
   const GRID_Y = 24;
   const CELL_COUNT = GRID_X * GRID_Y;
 
@@ -187,7 +187,7 @@ export function SearchOverlay({
     return idxs.length ? idxs : Array.from({ length: CELL_COUNT }, (_, i) => i);
   });
 
-  // Keep pulsars away from interactive elements (links, buttons, etc.)
+  // Keep pulsars away from interactive elements (links, buttons, etc.).
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
@@ -276,9 +276,9 @@ export function SearchOverlay({
   const [status, setStatus] = useState<"idle" | "locked" | "miss" | "hit">("idle");
   const [pausedInteractive, setPausedInteractive] = useState(false);
 
-  // Freeze buffers after capture
+  // Freeze buffers after capture.
   const lockedSeedRef = useRef<number | null>(null);
-  const lockedPulsarRef = useRef<Pulsar | null>(null); // null = noise capture
+  const lockedPulsarRef = useRef<Pulsar | null>(null); // null means noise capture
   const frozenTSRef = useRef<number[] | null>(null);
   const frozenFFTRef = useRef<number[] | null>(null);
 
@@ -286,10 +286,10 @@ export function SearchOverlay({
   const pausedInteractiveRef = useRef(false);
   const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Toast on miss
+  // Toast on miss.
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
 
-  // Logbook drawer
+  // Logbook drawer.
   const [logOpen, setLogOpen] = useState(false);
 
   const showMissToast = () => {
@@ -310,7 +310,7 @@ export function SearchOverlay({
     }, 5000);
   };
 
-  // -------- Session discovery tracking --------
+  // Session discovery tracking.
   const [logbook, setLogbook] = useState<LogEntry[]>(() => {
     try {
       const raw = typeof window !== "undefined" ? window.localStorage.getItem(LOGBOOK_KEY) : null;
@@ -373,27 +373,27 @@ export function SearchOverlay({
     return m;
   }, [ALL_PULSARS]);
 
-  // ---- Page list + automatic redistribution salt ----
+  // Page list and automatic redistribution salt.
   const allPages = useMemo(() => {
     const base = (sitePageKeys && sitePageKeys.length ? sitePageKeys : [pageKey]).filter(Boolean);
     const set = new Set<string>(base);
     set.add(pageKey);
-    return Array.from(set).sort(); // stable order
+    return Array.from(set).sort(); // stable order.
   }, [sitePageKeys, pageKey]);
 
   const autoSaltSeed = useMemo(() => {
     const pageStr = allPages.join("|");
-    // include pulsar IDs so adding pulsars also redistributes.
+    // Include pulsar IDs so adding pulsars redistributes as well.
     const idStr = ALL_PULSARS.map((p) => (p as any).id as string).join("|");
     return hashToUint32(`fk:autoSalt:${pageStr}::${idStr}`);
   }, [allPages, ALL_PULSARS]);
 
-  // ---- Equal distribution: assign pulsar IDs across all pages ----
+  // Equal distribution: assign pulsar IDs across all pages.
   const pageAssignments = useMemo(() => {
     const pages = allPages;
     const ids = ALL_PULSARS.map((p) => (p as any).id as string);
 
-    // shuffle deterministically based on current site composition
+    // Shuffle deterministically based on current site composition.
     const shuffled = shuffleDeterministic(ids, hashToUint32(`fk:assign:${autoSaltSeed}`));
 
     const m = new Map<string, string[]>();
@@ -410,7 +410,7 @@ export function SearchOverlay({
         idx += n;
       }
     } else {
-      // fewer pulsars than pages: at least one per page (repeats unavoidable)
+      // Fewer pulsars than pages: at least one per page (repeats unavoidable).
       for (let i = 0; i < pages.length; i++) {
         m.set(pages[i], [shuffled[i % Math.max(1, shuffled.length)]]);
       }
@@ -420,7 +420,7 @@ export function SearchOverlay({
 
   const assignedIdsForPage = useMemo(() => pageAssignments.get(pageKey) ?? [], [pageAssignments, pageKey]);
 
-  // ---- Site-wide embedded IDs (for session found/left) ----
+  // Site-wide embedded IDs for session found and left.
   const siteEmbeddedIds = useMemo(() => {
     const ids = new Set<string>();
     const cap = Math.min(CELL_COUNT, allowedCellIndices.length);
@@ -440,7 +440,7 @@ export function SearchOverlay({
   const sessionLeft = Math.max(0, siteEmbeddedIds.size - sessionFound);
   const pulsarsOnThisPage = assignedIdsForPage.length;
 
-  // Stats (simulated)
+  // Stats (simulated).
   const statsRef = useRef<Stats>({
     wallSec: 0,
     dataTB: 0,
@@ -459,7 +459,7 @@ export function SearchOverlay({
       const v = Number(window.localStorage.getItem(k) || "0");
       window.localStorage.setItem(k, String(v + 1));
     } catch {
-      // ignore
+      // Ignore storage errors.
     }
 
     setSessionIds((prev) => {
@@ -469,7 +469,7 @@ export function SearchOverlay({
       try {
         window.localStorage.setItem(SESSION_KEY, JSON.stringify(arr));
       } catch {
-        // ignore
+        // Ignore storage errors.
       }
       return arr;
     });
@@ -487,19 +487,19 @@ export function SearchOverlay({
     dirtyRef.current = true;
   };
 
-  // Reset when leaving search mode
+  // Reset when leaving Search Mode.
   useEffect(() => {
     if (!isActive) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  // Reset when pageKey changes
+  // Reset when pageKey changes.
   useEffect(() => {
     reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
-  // Reset when DiscoveryModal requests capture reset
+  // Reset when DiscoveryModal requests a capture reset.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => reset();
@@ -508,7 +508,7 @@ export function SearchOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ESC reset + L logbook
+  // Esc reset and L logbook.
   useEffect(() => {
     if (!isActive) return;
     const onKey = (e: KeyboardEvent) => {
@@ -537,7 +537,7 @@ export function SearchOverlay({
     const bottom = SAFE_BOTTOM_PX;
     const effH = Math.max(1, docH - top - bottom);
 
-    // Normalized coordinates across the whole document, excluding top/bottom safety bands.
+    // Normalized coordinates across the whole document, excluding top and bottom safety bands.
     const cx = clamp01(mx / w);
     const cy = clamp01((scrollY + my - top) / effH);
 
@@ -548,7 +548,7 @@ export function SearchOverlay({
     return { cellX, cellY, cellIndex };
   };
 
-  // ---- Hotspot map (one pulsar per chosen cell) ----
+  // Hotspot map (one pulsar per chosen cell).
   const hotspotMap = useMemo(() => {
     const ids = assignedIdsForPage;
     if (!ids.length) return new Map<number, HotspotInfo>();
@@ -579,7 +579,7 @@ export function SearchOverlay({
     return map;
   }, [assignedIdsForPage, allowedCellIndices, autoSaltSeed, pageKey, CELL_COUNT, pulsarById]);
 
-  // Mouse move updates scan state
+  // Mouse move updates scan state.
   useEffect(() => {
     if (!isActive) return;
     const onMove = (e: MouseEvent) => {
@@ -619,7 +619,7 @@ export function SearchOverlay({
     return () => window.removeEventListener("mousemove", onMove as any);
   }, [isActive, locked]);
 
-  // Click anywhere to CAPTURE (except UI)
+  // Click anywhere to capture (except UI).
   useEffect(() => {
     if (!isActive) return;
 
@@ -642,17 +642,17 @@ export function SearchOverlay({
       const { cellX, cellY, cellIndex } = computeCellFromXY(mx, my);
 
       const s0 = scanRef.current;
-      // Keep the nonce stable on capture so the FFT you're seeing doesn't "jump" at
-      // the moment you click.
+      // Keep the nonce stable on capture so the FFT you see does not jump
+      // at the moment you click.
       const nonce = s0.nonce;
       scanRef.current = { mouseX: mx, mouseY: my, cellX, cellY, cellIndex, nonce };
 
       const hot = hotspotMap.get(cellIndex);
       lockedPulsarRef.current = hot ? hot.pulsar : null;
 
-      // IMPORTANT: lock seed is stable for the captured position (prevents FFT jump)
-      // IMPORTANT: use the SAME seed format as the live renderer (`fk:LIVE...`) so the
-      // captured spectrum matches what you saw immediately before capture.
+      // Lock seed is stable for the captured position (prevents FFT jump).
+      // Use the same seed format as the live renderer (`fk:LIVE...`) so the
+      // captured spectrum matches what you saw right before capture.
       lockedSeedRef.current = hashToUint32(
         `fk:LIVE:${pageKey}:${autoSaltSeed}:${cellIndex}:${nonce}:${Math.floor(mx)}:${Math.floor(my)}`
       );
@@ -670,7 +670,7 @@ export function SearchOverlay({
     return () => window.removeEventListener("click", onClickCapture, true);
   }, [isActive, locked, pageKey, autoSaltSeed, hotspotMap]);
 
-  // Proximity to hotspot inside current tile
+  // Proximity to hotspot inside the current tile.
   const computeProximity = (s: ScanState) => {
     const hot = hotspotMap.get(s.cellIndex);
     if (!hot) return 0;
@@ -695,7 +695,7 @@ export function SearchOverlay({
     return Math.exp(-(dist * dist) / (sigma * sigma));
   };
 
-  // Build time series + FFT for a scan snapshot
+  // Build time series and FFT for a scan snapshot.
   const buildSignal = (s: ScanState, frozenSeed: number | null) => {
     const hot = hotspotMap.get(s.cellIndex);
     const targetPulsar = hot ? hot.pulsar : null;
@@ -709,7 +709,7 @@ export function SearchOverlay({
 
     const rng = mulberry32(baseSeed);
 
-    // ---- TIME SERIES: AR-ish noise + spikes + bursts (no obvious sinusoid) ----
+    // Time series: AR-ish noise plus spikes and bursts, no obvious sinusoid.
     let ts = locked ? frozenTSRef.current : null;
     if (!ts) {
       const N = 720;
@@ -747,7 +747,7 @@ export function SearchOverlay({
       if (locked) frozenTSRef.current = vals;
     }
 
-    // ---- FFT: noise + decoys always; real peak only near hotspot ----
+    // FFT: noise and decoys always, real peak only near the hotspot.
     let fft = locked ? frozenFFTRef.current : null;
     if (!fft) {
       const bins = 900;
@@ -776,7 +776,7 @@ export function SearchOverlay({
         decoyPeaks.push(p);
       }
 
-      // Deterministic drift: stable for a given cursor/capture seed (prevents spectrum 'jumping')
+      // Deterministic drift, stable for a given cursor or capture seed (prevents spectrum jumping).
       const ampDrift = 0.92 + 0.08 * Math.sin(((baseSeed % 10000) / 10000) * 2 * Math.PI);
       const baseRipple = 0.020 + 0.028 * (s.mouseX / (window.innerWidth || 1));
 
@@ -814,15 +814,15 @@ export function SearchOverlay({
     return { ts, fft, targetPulsar, proximity, targetVisible };
   };
 
-  // Stats ticking (simulated)
+  // Stats ticking (simulated).
   const tickStats = (now: number) => {
     const last = lastTickRef.current || now;
-    // Convert ms → seconds and clamp so we don't jump on tab-resume.
+    // Convert ms to seconds and clamp so we do not jump on tab resume.
     const dt = Math.max(0, Math.min(0.25, (now - last) / 1000));
     lastTickRef.current = now;
     if (!isActive) return;
 
-    // Only advance stats when the mouse has moved (i.e. user is actively exploring).
+    // Only advance stats when the mouse has moved (user is actively exploring).
     const scan = scanRef.current;
     if (!scan) return;
     const lastMouse = lastMouseRef.current;
@@ -843,7 +843,7 @@ export function SearchOverlay({
     setStatsUi({ ...s });
   };
 
-  // Draw loop
+  // Draw loop.
   useEffect(() => {
     if (!isActive) return;
 
@@ -882,8 +882,8 @@ export function SearchOverlay({
       const now = performance.now();
       tickStats(now);
 
-       // If the cursor is over an interactive/clickable element, freeze the live view
-       // (unless we're in a locked/captured state).
+       // If the cursor is over an interactive element, freeze the live view
+       // unless we are in a locked or captured state.
        if (pausedInteractiveRef.current && !locked) {
         return;
       }
@@ -906,7 +906,7 @@ export function SearchOverlay({
       const seed = locked ? (lockedSeedRef.current ?? null) : null;
       const sig = buildSignal(s, seed);
 
-      // TIME SERIES
+      // Time series.
       {
         const vals = sig.ts;
         let vmin = Infinity, vmax = -Infinity;
@@ -956,7 +956,7 @@ export function SearchOverlay({
         tsCtx.restore();
       }
 
-      // FFT
+      // FFT.
       {
         const vals = sig.fft;
 
@@ -1027,7 +1027,7 @@ export function SearchOverlay({
   const attemptFromFFTClick = async (e: React.MouseEvent) => {
     if (!isActive) return;
     if (!locked) {
-      // Helpful miss note if the user clicks FFT before capturing
+      // Helpful miss note if the user clicks FFT before capturing.
       const id = Date.now();
       setToast({ id, msg: "Capture first: click the sky (background), then click an FFT peak." });
       window.setTimeout(() => {
@@ -1058,9 +1058,9 @@ export function SearchOverlay({
       setStatus("hit");
       const id = (pulsar as any).id as string;
 
-       // If this pulsar was already discovered in this session,
-       // don't increment global or session counters again.
-       const alreadyFound = sessionSet.has(id);
+      // If this pulsar was already discovered in this session, do not increment
+      // global or session counters again.
+      const alreadyFound = sessionSet.has(id);
 
       if (alreadyFound) {
         const existing = logbook.find((e) => e.id === id);
@@ -1079,13 +1079,13 @@ export function SearchOverlay({
         return;
       }
 
-      // Global rank via KV (fallback to local session counter on failure)
+      // Global rank via KV, fallback to local session counter on failure.
       let rank = 1;
       const remoteRank = await recordDetection(id, pageKey);
       if (remoteRank != null && Number.isFinite(remoteRank)) {
         rank = remoteRank;
       } else {
-        // fallback: approximate rank from localStorage
+        // Fallback: approximate rank from localStorage.
         try {
           const k = `fk_discovery_count:${id}`;
           const v = Number(window.localStorage.getItem(k) || "0");
@@ -1097,11 +1097,11 @@ export function SearchOverlay({
 
       commitDiscovery(id);
 
-      // keep one entry per pulsar in this session (prevents duplicate spam)
+      // Keep one entry per pulsar in this session (prevents duplicate spam).
       setLogbook((prev) => {
         if (prev.some((x) => x && x.id === id)) return prev;
         const next: LogEntry[] = [{ id, rank, ts: Date.now() }, ...prev];
-        try { sessionStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        try { sessionStorage.setItem(LOGBOOK_KEY, JSON.stringify(next)); } catch { /* ignore storage errors */ }
         return next;
       });
 
@@ -1133,7 +1133,7 @@ export function SearchOverlay({
 
   return (
     <>
-      {/* Global toast, rendered above modal / overlay */}
+      {/* Global toast, rendered above the modal and overlay */}
       <AnimatePresence>
         {toast ? (
           <motion.div
@@ -1151,7 +1151,7 @@ export function SearchOverlay({
         ) : null}
       </AnimatePresence>
 
-      {/* Instrument strip (below DiscoveryModal) */}
+      {/* Instrument strip below DiscoveryModal */}
       <div className="pointer-events-none fixed inset-0 z-[60]">
         <div className="pointer-events-none absolute inset-x-0 bottom-0" data-ui="search-overlay">
         <div className="mx-auto max-w-[1800px] px-4 sm:px-8 pb-5">
@@ -1162,7 +1162,7 @@ export function SearchOverlay({
             className="rounded-3xl border bg-black/90 backdrop-blur-xl border-white/14 overflow-hidden"
           >
             <div className="grid grid-cols-12 gap-3 p-3 sm:p-4">
-              {/* Time series */}
+              {/* Time series panel */}
               <div className="col-span-12 md:col-span-3">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas ref={tsRef} className="h-[140px] w-full" data-nolock />
@@ -1172,7 +1172,7 @@ export function SearchOverlay({
                 </div>
               </div>
 
-              {/* FFT */}
+              {/* FFT panel */}
               <div className="col-span-12 md:col-span-6">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas
@@ -1187,7 +1187,7 @@ export function SearchOverlay({
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Stats panel */}
               <div className="col-span-12 md:col-span-3">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <div className="mt-1 grid grid-cols-2 gap-3 text-xs px-3">

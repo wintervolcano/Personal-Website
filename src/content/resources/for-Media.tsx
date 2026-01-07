@@ -50,7 +50,7 @@ export function ForMedia({ theme }: { theme: Theme }) {
 
   return (
     <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
-      {/* Header */}
+      {/* Header area */}
       <section className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pt-8 pb-12 sm:pt-10 sm:pb-14">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
@@ -112,7 +112,7 @@ export function ForMedia({ theme }: { theme: Theme }) {
         </div>
       </section>
 
-      {/* Content: structured rows for media */}
+      {/* Content rows for media */}
       <section className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pb-16">
           <div

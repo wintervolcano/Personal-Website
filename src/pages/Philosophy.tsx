@@ -143,7 +143,7 @@ export function Philosophy({ theme }: { theme: Theme }) {
 
     return (
         <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
-            {/* Top header strip */}
+            {/* Top header strip area */}
             <section className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pt-8 pb-12 sm:pt-10 sm:pb-14">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end items-stretch">
@@ -788,7 +788,7 @@ export function Philosophy({ theme }: { theme: Theme }) {
                 </div>
             </Section>
 
-            {/* Footer-ish spacer */}
+            {/* Footer spacer */}
             <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pb-16">
                     <div className={cn("text-xs", isDark ? "text-white/55" : "text-black/55")}>

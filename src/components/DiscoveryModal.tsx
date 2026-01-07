@@ -28,7 +28,7 @@ export function DiscoveryModal({
     try {
       window.dispatchEvent(new Event("fk-reset-capture"));
     } catch {
-      // ignore
+      // Ignore errors.
     }
   };
 
@@ -54,9 +54,7 @@ export function DiscoveryModal({
   const primaryAssoc = trapum?.associations && trapum.associations[0];
   const difficulty = (pulsar as any).difficulty as "easy" | "medium" | "hard" | undefined;
 
-  /* ----------------------------- */
-  /* Canvas helpers + download     */
-  /* ----------------------------- */
+  /* Canvas helpers and download */
 
   const handleDownloadDiscoveryCard = async () => {
     if (typeof window === "undefined") return;
@@ -86,9 +84,7 @@ export function DiscoveryModal({
     }
   };
 
-  /* ----------------------------- */
-  /* modal key handling            */
-  /* ----------------------------- */
+  /* Modal key handling */
 
   useEffect(() => {
     if (!open) return;
@@ -426,7 +422,7 @@ export function DiscoveryModal({
           ) : null}
         </AnimatePresence>
 
-        {/* Off-screen export-only card: simplified but matching layout */}
+        {/* Off-screen export-only card, simplified but matching the layout */}
         <div
           ref={downloadCardRef}
           style={{
@@ -515,7 +511,7 @@ export function DiscoveryModal({
               gap: "24px",
             }}
           >
-            {/* Left side: pulsar panel + metadata */}
+            {/* Left side: pulsar panel and metadata */}
             <div>
               <div
                 style={{
@@ -545,7 +541,7 @@ export function DiscoveryModal({
                   Pulsar (parameterized)
                 </div>
 
-                    {/* Static pulsar glyph for export card */}
+                    {/* Static pulsar glyph for the export card */}
                 <div
                   style={{
                     position: "absolute",
@@ -563,7 +559,7 @@ export function DiscoveryModal({
                       height: "170px",
                     }}
                   >
-                    {/* Beam towards top-right */}
+                    {/* Beam toward top right */}
                     <div
                       style={{
                         position: "absolute",
@@ -580,7 +576,7 @@ export function DiscoveryModal({
                         opacity: 0.95,
                       }}
                     />
-                    {/* Inner core on top-right beam */}
+                    {/* Inner core on top right beam */}
                     <div
                       style={{
                         position: "absolute",
@@ -596,7 +592,7 @@ export function DiscoveryModal({
                         opacity: 0.95,
                       }}
                     />
-                    {/* Beam towards bottom-left */}
+                    {/* Beam toward bottom left */}
                     <div
                       style={{
                         position: "absolute",
@@ -613,7 +609,7 @@ export function DiscoveryModal({
                         opacity: 0.9,
                       }}
                     />
-                    {/* Inner core on bottom-left beam */}
+                    {/* Inner core on bottom left beam */}
                     <div
                       style={{
                         position: "absolute",

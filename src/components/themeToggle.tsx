@@ -55,8 +55,8 @@ export function ThemeToggle({
           transition={{ type: "spring", stiffness: 600, damping: 40 }}
           className={cn(
             "absolute top-0.5 h-6 w-6 rounded-full flex items-center justify-center shadow-sm",
-            // In light / Browse mode the knob is black on the left.
-            // In dark / Search mode the knob is white on the right.
+            // In light or Browse mode, the knob is black on the left.
+            // In dark or Search mode, the knob is white on the right.
             isDark ? "left-[calc(100%-1.625rem)] bg-white text-black" : "left-0.5 bg-black text-white"
           )}
         >

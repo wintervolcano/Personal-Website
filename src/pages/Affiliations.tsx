@@ -1,4 +1,4 @@
-// src/pages/Affiliations.tsx
+// Affiliations page.
 import React from "react";
 import { SectionShell } from "./SectionShell";
 import type { Theme } from "../components/themeToggle";
@@ -25,7 +25,7 @@ const EDUCATION: TimelineNode[] = [
             },
         ],
     },
-    // Add / edit your earlier degrees here:
+    // Add or edit your earlier degrees here.
     {
         id: "degree-1",
         period: "YYYY — YYYY",

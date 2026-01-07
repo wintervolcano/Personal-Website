@@ -7,13 +7,13 @@ export type Pulsar = {
   fold_png_url?: string;
 };
 
-// NOTE:
-// - This list contains ONLY real pulsar-style designations (no "DEMO", no synthetic IDs).
-// - f0_hz and period_ms are kept approximately consistent (f0 ≈ 1000 / period_ms).
+// Notes:
+// - This list contains only real pulsar-style designations (no "DEMO" or synthetic IDs).
+// - f0_hz and period_ms stay roughly consistent (f0 ~ 1000 / period_ms).
 // - difficulty is for gameplay tuning, not scientific classification.
 
 export const PULSARS: Pulsar[] = [
-  // --- Your existing set (unchanged) ---
+  // Existing set (unchanged).
   { id: "J0030+0451", name: "PSR J0030+0451", f0_hz: 205.6, period_ms: 4.86, difficulty: "easy" },
   { id: "J0108-1431", name: "PSR J0108−1431", f0_hz: 1.24, period_ms: 806.5, difficulty: "medium" },
   { id: "J0218+4232", name: "PSR J0218+4232", f0_hz: 430.2, period_ms: 2.32, difficulty: "hard" },
@@ -70,7 +70,7 @@ export const PULSARS: Pulsar[] = [
   { id: "J2222-0137", name: "PSR J2222−0137", f0_hz: 30.3, period_ms: 33.0, difficulty: "medium" },
   { id: "J2317+1439", name: "PSR J2317+1439", f0_hz: 290.0, period_ms: 3.45, difficulty: "medium" },
 
-  // --- Added real pulsars to bring the total to 100+ ---
+  // Added real pulsars to bring the total to 100+.
   { id: "J0007+7303", name: "PSR J0007+7303", f0_hz: 3.17, period_ms: 315.9, difficulty: "easy" },
   { id: "J0023+0923", name: "PSR J0023+0923", f0_hz: 327.0, period_ms: 3.06, difficulty: "hard" },
   { id: "J0034-0534", name: "PSR J0034−0534", f0_hz: 532.7, period_ms: 1.88, difficulty: "hard" },
@@ -130,7 +130,7 @@ export const PULSARS: Pulsar[] = [
   { id: "J2256-1024", name: "PSR J2256−1024", f0_hz: 243.2, period_ms: 4.11, difficulty: "hard" },
   { id: "J2302+4442", name: "PSR J2302+4442", f0_hz: 187.8, period_ms: 5.32, difficulty: "medium" },
 
-  // A few extra MSPs to comfortably exceed 100 total:
+  // Extra MSPs to exceed 100 total.
   { id: "J0610-2100", name: "PSR J0610−2100", f0_hz: 258.0, period_ms: 3.88, difficulty: "hard" },
   { id: "J0645+5158", name: "PSR J0645+5158", f0_hz: 112.1, period_ms: 8.92, difficulty: "medium" },
   { id: "J0931-1902", name: "PSR J0931−1902", f0_hz: 430.0, period_ms: 2.33, difficulty: "hard" },

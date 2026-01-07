@@ -18,7 +18,7 @@ export function usePageMeta(title: string, description?: string) {
       tag.content = description;
     }
 
-    // Per-page canonical: https://www.fazalkareem.com + current path
+    // Keep the canonical URL in sync with the current path.
     if (typeof window !== "undefined") {
       const path = window.location.pathname || "/";
       const canonicalUrl = `${SITE_ORIGIN}${path}`;
@@ -33,4 +33,3 @@ export function usePageMeta(title: string, description?: string) {
     }
   }, [title, description]);
 }
-

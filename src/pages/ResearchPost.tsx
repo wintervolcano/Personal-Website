@@ -81,7 +81,7 @@ export default function ResearchPost({
         );
     }
 
-    // Render markdown from whichever field your loader uses
+    // Render markdown from whatever field the loader provides.
     const markdown =
         (post as any).body ??
         (post as any).content ??

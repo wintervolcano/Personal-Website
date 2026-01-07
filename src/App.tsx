@@ -1,4 +1,4 @@
-// src/App.tsx
+// App layout and routes.
 import React, { useEffect, useMemo, useState } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,7 +36,7 @@ import BlogPost from "./pages/BlogPost";
 import ResourcePost from "./pages/ResourcePost";
 import { DetectionsDashboard } from "./pages/DetectionsDashboard";
 
-// ✅ Auto page key list (blogs + any new pages) for distributing pulsars site-wide
+// Auto page key list for distributing pulsars across the site.
 import { SITE_PAGE_KEYS } from "./lib/sitePageKeys";
 
 function PageTransition({ children }: { children: React.ReactNode }) {
@@ -58,7 +58,7 @@ function pageKeyFromPath(pathname: string): PageKey {
   if (pathname.startsWith("/projects")) return "projects";
   if (pathname.startsWith("/publications")) return "publications";
   if (pathname.startsWith("/resources")) return "resources";
-  if (pathname.startsWith("/blog")) return "blog"; // includes /blog/:slug
+  if (pathname.startsWith("/blog")) return "blog"; // includes /blog/:slug.
    if (pathname.startsWith("/gallery")) return "gallery";
   if (pathname.startsWith("/about")) return "about";
   return "home";
@@ -103,7 +103,7 @@ export default function App() {
   const [resourceDocs, setResourceDocs] = useState<MdDoc[]>([]);
   const [projectDocs, setProjectDocs] = useState<MdDoc[]>([]);
 
-  // Optional modal (keep only if you still want research updates as modal)
+  // Optional modal if you still want research updates here.
   const [postOpen, setPostOpen] = useState(false);
   const [activePost, setActivePost] = useState<MdDoc | null>(null);
 
@@ -165,7 +165,7 @@ export default function App() {
     })();
   }, []);
 
-  // Keep browser UI (address bar, OS chrome) in sync with theme.
+  // Keep browser UI (address bar, OS chrome) in sync with the theme.
   useEffect(() => {
     if (typeof document === "undefined") return;
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
@@ -173,14 +173,14 @@ export default function App() {
     if (meta) {
       meta.content = color;
     }
-    // Hint to the browser for form controls / scrollbars.
+    // Hint the browser for form controls and scrollbars.
     document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
 
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem("fk-theme", theme);
       } catch {
-        // ignore persistence errors
+        // Ignore persistence errors.
       }
     }
   }, [theme]);
@@ -205,28 +205,28 @@ export default function App() {
     [researchDocs]
   );
 
-  // Keep Home’s existing API (onOpenPost), but use real routes for blog posts.
+  // Keep Home's existing API (onOpenPost), but use real routes for blog posts.
   const openPost = (collection: "blog" | "research", slug: string) => {
     if (collection === "blog") {
       navigate(`/blog/${slug}`);
       return;
     }
 
-    // If you later want research posts as real pages too:
+    // If you later want research posts as real pages:
     // navigate(`/research/${slug}`);
 
-    // For now keep research updates in the modal (optional)
+    // For now, keep research updates in the modal.
     const doc = researchDocs.find((d) => d.slug === slug) || null;
     setActivePost(doc);
     setPostOpen(!!doc);
   };
 
-  // Keep TopNav API: when it calls setPage("home"), we navigate("/")
+  // Keep TopNav API: when it calls setPage("home"), go to "/".
   const setPage = (k: PageKey) => {
     navigate(pathFromPageKey(k));
   };
 
-  //  Full unique page key (so /blog/:slug doesn’t collapse to just "blog")
+  // Full unique page key so /blog/:slug does not collapse to just "blog".
   function pageKeyForOverlay(pathname: string) {
     const p = pathname.replace(/\/+$/, "");
     return p === "" || p === "/" ? "home" : p.replace(/^\//, "");
@@ -234,9 +234,9 @@ export default function App() {
 
   const overlayPageKey = useMemo(() => pageKeyForOverlay(location.pathname), [location.pathname]);
 
-  // Do not render SearchOverlay on the Search Mode page
+  // Do not render SearchOverlay on the Search Mode page.
   const isSearchModePage = useMemo(() => location.pathname.startsWith("/search-mode"), [location.pathname]);
-  // Do not render SearchOverlay on internal-only routes
+  // Do not render SearchOverlay on internal-only routes.
   const isInternalPage = useMemo(() => location.pathname.startsWith("/internal"), [location.pathname]);
 
   return (
@@ -292,7 +292,7 @@ export default function App() {
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />
                 <Route path="/resources/for-media" element={<ForMedia theme={theme} />} />
                 <Route path="/gallery" element={<Gallery theme={theme} />} />
-                {/* Internal-only diagnostics page; no link from nav */}
+                {/* Internal-only diagnostics page, no nav link */}
                 <Route path="/internal/detections" element={<DetectionsDashboard theme={theme} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
@@ -303,7 +303,7 @@ export default function App() {
 
       <Footer theme={theme} />
 
-      {/* In Search Mode, add a “gutter” after the footer so it can scroll fully above the FFT panel (desktop/tablet only) */}
+      {/* In Search Mode, add a gutter after the footer so it can scroll above the FFT panel on desktop and tablet */}
       {isDark && !isMobile ? (
         <div
           aria-hidden
@@ -312,7 +312,7 @@ export default function App() {
         />
       ) : null}
 
-      {/* SearchOverlay on ALL non-mobile pages (including blog posts), but not on /search-mode or internal pages */}
+      {/* SearchOverlay on all non-mobile pages, except /search-mode and internal pages */}
       {!isSearchModePage && !isInternalPage && !isMobile && (
         <SearchOverlay
           theme={theme}
@@ -339,7 +339,7 @@ export default function App() {
         />
       )}
 
-      {/* Optional: keep modal only for research posts for now */}
+      {/* Optional: keep the modal only for research posts for now */}
       <PostModal theme={theme} open={postOpen} doc={activePost} onClose={() => setPostOpen(false)} />
 
       <Analytics />

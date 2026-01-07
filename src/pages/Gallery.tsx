@@ -1,4 +1,4 @@
-// src/pages/Gallery.tsx
+// Gallery page.
 import React, { useMemo, useEffect, useState } from "react";
 import { SectionShell } from "./SectionShell";
 import type { Theme } from "../components/themeToggle";
@@ -8,15 +8,15 @@ import { ArrowUpRight, Heart } from "lucide-react";
 import { fetchGalleryLikes, toggleGalleryLike } from "../lib/galleryLikes";
 
 // Images are served from the Vite `public/` folder.
-// Drop JPG/PNG/WEBP files into `public/gallery/` and reference them
-// here as `/gallery/filename.ext`. Titles/descriptions live purely
-// in this metadata and can be edited anytime.
+// Drop JPG/PNG/WEBP files into `public/gallery/` and reference them here
+// as `/gallery/filename.ext`. Titles and descriptions live in this metadata
+// and can be edited anytime.
 type GalleryItem = {
     id: string;
     src: string;
     title: string;
     description?: string;
-    /** ISO date string (YYYY-MM-DD). Used for sorting, newest first. */
+    /** ISO date string (YYYY-MM-DD), used for sorting, newest first. */
     date?: string;
 };
 
@@ -136,7 +136,7 @@ export function Gallery({ theme }: { theme: Theme }) {
         try {
             window.localStorage.setItem(LOCAL_LIKES_KEY, JSON.stringify(Array.from(ids)));
         } catch {
-            // ignore storage errors
+            // Ignore storage errors.
         }
     };
 
@@ -146,7 +146,7 @@ export function Gallery({ theme }: { theme: Theme }) {
 
     const columns = 3;
     const columnItems = useMemo(() => {
-        // Sort by date (newest first) when dates are provided.
+        // Sort by date, newest first, when dates are provided.
         const sorted: GalleryItem[] = [...GALLERY_ITEMS].sort((a, b) => {
             if (!a.date && !b.date) return 0;
             if (!a.date) return 1;
@@ -189,7 +189,7 @@ export function Gallery({ theme }: { theme: Theme }) {
             const nextLiked = !current.liked;
             const delta = nextLiked ? 1 : -1;
 
-            // Persist liked state for this browser
+            // Persist liked state for this browser.
             if (nextLiked) local.add(id);
             else local.delete(id);
             writeLocalLikes(local);
@@ -222,7 +222,7 @@ export function Gallery({ theme }: { theme: Theme }) {
             title="Snapshots from my work and life."
             subtitle="A loose collection of moments with people, telescopes and other personal favourites."
         >
-            {/* Staggered “polaroid” columns, animated on scroll */}
+            {/* Staggered polaroid columns, animated on scroll */}
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {columnItems.map((col, colIdx) => (
                     <div key={`col-${colIdx}`} className="space-y-5">
@@ -247,9 +247,9 @@ export function Gallery({ theme }: { theme: Theme }) {
                                             alt={item.title}
                                             className={cn(
                                                 "h-full w-full object-cover",
-                                                // Only apply grayscale + hover zoom on devices
+                                                // Only apply grayscale and hover zoom on devices
                                                 // with hover (sm and up). On mobile, images
-                                                // stay in full colour.
+                                                // stay in full color.
                                                 "sm:grayscale sm:group-hover:grayscale-0 sm:group-hover:scale-[1.05] transition-transform duration-400 ease-out"
                                             )}
                                         />

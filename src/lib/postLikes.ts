@@ -24,12 +24,12 @@ function setLocalLiked(id: string, liked: boolean): void {
       window.localStorage.removeItem(LOCAL_KEY_PREFIX + id);
     }
   } catch {
-    // ignore
+    // Ignore storage errors.
   }
 }
 
-// Fetch like counts for a set of post IDs.
-// Backend: GET /api/post-likes?ids=id1,id2,…
+// Fetch like counts for a list of post IDs.
+// Uses GET /api/post-likes?ids=id1,id2,...
 export async function fetchPostLikes(
   ids: string[]
 ): Promise<Record<string, PostLikeSnapshot>> {
@@ -63,9 +63,9 @@ export async function fetchPostLikes(
   }
 }
 
-// Toggle a like for a single post.
-// Backend: POST /api/post-like?id=<id> to like,
-//          DELETE /api/post-like?id=<id> to unlike.
+// Toggle a like for one post.
+// Uses POST /api/post-like?id=<id> to like,
+// and DELETE /api/post-like?id=<id> to unlike.
 export async function togglePostLike(
   id: string,
   nextLiked: boolean
@@ -86,8 +86,7 @@ export async function togglePostLike(
       likedByMe,
     };
   } catch {
-    // If the request fails, don't flip local storage.
+    // If the request fails, keep local storage as-is.
     return null;
   }
 }
-

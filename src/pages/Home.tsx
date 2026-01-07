@@ -54,7 +54,7 @@ function Hero({
   const tx2 = useTransform(xSpring, [0, vw || 1], [14, -14]);
   const ty2 = useTransform(ySpring, [0, vh || 1], [10, -10]);
 
-  // Slightly different motion for each name so they "shear" apart.
+  // Slightly different motion for each name so they separate a bit.
   const txFazal = useTransform(xSpring, [0, vw || 1], [-10, 10]);
   const tyFazal = useTransform(ySpring, [0, vh || 1], [-6, 6]);
   const txKareem = useTransform(xSpring, [0, vw || 1], [8, -8]);
@@ -152,7 +152,7 @@ function Hero({
                 Pulsars • Neutron Stars • Gravitational Waves
               </div>
 
-              {/* Desktop copy about Search Mode */}
+              {/* Desktop copy for Search Mode */}
               <div className="hidden md:block">
                 {!isDark ? (
                   <div className={cn("mt-3 max-w-[74ch] text-base sm:text-lg leading-relaxed", "text-black/65")}>
@@ -165,7 +165,7 @@ function Hero({
                 )}
               </div>
 
-              {/* Mobile copy: no Search Mode on small screens */}
+              {/* Mobile copy without Search Mode on small screens */}
               <div className="block md:hidden">
                 <div
                   className={cn(
@@ -177,7 +177,7 @@ function Hero({
                 </div>
               </div>
 
-              {/* CTA: Search Mode button (all breakpoints) */}
+              {/* Search Mode button for all breakpoints */}
               <div className="mt-7 flex flex-wrap justify-center gap-2" data-nolock>
                 <button
                   type="button"
@@ -200,7 +200,7 @@ function Hero({
             </div>
           </div>
 
-          {/* KPI cards: desktop / tablet only */}
+          {/* KPI cards for desktop and tablet */}
           <div className="mt-10 sm:mt-12 hidden md:block w-full">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
               <KPI theme={theme} title="Focus" value="Globular cluster pulsars" />
@@ -210,7 +210,7 @@ function Hero({
             </div>
           </div>
 
-          {/* Animated “Scroll” call */}
+          {/* Animated Scroll cue */}
           <motion.div
             className={cn("mt-10 sm:mt-12 flex items-center gap-3", isDark ? "text-white/60" : "text-black/55")}
             initial={{ opacity: 0, y: 8 }}

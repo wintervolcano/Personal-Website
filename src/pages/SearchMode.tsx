@@ -1,4 +1,4 @@
-// src/pages/SearchMode.tsx
+// Search Mode page.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -9,15 +9,13 @@ import { ThemeToggle, type Theme } from "../components/themeToggle";
 import type { Pulsar } from "../lib/pulsars";
 import { getTrapumPulsars, type TrapumPulsar } from "../lib/trapumPulsars";
 
-/* -------------------------
-   Shared tiny utilities
--------------------------- */
+/* Shared helper utilities */
 function clamp01(x: number) {
     return Math.min(1, Math.max(0, x));
 }
 
 function cellNoise(i: number, ch: number) {
-    // hash -> [0,1)
+    // Hash to [0,1).
     let n = (i + 1) * 374761393 + (ch + 1) * 668265263;
     n = (n ^ (n >>> 13)) * 1274126177;
     n = (n ^ (n >>> 16)) >>> 0;
@@ -77,9 +75,7 @@ function drawAxes(ctx: CanvasRenderingContext2D, w: number, h: number, theme: Th
     ctx.restore();
 }
 
-/* -------------------------
-   Pulsar glyph (hero-style)
--------------------------- */
+/* Hero-style pulsar glyph */
 type PulsarGlyphSprite = {
     r: number;
     beamLen: number;
@@ -175,9 +171,7 @@ function FoldingPulsarGlyph({ sprite }: { sprite: PulsarGlyphSprite }) {
     );
 }
 
-/* -------------------------
-   Demo model
--------------------------- */
+/* Demo model */
 type DemoTarget = {
     name: string;
     f0_hz: number;
@@ -185,7 +179,7 @@ type DemoTarget = {
 };
 
 function difficultyKnobs(d: DemoTarget["difficulty"]) {
-    // Hard demo targets are more "noisy": weaker, narrower peaks and extra decoys.
+    // Hard demo targets are more noisy: weaker, narrower peaks and extra decoys.
     const peakAmp = d === "easy" ? 1.55 : d === "medium" ? 1.25 : 0.9;
     const decoys = d === "easy" ? 2 : d === "medium" ? 4 : 7;
     const tol = d === "easy" ? 0.02 : d === "medium" ? 0.013 : 0.009;
@@ -304,9 +298,7 @@ function synthFFT(opts: {
     return vals;
 }
 
-// -------------------------
-//  Try-it demo component
-// -------------------------
+// Try-it demo component.
 function TryItDemo({
     theme,
     onDemoSolved,
@@ -316,7 +308,7 @@ function TryItDemo({
 }) {
     const reduced = usePrefersReducedMotion();
 
-    // Local Browse/Search mode just for this panel
+    // Local Browse/Search mode for this panel.
     const [demoTheme, setDemoTheme] = useState<Theme>(theme);
     useEffect(() => {
         setDemoTheme(theme);
@@ -335,9 +327,9 @@ function TryItDemo({
     const [showHint, setShowHint] = useState(false);
 
     // Guided steps:
-    // 0 = tell user to click toggle
-    // 1 = explain sky / capture
-    // 2 = explain FFT / peak click
+    // 0 = prompt the user to click the toggle
+    // 1 = explain the sky and capture
+    // 2 = explain the FFT and peak click
     // 3 = success summary
     const [guideStep, setGuideStep] = useState<0 | 1 | 2 | 3>(0);
 
@@ -360,7 +352,7 @@ function TryItDemo({
         candidates: 14320,
     });
 
-    // Use one real TRAPUM pulsar (with discovery plot and metadata) as the demo target.
+    // Use a real TRAPUM pulsar (with discovery plot and metadata) as the demo target.
     const demoPulsar = useMemo((): (Pulsar & { trapum: TrapumPulsar }) | null => {
         const all = getTrapumPulsars();
         if (!all || !all.length) return null;
@@ -404,7 +396,7 @@ function TryItDemo({
     const knobs = useMemo(() => difficultyKnobs(target.difficulty), [target.difficulty]);
     const peakPos = useMemo(() => peakPosForF0(target.f0_hz), [target.f0_hz]);
 
-    // FIXED hotspot near bottom-right of the panel (normalized coords 0..1)
+    // Fixed hotspot near the bottom right of the panel (normalized coords 0..1).
     const hotspot = useMemo(() => ({ hx: 0.99, hy: 0.99 }), []);
 
     const reset = () => {
@@ -418,7 +410,7 @@ function TryItDemo({
         setGuideStep(0);
     };
 
-    // ESC resets
+    // Esc resets.
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
@@ -430,7 +422,7 @@ function TryItDemo({
         return () => window.removeEventListener("keydown", onKey);
     }, []);
 
-    // External capture reset (from DiscoveryModal)
+    // External capture reset from DiscoveryModal.
     useEffect(() => {
         if (typeof window === "undefined") return;
         const handler = () => reset();
@@ -439,7 +431,7 @@ function TryItDemo({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Mouse tracking inside panel
+    // Mouse tracking inside the panel.
     useEffect(() => {
         const el = panelRef.current;
         if (!el) return;
@@ -461,7 +453,7 @@ function TryItDemo({
         return () => el.removeEventListener("mousemove", onMove as any);
     }, [locked]);
 
-    // Advance guided steps based on state
+    // Advance guided steps based on state.
     useEffect(() => {
         if (demoTheme === "dark" && guideStep === 0) setGuideStep(1);
     }, [demoTheme, guideStep]);
@@ -474,17 +466,17 @@ function TryItDemo({
         }
     }, [status, guideStep]);
 
-    // Hint timer: once panel is in Search Mode, show hint after some time if not solved
+    // Hint timer: once the panel is in Search Mode, show a hint after a while if not solved.
     useEffect(() => {
         setShowHint(false);
         if (demoTheme !== "dark") return;
         if (status === "hit") return;
 
-        const id = window.setTimeout(() => setShowHint(true), 20000); // 20s
+        const id = window.setTimeout(() => setShowHint(true), 20000); // 20 seconds
         return () => window.clearTimeout(id);
     }, [demoTheme, status]);
 
-    // Click background to CAPTURE (only in Search Mode)
+    // Click the background to capture (only in Search Mode).
     useEffect(() => {
         const el = panelRef.current;
         if (!el) return;
@@ -555,7 +547,7 @@ function TryItDemo({
         return () => el.removeEventListener("click", onClick);
     }, [demoTheme, hotspot.hx, hotspot.hy, knobs.decoys, knobs.peakAmp, knobs.peakW, locked, peakPos, target.f0_hz]);
 
-    // Draw loop (FFT disabled in Browse Mode)
+    // Draw loop (FFT disabled in Browse Mode).
     useEffect(() => {
         const ts = tsRef.current;
         const fft = fftRef.current;
@@ -603,7 +595,7 @@ function TryItDemo({
             tsCtx.clearRect(0, 0, w1, h1);
             fftCtx.clearRect(0, 0, w2, h2);
 
-            // Browse Mode: only axes + hint, no synth
+            // Browse Mode: axes and hint only, no synth.
             if (demoTheme !== "dark") {
                 drawAxes(tsCtx, w1, h1, demoTheme);
                 drawAxes(fftCtx, w2, h2, demoTheme);
@@ -621,7 +613,7 @@ function TryItDemo({
                 return;
             }
 
-            // Search Mode: full synth
+            // Search Mode: full synth.
             drawAxes(tsCtx, w1, h1, demoTheme);
             drawAxes(fftCtx, w2, h2, demoTheme);
 
@@ -671,7 +663,7 @@ function TryItDemo({
                     pageLikeSalt: "demo",
                 });
 
-            // Time series
+            // Time series.
             {
                 let ymin = Infinity;
                 let ymax = -Infinity;
@@ -709,7 +701,7 @@ function TryItDemo({
                 tsCtx.restore();
             }
 
-            // FFT
+            // FFT.
             {
                 let ymin = Infinity;
                 let ymax = -Infinity;
@@ -828,7 +820,7 @@ function TryItDemo({
                     dataTB: c.diskTB,
                 };
 
-                // Demo should never affect real rankings; always show as #1 in the modal.
+                // Demo should never affect real rankings, always show as #1 in the modal.
                 window.setTimeout(() => onDemoSolved(demoPulsar, stats), 240);
             }
         } else {
@@ -861,7 +853,7 @@ function TryItDemo({
                 cardBg
             )}
         >
-            {/* background glows */}
+            {/* Background glows */}
             <div
                 className={cn(
                     "absolute inset-0 opacity-70 pointer-events-none",
@@ -872,7 +864,7 @@ function TryItDemo({
             />
 
             <div className="relative">
-                {/* fixed pulsar hint at bottom-right (after timeout) */}
+                {/* Fixed pulsar hint at bottom right (after timeout) */}
                 {showHint && demoTheme === "dark" && status !== "hit" && (
                     <div
                         className="pointer-events-none absolute z-20"
@@ -958,7 +950,7 @@ function TryItDemo({
                     </div>
                 )}
 
-                {/* header + controls */}
+                {/* Header and controls */}
                 <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                     <div>
                         <div
@@ -1019,7 +1011,7 @@ function TryItDemo({
                     </div>
                 </div>
 
-                {/* main demo layout */}
+                {/* Main demo layout */}
                 <div className="mt-5 grid grid-cols-12 gap-3">
                     <div className="col-span-12 lg:col-span-4">
                         <div
@@ -1203,17 +1195,17 @@ function renderDispersionDemo(
     const channels = 64;
     const phaseBins = 256;
 
-    const dmTrue = 60; // pc cm^-3 – planted DM
+    const dmTrue = 60; // pc cm^-3, planted DM
 
-    // Correct cold-plasma dispersion law (ν in MHz):
-    // Δt(ms) = 4.148808e6 * DM * (ν^-2 - ν_ref^-2)
+    // Correct cold-plasma dispersion law (nu in MHz):
+    // dt(ms) = 4.148808e6 * DM * (nu^-2 - nu_ref^-2)
     const K_MS_MHZ = 4.148808e6;
 
-    // Choose a period large enough to avoid crazy phase wrapping in the band
-    // For DM~60 across 1400–1800 MHz, delay is ~50 ms. So 100 ms gives nice tilt without wrapping too much.
+    // Choose a period large enough to avoid heavy phase wrapping in the band.
+    // For DM~60 across 1400-1800 MHz, delay is about 50 ms. So 100 ms gives a nice tilt without too much wrapping.
     const periodMs = 100;
 
-    // Frequency band (MHz), highest at the top, lowest at the bottom
+    // Frequency band (MHz), highest at the top, lowest at the bottom.
     const nuHigh = 1800;
     const nuLow = 1400;
     const nuRef = nuHigh;
@@ -1223,23 +1215,23 @@ function renderDispersionDemo(
 
     const profile = new Array<number>(phaseBins).fill(0);
 
-    // Background
+    // Background.
     heatCtx.clearRect(0, 0, wHeat, hHeat);
     heatCtx.fillStyle = isDark ? "#050712" : "#fffaf5";
     heatCtx.fillRect(0, 0, wHeat, hHeat);
 
-    // Build channel-by-phase intensity using residual delay after trial dedispersion
+    // Build channel-by-phase intensity using residual delay after trial dedispersion.
     for (let ch = 0; ch < channels; ch++) {
         const frac = ch / Math.max(1, channels - 1);
-        const nu = nuHigh - (nuHigh - nuLow) * frac; // MHz (ch=0 -> nuHigh)
+        const nu = nuHigh - (nuHigh - nuLow) * frac; // MHz (ch=0 to nuHigh)
 
         const invNu2 = 1 / (nu * nu);
         const invRef2 = 1 / (nuRef * nuRef);
 
-        // Residual after applying trial DM to data dispersed with dmTrue:
+        // Residual after applying trial DM to data dispersed with dmTrue.
         const dtResidualMs = K_MS_MHZ * (dmTrue - dm) * (invNu2 - invRef2);
 
-        // Convert delay -> phase shift (rotations), wrap to [0,1)
+        // Convert delay to phase shift (rotations), wrap to [0,1).
         let phaseShift = dtResidualMs / periodMs;
         phaseShift = ((phaseShift % 1) + 1) % 1;
 
@@ -1256,7 +1248,7 @@ function renderDispersionDemo(
 
             const width = 0.022;
             let dPhase = u - centerPhase;
-            dPhase = ((dPhase + 0.5) % 1) - 0.5; // shortest distance on circle
+            dPhase = ((dPhase + 0.5) % 1) - 0.5; // shortest distance on the circle
             const pulse = Math.exp(-0.5 * (dPhase / width) ** 2) * 1.2;
 
             const intensity = noise + pulse;
@@ -1277,14 +1269,14 @@ function renderDispersionDemo(
 
             heatCtx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
 
-            // ✅ high freq at the top: ch=0 is top row
+            // High freq at the top: ch=0 is top row.
             const x = i * cellW;
             const y = ch * cellH;
             heatCtx.fillRect(x, y, cellW + 0.5, cellH + 0.5);
         }
     }
 
-    // Draw profile
+    // Draw profile.
     const profileCanvasWidth = phaseRect.width || 1;
     const profileCanvasHeight = phaseRect.height || 1;
 
@@ -1321,7 +1313,7 @@ function renderDispersionDemo(
     }
     phaseCtx.stroke();
 
-    // Axes and labels (now consistent with top=high freq)
+    // Axes and labels (top is high freq).
     const axisColor = isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.65)";
     heatCtx.strokeStyle = axisColor;
     heatCtx.lineWidth = 1;
@@ -1581,7 +1573,7 @@ function TimeZoomDemo({ theme }: { theme: Theme }) {
 function FftDemo({ theme }: { theme: Theme }) {
     const timeCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const freqCanvasRef = useRef<HTMLCanvasElement | null>(null);
-    const [freq, setFreq] = useState(5); // cycles across the window
+    const [freq, setFreq] = useState(5); // cycles across the window.
     const [showHarmonics, setShowHarmonics] = useState(false);
 
     const isDark = theme === "dark";
@@ -2049,9 +2041,7 @@ function FoldingLighthouseDemo({ theme }: { theme: Theme }) {
 }
 
 
-/* -------------------------
-   Page (FORCED LIGHT MODE)
--------------------------- */
+/* Page setup (forced light mode) */
 export function SearchMode({
     theme,
     setTheme,
@@ -2064,7 +2054,7 @@ export function SearchMode({
     const reduced = usePrefersReducedMotion();
     const navigate = useNavigate();
 
-    // Force light mode while this page is mounted, then restore
+    // Force light mode while this page is mounted, then restore it.
     const prevThemeRef = useRef<Theme>(theme);
     useEffect(() => {
         prevThemeRef.current = theme;
@@ -2185,7 +2175,7 @@ export function SearchMode({
                         noisy data stream from a telescope, can we find the periodic heartbeat of one of these stars?
                     </p>
 
-                    {/* 2. Time series & noise */}
+                    {/* 2. Time series and noise */}
                     <h2 className="mt-4 text-xl sm:text-2xl font-extrabold tracking-[-0.02em] text-black">
                         2. Time series: what telescopes actually record
                     </h2>
@@ -2216,7 +2206,7 @@ export function SearchMode({
 
                     <TimeZoomDemo theme={effectiveTheme} />
 
-                    {/* 3. Dispersion & dedispersion */}
+                    {/* 3. Dispersion and dedispersion */}
                     <h2 className="mt-6 text-xl sm:text-2xl font-extrabold tracking-[-0.02em] text-black">
                         3. Dispersion and dedispersion
                     </h2>
@@ -2373,7 +2363,7 @@ export function SearchMode({
                     </p>
                 </div>
 
-                {/* Try-it demo (panel-local Search Mode toggle) */}
+                {/* Try-it demo with a panel-local Search Mode toggle */}
                 <div className="mt-10">
                     <TryItDemo theme={effectiveTheme} onDemoSolved={onDemoSolved} />
                 </div>

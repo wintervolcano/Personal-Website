@@ -123,7 +123,7 @@ export function Blog({
           t: d.title,
           d: d.description || (d.body ? d.body.slice(0, 120) + "…" : ""),
           tag: d.tags && d.tags.length ? d.tags.join(" • ") : d.date,
-          onClick: () => navigate(`/blog/${d.slug}`), // same tab, full page route
+          onClick: () => navigate(`/blog/${d.slug}`), // Same tab, full page route.
         }))}
       />
     </SectionShell>

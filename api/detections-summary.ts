@@ -25,14 +25,14 @@ export default async function handler(req: any, res: any) {
   const tokenFromHeader = req.headers["x-admin-token"];
 
   let tokenFromQuery: string | null = null;
-  // Vercel / Node may expose query both on req.url and req.query; support both.
+  // Vercel or Node may expose query on both req.url and req.query, so support both.
   try {
     if (req.url) {
       const url = new URL(req.url, "http://localhost");
       tokenFromQuery = url.searchParams.get("token");
     }
   } catch {
-    // ignore URL parsing issues
+    // Ignore URL parsing issues.
   }
   if (!tokenFromQuery && req.query && typeof req.query === "object") {
     const q = (req as any).query;
@@ -70,8 +70,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Merge "static" pulsars and TRAPUM detections into one ID set
-    // so we can attach human-readable names to each detection.
+    // Merge static pulsars and TRAPUM detections into one ID set
+    // so we can attach human readable names to each detection.
     const idMap = new Map<string, { id: string; name: string }>();
 
     for (const p of PULSARS) {
@@ -87,11 +87,11 @@ export default async function handler(req: any, res: any) {
         }
       }
     } catch {
-      // If TRAPUM data isn't available server-side, we still return the static set.
+      // If TRAPUM data is not available server-side, return the static set.
     }
 
-    // Load full detection log. Prefer the Redis list if present; fall back
-    // to the JSON-array mirror (v2 key) otherwise.
+    // Load the full detection log. Prefer the Redis list if present, fall back
+    // to the JSON array mirror (v2 key) otherwise.
     let storedEvents: StoredDetectionEvent[] = [];
     try {
       // First try the list log.
@@ -126,10 +126,10 @@ export default async function handler(req: any, res: any) {
             .filter((x): x is StoredDetectionEvent => !!x);
         }
       } catch {
-        // ignore list read errors and fall through to v2 mirror
+        // Ignore list read errors and fall through to the v2 mirror.
       }
 
-      // If the list is empty/unavailable, fall back to the v2 JSON-array key.
+      // If the list is empty or unavailable, fall back to the v2 JSON array key.
       if (!storedEvents.length) {
         const raw = await kv.get("pulsar:detections:events:v2");
         const arr =
@@ -168,7 +168,7 @@ export default async function handler(req: any, res: any) {
       storedEvents = [];
     }
 
-    // Attach names and sort newest-first.
+    // Attach names and sort newest first.
     const events: DetectionEvent[] = storedEvents
       .map((ev) => {
         const meta = idMap.get(ev.id);

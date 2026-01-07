@@ -1,8 +1,8 @@
-// src/lib/publications.ts
+// Publication helpers for the publications page.
 export type PubType = "journal" | "preprint" | "conference" | "thesis" | "other";
 
 export type PublicationItem = {
-    id: string;              // stable id (orcid put-code or derived)
+    id: string;              // stable id (ORCID put-code or derived)
     title: string;
     year?: number;
     venue?: string;
@@ -81,7 +81,7 @@ export async function fetchOrcidPublications(orcid: string): Promise<Publication
         const isCorsLike =
             err instanceof TypeError && (err.message || "").toLowerCase().includes("failed to fetch");
 
-        // Surface a clear message to your UI (Publications.tsx already shows `err`)
+        // Surface a clear message for the UI (Publications.tsx already shows `err`).
         if (isCorsLike) {
             throw new Error(
                 "Could not reach ORCID from the browser (CORS / network). " +

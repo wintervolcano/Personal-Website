@@ -92,8 +92,8 @@ const INTERESTS: TimelineNode[] = [
   },
 ];
 
-// Black‑and‑white portrait + a couple of supporting images.
-// Put these in public/about/… or swap to direct Google Photos image URLs.
+// Black-and-white portrait plus a couple of supporting images.
+// Put these in public/about/ or swap in direct Google Photos image URLs.
 const PORTRAIT_SRC = "/Fazal_image_cropped.jpeg";
 
 const ABOUT_IMAGES: { id: string; src: string; alt: string }[] = [
@@ -183,7 +183,7 @@ export function About({ theme }: { theme: Theme }) {
 
   return (
       <SectionShell theme={theme} eyebrow="About" title="Hi — I'm Fazal.">
-      {/* Top row: narrative and portrait */}
+      {/* Top row with the story and portrait */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         <div className="lg:col-span-7 xl:col-span-8 space-y-5 max-w-none">
           <p
@@ -300,7 +300,7 @@ export function About({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* From the gallery */}
+      {/* Gallery picks */}
       <div
         className={cn(
           "mt-10 rounded-3xl border p-6 sm:p-8",
@@ -363,7 +363,7 @@ export function About({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Affiliations: education + organisations */}
+      {/* Affiliations section: education and organisations */}
       <div
         className={cn(
           "mt-12 rounded-3xl border p-6 sm:p-8",
@@ -401,7 +401,7 @@ export function About({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Core interests & hobbies as a second tree */}
+      {/* Core interests and hobbies in a second tree */}
       <div
         className={cn(
           "mt-10 rounded-3xl border p-6 sm:p-8",

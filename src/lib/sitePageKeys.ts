@@ -1,5 +1,5 @@
-// src/lib/sitePageKeys.ts
-// Vite-only (import.meta.glob)
+// Site page key helpers.
+// Vite only (import.meta.glob).
 
 function stripExt(p: string) {
   return p.replace(/\.(tsx|ts|mdx|md)$/, "");
@@ -27,25 +27,25 @@ function toKebabCase(s: string) {
 function toKeyFromPageFile(file: string) {
   const f = normalizeSlashes(file);
 
-  // Explicitly ignore internal-only pages such as the detections dashboard.
+  // Skip internal-only pages like the detections dashboard.
   if (f.toLowerCase().includes("detectionsdashboard.tsx")) return null;
 
   let rel = f;
-  // Vite glob keys (relative) e.g. "../pages/Home.tsx"
+  // Vite glob keys (relative), e.g. "../pages/Home.tsx".
   rel = rel.replace(/^(\.\.\/)+pages\//, "");
-  // Fallback for absolute-style paths if used
+  // Fallback for absolute-style paths.
   rel = rel.replace(/^.*\/src\/pages\//, "");
   rel = rel.replace(/^.*\/src\/routes\//, "");
 
   const noExt = stripExt(rel);
 
-  // kill trailing /index
+  // Drop trailing /index.
   const cleaned = noExt.replace(/\/index$/i, "");
 
-  // remove dynamic route segments like [slug]
+  // Drop dynamic route segments like [slug].
   if (cleaned.includes("[") && cleaned.includes("]")) return null;
 
-  // ignore search mode page
+  // Skip the Search Mode page.
   if (cleaned.toLowerCase().includes("searchmode") || cleaned.toLowerCase().includes("search-mode")) return null;
 
   const segments = cleaned.split("/");
@@ -67,7 +67,7 @@ function toKeyFromBlogFile(file: string) {
 
   const noExt = stripExt(rel);
 
-  // ignore index-like files if you have them
+  // Skip index-like files if you have them.
   if (noExt.toLowerCase().endsWith("/index")) {
     return `blog/${noExt.slice(0, -"/index".length)}`.replace(/\/$/, "");
   }
@@ -105,18 +105,18 @@ function toKeyFromResourcesFile(file: string) {
 
 export const SITE_PAGE_KEYS: string[] = (() => {
   /**
-   * IMPORTANT:
-   * - No `eager: true` here.
+   * Notes:
+   * - Do not use `eager: true` here.
    * - We only need file paths, not module contents.
-   * - This prevents Vite from trying to parse .md/.mdx as JS.
+   * - This keeps Vite from trying to parse .md/.mdx as JS.
    */
 
-  // Pages (tsx/ts)
+  // Pages (tsx/ts).
   const pageFiles = import.meta.glob("../pages/**/*.{tsx,ts}");
 
-  // Content posts (md/mdx)
-  // Use the `?raw` query so Vite treats these as plain text strings rather than
-  // trying to parse Markdown as JavaScript during the bundle. We only use the
+  // Content posts (md/mdx).
+  // Use the `?raw` query so Vite treats these as plain text strings and does
+  // not try to parse Markdown as JavaScript during the bundle. We only use the
   // keys, not the loaded contents.
   const blogFiles = import.meta.glob("../content/blog/**/*.{md,mdx}", {
     query: "?raw",
@@ -153,7 +153,7 @@ export const SITE_PAGE_KEYS: string[] = (() => {
     if (k) keys.add(k);
   }
 
-  // Always ensure home exists
+  // Always ensure home exists.
   keys.add("home");
 
   return Array.from(keys).sort();

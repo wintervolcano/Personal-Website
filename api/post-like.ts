@@ -1,8 +1,8 @@
 import { kv } from "@vercel/kv";
 
-// POST /api/post-like?id=<id>   -> increment like count
-// DELETE /api/post-like?id=<id> -> decrement like count (clamped at 0)
-// Response: { id, likes, likedByMe }
+// POST /api/post-like?id=<id> increments the like count.
+// DELETE /api/post-like?id=<id> decrements the like count (clamped at 0).
+// Response: { id, likes, likedByMe }.
 export default async function handler(req: any, res: any) {
     const id = String(req.query?.id || "").trim();
     if (!id) {
@@ -28,4 +28,3 @@ export default async function handler(req: any, res: any) {
 
     res.status(405).json({ error: "Method not allowed" });
 }
-

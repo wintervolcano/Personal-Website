@@ -43,7 +43,7 @@ function useMouseXYEnabled(enabled: boolean) {
   return { x, y };
 }
 
-/** ------- Visual primitives ------- */
+/* Visual primitives */
 
 type PulsarSprite = {
   id: string;
@@ -75,7 +75,7 @@ type BinarySprite = {
 
 function makePulsars(): PulsarSprite[] {
   return [
-    // thinner beams + slightly shorter
+    // Thinner beams and slightly shorter.
     { id: "p1", x: 0.11, y: 0.08, r: 14, spinSec: 0.9, driftSec: 10.0, depth: 0.55, beamLen: 140, beamW: 16, beamAlpha: 0.20, tiltDeg: 18 },
     { id: "p2", x: 0.84, y: 0.02, r: 11, spinSec: 3.2, driftSec: 9.0, depth: 0.45, beamLen: 160, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
     { id: "p3", x: 0.01, y: 0.4, r: 11, spinSec: 2.2, driftSec: 9.0, depth: 0.45, beamLen: 170, beamW: 14, beamAlpha: 0.18, tiltDeg: 14 },
@@ -84,7 +84,7 @@ function makePulsars(): PulsarSprite[] {
 }
 
 // Slightly different layout for small screens so the glyphs
-// don’t sit directly under nav/hero text.
+// do not sit directly under the nav and hero text.
 function makeMobilePulsars(): PulsarSprite[] {
   return [
     { id: "p1", x: 0.07, y: 0.12, r: 14, spinSec: 0.9, driftSec: 10.0, depth: 0.55, beamLen: 130, beamW: 16, beamAlpha: 0.20, tiltDeg: 18 },
@@ -96,7 +96,7 @@ function makeMobilePulsars(): PulsarSprite[] {
 
 function makeBinaries(): BinarySprite[] {
   return [
-    // hover speed-up: faster but not silly
+    // Hover speed-up, faster but not silly.
     { id: "b1", x: 0.70, y: 0.54, rP: 12, rC: 8, orbitR: 50, baseOrbitSec: 6.0, hoverOrbitSec: 0.02, spinSec: 1.6, driftSec: 10.0, depth: 0.50 },
     { id: "b2", x: 0.22, y: 0.80, rP: 11, rC: 7, orbitR: 22, baseOrbitSec: 1.4, hoverOrbitSec: 2.4, spinSec: 3.0, driftSec: 11.0, depth: 0.42 },
     { id: "b3", x: 0.5, y: 0.11, rP: 11, rC: 7, orbitR: 30, baseOrbitSec: 2.4, hoverOrbitSec: 2.4, spinSec: 2.0, driftSec: 11.0, depth: 0.42 },
@@ -127,7 +127,7 @@ function Beam({
         transformOrigin: "50% 50%",
       }}
     >
-      {/* long thin beam */}
+      {/* Long, thin beam */}
       <div
         style={{
           width: w,
@@ -139,7 +139,7 @@ function Beam({
           filter: "blur(0.5px)",
         }}
       />
-      {/* inner core beam (even thinner) */}
+      {/* Inner core beam, even thinner */}
       <div
         style={{
           width: Math.max(4, Math.round(w * 0.35)),
@@ -160,7 +160,7 @@ function Beam({
 function PulsarGlyph({ s, bright }: { s: PulsarSprite; bright?: boolean }) {
   return (
     <div className="relative" style={{ width: s.beamLen * 2, height: s.beamLen * 2 }}>
-      {/* TWO beams 180° apart */}
+      {/* Two beams 180 deg apart */}
       <motion.div
         className="absolute inset-0"
         animate={{ rotate: 360 }}
@@ -170,7 +170,7 @@ function PulsarGlyph({ s, bright }: { s: PulsarSprite; bright?: boolean }) {
         <Beam len={s.beamLen} w={s.beamW} alpha={s.beamAlpha} rotateDeg={180} tiltDeg={s.tiltDeg} bright={bright} />
       </motion.div>
 
-      {/* star sphere (black) */}
+      {/* Star sphere (black) */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -184,7 +184,7 @@ function PulsarGlyph({ s, bright }: { s: PulsarSprite; bright?: boolean }) {
         }}
       />
 
-      {/* subtle halo (not magnetosphere) */}
+      {/* Subtle halo (not magnetosphere) */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -216,14 +216,14 @@ function BinaryGlyph({ s, bright }: { s: BinarySprite; bright?: boolean }) {
       onMouseLeave={() => setHover(false)}
       aria-label="binary system"
     >
-      {/* orbital rotation */}
+      {/* Orbital rotation */}
       <motion.div
         className="absolute left-1/2 top-1/2"
         style={{ width: 1, height: 1 }}
         animate={{ rotate: 360 }}
         transition={{ duration: hover ? s.hoverOrbitSec : s.baseOrbitSec, repeat: Infinity, ease: "linear" }}
       >
-        {/* pulsar body */}
+        {/* Pulsar body */}
         <div className="absolute left-0 top-0" style={{ transform: `translate(${s.orbitR}px, ${-s.orbitR * 0.10}px)` }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: s.spinSec, repeat: Infinity, ease: "linear" }}>
             <div className="relative" style={{ width: s.rP * 2, height: s.rP * 2 }}>
@@ -245,7 +245,7 @@ function BinaryGlyph({ s, bright }: { s: BinarySprite; bright?: boolean }) {
           </motion.div>
         </div>
 
-        {/* white dwarf */}
+        {/* White dwarf */}
         <div className="absolute left-0 top-0" style={{ transform: `translate(${-s.orbitR}px, ${s.orbitR * 0.10}px)` }}>
           <div
             className="rounded-full"
@@ -266,7 +266,7 @@ function BinaryGlyph({ s, bright }: { s: BinarySprite; bright?: boolean }) {
 }
 
 export function HeroPulsars({ theme }: { theme: Theme }) {
-  // IMPORTANT: no early return before hooks.
+  // No early return before hooks.
   const reduced = usePrefersReducedMotion();
   const { vw, vh } = useViewport();
   const isMobile = vw < 768;
@@ -279,22 +279,22 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
   const enabled = theme === "light";
   const { x, y } = useMouseXYEnabled(enabled && !reduced && !isMobile);
 
-  // smoother + subtler
+  // Smoother and subtler.
   const sx = useSpring(x, { stiffness: 140, damping: 30, mass: 0.9 });
   const sy = useSpring(y, { stiffness: 140, damping: 30, mass: 0.9 });
 
-  // subtle parallax ranges (smaller than before)
+  // Subtle parallax ranges (smaller than before).
   const px = useTransform(sx, [0, vw || 1], [-12, 12]);
   const py = useTransform(sy, [0, vh || 1], [-8, 8]);
 
-  // optional: tiny “tilt” adds depth (still subtle)
+  // Optional: tiny tilt adds depth (still subtle).
   const rY = useTransform(sx, [0, vw || 1], [-2.2, 2.2]);
   const rX = useTransform(sy, [0, vh || 1], [1.8, -1.8]);
 
   const num = (v: any) => (typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : 0);
 
-  // Render nothing in dark mode on desktop/tablet, but always keep
-  // the glyphs visible on mobile so the hero feels alive even when
+  // Render nothing in dark mode on desktop or tablet, but keep
+  // the glyphs visible on mobile so the hero feels alive when
   // Search Mode is disabled.
   if (!enabled && !isMobile) return null;
 
@@ -306,7 +306,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
           className="absolute"
           style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }}
         >
-          {/* OUTER: mouse parallax (no drift here) */}
+          {/* Outer mouse parallax, no drift here */}
           <motion.div
             style={{
               x: reduced || isMobile ? 0 : (px as any),

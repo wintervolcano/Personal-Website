@@ -83,8 +83,8 @@ export default function ProjectsPost({
         );
     }
 
-    // IMPORTANT: render the actual markdown from whichever field your loader uses.
-    // In your Blog list you used `d.body`, so this will work even if `content` is undefined.
+    // Render markdown from whatever field the loader provides.
+    // The Blog list uses `d.body`, so this works even if `content` is undefined.
     const markdown =
         (post as any).body ??
         (post as any).content ??
@@ -156,7 +156,7 @@ export default function ProjectsPost({
 
                 <div className={cn("mt-10 h-px w-full", isDark ? "bg-white/10" : "bg-black/10")} />
 
-                {/* Markdown body */}
+                {/* Post body */}
                 <article
                     className={cn(
                         "mt-10 text-[0.98rem] sm:text-[1.08rem] leading-relaxed text-justify",

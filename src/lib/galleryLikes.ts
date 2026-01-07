@@ -4,9 +4,9 @@ export type GalleryLikeSnapshot = {
   likedByMe?: boolean;
 };
 
-// Fetch like counts for a set of gallery IDs.
-// This assumes you expose an API at /api that accepts
-// ?ids=id1,id2,… and returns an array of { id, likes, likedByMe }.
+// Fetch like counts for a list of gallery IDs.
+// Assumes you expose an API at /api that accepts
+// ?ids=id1,id2,... and returns an array of { id, likes, likedByMe }.
 export async function fetchGalleryLikes(
   ids: string[]
 ): Promise<Record<string, GalleryLikeSnapshot>> {
@@ -26,15 +26,15 @@ export async function fetchGalleryLikes(
     }
     return out;
   } catch {
-    // Fallback: no backend wired yet.
+    // Fallback when no backend is wired yet.
     const out: Record<string, GalleryLikeSnapshot> = {};
     for (const id of ids) out[id] = { id, likes: 0, likedByMe: false };
     return out;
   }
 }
 
-// Toggle a like for a single image.
-// Expects a backend at /api/id?id=<id> that increments/decrements
+// Toggle a like for one image.
+// Expects a backend at /api/id?id=<id> that increments or decrements
 // and returns the updated { id, likes, likedByMe }.
 export async function toggleGalleryLike(
   id: string,

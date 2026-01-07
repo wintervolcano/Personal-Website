@@ -1,8 +1,8 @@
 import { kv } from "@vercel/kv";
 
-// POST /api/gallery-likes/:id   -> increment like count
-// DELETE /api/gallery-likes/:id -> decrement like count (clamped at 0)
-// Response: { id, likes, likedByMe }
+// POST /api/gallery-likes/:id increments the like count.
+// DELETE /api/gallery-likes/:id decrements the like count (clamped at 0).
+// Response: { id, likes, likedByMe }.
 export default async function handler(req: any, res: any) {
     const id = String(req.query?.id || "").trim();
     if (!id) {

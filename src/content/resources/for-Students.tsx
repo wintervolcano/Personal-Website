@@ -186,23 +186,23 @@ export function ForStudents({ theme }: { theme: Theme }) {
   //   {
   //     title: "Pulsar Software Jungle",
   //     href: "https://alex88ridolfi.altervista.org/pagine/pulsar_software_jungle.html",
-  //     desc: "A curated “map” of pulsar software (PRESTO, DSPSR, PSRCHIVE, tempo/tempo2, psrdada, and more).",
+  //     desc: "A curated map of pulsar software (PRESTO, DSPSR, PSRCHIVE, tempo/tempo2, psrdada, and more).",
   //   },
   //   {
   //     title: "Some useful sites (Freire)",
   //     href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/urls.html",
-  //     desc: "Follow-up tools, catalogues, survey portals, and the daily-driver astronomy links.",
+  //     desc: "Follow-up tools, catalogs, survey portals, and the daily-driver astronomy links.",
   //   },
   //   {
   //     title: "Pulsars in Globular Clusters",
   //     href: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.html",
-  //     desc: "The master list of GC pulsars and references — invaluable once you start thinking in clusters.",
+  //     desc: "The master list of GC pulsars and references, invaluable once you start thinking in clusters.",
   //   },
   // ];
 
   return (
     <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
-      {/* Header */}
+      {/* Header area */}
       <section className={cn("w-full", isDark ? "bg-black" : "bg-white")}>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-8 pt-8 pb-12 sm:pt-10 sm:pb-14">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">

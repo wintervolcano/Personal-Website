@@ -1,7 +1,5 @@
 /**
- * Cloudflare Worker: GC3D Proxy (Baumgardt combined_table.txt + Freire GCpsr.txt)
- *
- * v5 Fix:
+ * Cloudflare Worker: GC3D proxy for Baumgardt combined_table.txt and Freire GCpsr.txt.
  */
 
 const WORKER_VERSION = "gc3d_combined_v5";
@@ -11,7 +9,7 @@ const SRC = {
   pulsars: "https://www3.mpifr-bonn.mpg.de/staff/pfreire/GCpsr.txt",
 };
 
-// ICRS(J2000) -> Galactic rotation matrix (common J2000 constants).
+// ICRS (J2000) to Galactic rotation matrix (common J2000 constants).
 const A0G = [
   [-0.0548755604162154, -0.8734370902348850, -0.4838350155487132],
   [0.4941094278755837, -0.4448296299600112, 0.7469822444972189],
@@ -91,7 +89,7 @@ function parseCombinedTable(txt) {
     if (line.startsWith("#")) continue;
     const partsRaw = line.trim().split(/\s+/);
 
-    // Robust: allow missing trailing columns; pad with nulls
+    // Robust handling: allow missing trailing columns, pad with nulls.
     const parts = partsRaw.slice(0, fields.length);
     while (parts.length < fields.length) parts.push(null);
 
@@ -103,7 +101,7 @@ function parseCombinedTable(txt) {
 
     const id = prettyClusterToken(clusterToken);
     const name = id;
-    const key = id; // key is exactly the cluster name/id
+    const key = id; // key matches the cluster name/id
 
     const ra_deg = safeNum(row["RA"]);
     const dec_deg = safeNum(row["DEC"]);
@@ -147,13 +145,13 @@ function parseMaybeNum(tok) {
   let s = String(tok).trim();
   if (!s || s === "*" || s.toLowerCase() === "i") return null;
 
-  // normalize unicode minus to ASCII hyphen
+  // Normalize unicode minus to ASCII hyphen.
   s = s.replace(/−/g, "-");
 
-  // strip uncertainties in parentheses: 24.599(2) -> 24.599 ; -4.9850(6) -> -4.9850
+  // Strip uncertainties in parentheses: 24.599(2) -> 24.599; -4.9850(6) -> -4.9850.
   s = s.replace(/\([^)]*\)/g, "");
 
-  // strip leading < or >, keep numeric part
+  // Strip leading < or > and keep the numeric part.
   s = s.replace(/^[<>]/, "");
 
   const n = Number(s);
@@ -161,8 +159,8 @@ function parseMaybeNum(tok) {
 }
 
 function parseGCpsr(txt) {
-  // Map: normalized cluster key -> pulsars[]
-  // Adds aliases so cluster.key = "NGC 104" matches if header is "47 Tuc (NGC 104)" etc.
+  // Map: normalized cluster key to pulsars[].
+  // Add aliases so cluster.key = "NGC 104" matches if header is "47 Tuc (NGC 104)" and so on.
   const lines = txt.split(/\r?\n/);
   const byKey = {};
   let currentArr = null;
@@ -172,14 +170,14 @@ function parseGCpsr(txt) {
     const line = raw.trimEnd();
     if (!line || line.startsWith("#")) continue;
 
-    // Cluster header line: not starting with a pulsar name like Jxxxx or Bxxxx
+    // Cluster header line, not starting with a pulsar name like Jxxxx or Bxxxx.
     if (!/^\s*(J|B)\d/.test(line)) {
       currentHeader = line.trim();
       const k = normKey(currentHeader);
       byKey[k] = byKey[k] || [];
       currentArr = byKey[k];
 
-      // Aliases:
+      // Aliases.
       addAlias(byKey, currentHeader.replace(/\(.*?\)/g, "").trim(), currentArr); // without parentheses
       const ngcMatches = currentHeader.match(/NGC\s*\d+/ig) || [];
       for (const ngc of ngcMatches) addAlias(byKey, ngc.replace(/\s+/g, " ").trim(), currentArr);
@@ -196,7 +194,7 @@ function parseGCpsr(txt) {
 
     if (!currentArr) continue;
 
-    // Pulsar line columns (from GCpsr table):
+    // Pulsar line columns (from the GCpsr table):
     // name, offset_arcmin, P0_ms, Pdot(1e-20), DM, Pb_days, x_seconds, e, mc, ... (notes/refs may follow)
     const cols = line.trim().split(/\s+/);
     const name = cols[0];

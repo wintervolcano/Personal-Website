@@ -1,4 +1,4 @@
-// Footer.tsx
+// Footer component.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { Theme } from "./themeToggle";
@@ -25,7 +25,7 @@ function Social({ theme, href, label, Icon }: { theme: Theme; href: string; labe
   );
 }
 
-/** Hero-style Pulsar (same structure) */
+/** Hero-style pulsar (same structure). */
 function Beam({
   len,
   w,
@@ -81,14 +81,14 @@ function Beam({
   );
 }
 
-/** Pitch-black BH shadow + very subtle lensing halo */
+/** Pitch-black BH shadow with a subtle lensing halo. */
 function BlackHole({ r, theme }: { r: number; theme: Theme }) {
   const isDark = theme === "dark";
   const ringSoft = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.14)";
 
   return (
     <div className="relative" style={{ width: r * 2, height: r * 2 }}>
-      {/* lensing halo */}
+      {/* Lensing halo */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -102,7 +102,7 @@ function BlackHole({ r, theme }: { r: number; theme: Theme }) {
         }}
       />
 
-      {/* event horizon / shadow */}
+      {/* Event horizon and shadow */}
       <div
         className="absolute left-1/2 top-1/2 rounded-full"
         style={{
@@ -127,7 +127,7 @@ function warpPoint(x: number, y: number, masses: MassPoint[], k: number) {
   for (const mp of masses) {
     const dx = x - mp.x;
     const dy = y - mp.y;
-    const r2 = dx * dx + dy * dy + 18; // soften singularity
+    const r2 = dx * dx + dy * dy + 18; // soften singularity.
     const f = mp.m / r2;
     dxSum += dx * f;
     dySum += dy * f;
@@ -136,7 +136,7 @@ function warpPoint(x: number, y: number, masses: MassPoint[], k: number) {
   const x2 = x - dxSum * k;
   const y2 = y - dySum * k;
 
-  // subtle “sag” toward the instantaneous barycenter of the binary so the
+  // Subtle sag toward the instantaneous barycenter of the binary so the
   // deepest part of the sheet lines up with the orbiting system.
   let cx = 50;
   let cy = 56;
@@ -192,7 +192,7 @@ function SpacetimeGrid({
 }) {
   const isDark = theme === "dark";
 
-  // grid definition: reasonably dense mesh across most of the plane
+  // Grid definition: reasonably dense mesh across most of the plane.
   const hLines = useMemo(() => {
     const ys: number[] = [];
     for (let y = 12; y <= 88; y += 4) ys.push(y);
@@ -204,7 +204,7 @@ function SpacetimeGrid({
     return xs;
   }, []);
 
-  const k = 90; // warp strength (lower = smoother sheet)
+  const k = 90; // warp strength (lower means a smoother sheet)
   const stroke = isDark ? "rgba(255, 255, 255, 0.65)" : "rgba(0,0,0,0.22)";
   const glow = isDark ? "rgba(255, 255, 255, 0.73)" : "rgba(0,0,0,0.14)";
 
@@ -221,24 +221,24 @@ function SpacetimeGrid({
   const last = useRef(0);
 
   useAnimationFrame((t) => {
-    // throttle (keeps CPU low)
+    // Throttle to keep CPU low.
     if (t - last.current < 33) return;
     last.current = t;
 
     const theta = ((t / 1000) * (2 * Math.PI)) / orbitSec;
 
-    // Put bodies on an ellipse under the binary (in SVG viewBox units)
+    // Put bodies on an ellipse under the binary (in SVG viewBox units).
     const cx = 50;
     const cy = 56;
     const d = 18; // orbit radius in SVG space
-    const ell = 0.55; // squash
+    const ell = 0.55; // squash factor
     const yOff = 2.0;
 
     const psr = { x: cx + Math.cos(theta) * d, y: cy + Math.sin(theta) * d * ell - yOff };
     const bh = { x: cx - Math.cos(theta) * d, y: cy - Math.sin(theta) * d * ell + yOff };
 
     const masses: MassPoint[] = [
-      { x: bh.x, y: bh.y, m: 1.35 }, // BH stronger
+      { x: bh.x, y: bh.y, m: 1.35 }, // BH is stronger
       { x: psr.x, y: psr.y, m: 0.95 }, // pulsar
     ];
 
@@ -299,7 +299,7 @@ function SpacetimeGrid({
             <path key={`v-${i}`} d={d} fill="none" stroke={stroke} strokeWidth="0.7" vectorEffect="non-scaling-stroke" />
           ))}
 
-          {/* moving “well” hints */}
+          {/* Moving well hints */}
           <circle cx={paths.wells.bh.x} cy={paths.wells.bh.y} r="3.5" fill={glow} />
           <circle cx={paths.wells.psr.x} cy={paths.wells.psr.y} r="5.0" fill={glow} />
         </g>
@@ -309,8 +309,8 @@ function SpacetimeGrid({
 }
 
 /**
- * IMPORTANT:
- * - This is ABSOLUTE but the Footer is RELATIVE, so it anchors to the footer only.
+ * Notes:
+ * - This is absolute but the Footer is relative, so it anchors to the footer only.
  * - pointer-events-none so it never blocks clicks on footer links.
  */
 function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
@@ -328,7 +328,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // parameters
+  // Parameters.
   const rP = 12;
   const rBH = 11;
   const orbitR = 30;
@@ -346,7 +346,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
     <div
       className={cn(
         "absolute right-8 bottom-27 sm:right-8 sm:bottom-24 z-[5] opacity-90",
-        // Using percentages keeps it inside the footer even on ultra-wide monitors.
+        // Using percentages keeps it inside the footer on ultra-wide monitors.
         "md:right-[12%] lg:right-[8%] xl:right-[12%]"
       )}
     >
@@ -358,10 +358,10 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
         }}
         onMouseLeave={() => setHover(false)}
       >
-        {/* ✅ Grid lives INSIDE overlay so it can use box + orbitSec */}
+        {/* Grid lives inside the overlay so it can use box and orbitSec */}
         <SpacetimeGrid theme={theme} width={box * 1} height={box * 1} orbitSec={orbitSec} />
 
-        {/* soft vignette */}
+        {/* Soft vignette */}
         <div
           className="absolute inset-0 rounded-full"
           style={{
@@ -372,14 +372,14 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
           }}
         />
 
-        {/* orbital rotation (binary + wells rotate together because grid is time-driven by orbitSec) */}
+        {/* Orbital rotation. Binary and wells rotate together because the grid is time-driven by orbitSec */}
         <motion.div
           className="absolute left-1/2 top-1/2 pointer-events-none"
           style={{ width: 1, height: 1, scaleY: 0.7 }}
           animate={{ rotate: 360 }}
           transition={{ duration: orbitSec, repeat: Infinity, ease: "linear" }}
         >
-          {/* pulsar */}
+          {/* Pulsar */}
           <div className="absolute left-0 top-0" style={{ transform: `translate(${orbitR}px, ${-orbitR * 0.1}px)` }}>
             <motion.div animate={{ rotate: 360 }} transition={{ duration: spinSec, repeat: Infinity, ease: "linear" }}>
               <div className="relative" style={{ width: rP * 2, height: rP * 2 }}>
@@ -402,7 +402,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
             </motion.div>
           </div>
 
-          {/* black hole */}
+          {/* Black hole */}
           <div className="absolute left-0 top-0" style={{ transform: `translate(${-orbitR}px, ${orbitR * 0.1}px)` }}>
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 12, repeat: Infinity, ease: "linear" }}>
               <BlackHole r={rBH} theme={theme} />
@@ -410,7 +410,7 @@ function FooterPSRBHOverlay({ theme }: { theme: Theme }) {
           </div>
         </motion.div>
 
-        {/* Hover popup: glasmorphic card */}
+        {/* Hover popup, glassmorphic card */}
         {hover && !isMobile && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -451,7 +451,7 @@ export function Footer({ theme }: { theme: Theme }) {
 
   return (
     <footer className={cn("relative w-full overflow-hidden", isDark ? "bg-black" : "bg-white")}>
-      {/* Overlay is a direct child of the footer (anchors to footer only) */}
+      {/* Overlay is a direct child of the footer so it anchors to the footer only */}
       <FooterPSRBHOverlay theme={theme} />
 
       <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-12">

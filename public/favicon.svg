@@ -36,7 +36,7 @@
     </filter>
   </defs>
 
-  <!-- tilted rings -->
+  <!-- Tilted rings -->
   <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glowD)">
     <ellipse cx="32" cy="32" rx="22" ry="14" transform="rotate(-18 32 32)"
       stroke="url(#ringD)" stroke-width="3.2" opacity="0.95"/>
@@ -44,22 +44,22 @@
       stroke="rgba(255,255,255,0.40)" stroke-width="2.6" opacity="0.85"/>
   </g>
 
-  <!-- beams -->
+  <!-- Beams -->
   <g filter="url(#glowD)">
     <rect x="28.8" y="4.8" width="6.4" height="18.0" rx="3.2" fill="url(#beamD)"/>
     <rect x="28.8" y="41.2" width="6.4" height="18.0" rx="3.2" fill="url(#beamD)"/>
   </g>
 
-  <!-- core -->
+  <!-- Core -->
   <g filter="url(#glowD)">
     <circle cx="32" cy="32" r="8.2" fill="url(#coreD)"/>
-    <!-- crisp edge -->
+    <!-- Crisp edge -->
     <circle cx="32" cy="32" r="8.2" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.2"/>
-    <!-- specular highlight -->
+    <!-- Specular highlight -->
     <circle cx="35.0" cy="29.2" r="1.5" fill="rgba(255,255,255,0.85)"/>
   </g>
 
-  <!-- tiny instrument ticks (subtle) -->
+  <!-- Small instrument ticks (subtle) -->
   <g stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round" opacity="0.8">
     <path d="M50 26 l3 -1"/>
     <path d="M14 38 l-3 1"/>

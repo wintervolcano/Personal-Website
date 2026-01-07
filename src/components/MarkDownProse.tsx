@@ -83,7 +83,7 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
   return (
     <div
       className={cn(
-        // Typography aligned to your site
+        // Typography aligned to the site.
         "leading-relaxed",
         isDark ? "text-white/80" : "text-black/75"
       )}
@@ -106,7 +106,7 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
             <h3 className={cn("text-xl font-extrabold mt-8 mb-2", isDark ? "text-white" : "text-black")}>{children}</h3>
           ),
           p: ({ node, children }) => {
-            // If the paragraph is ONLY a single link (or bare URL), render a card
+            // If the paragraph is only a single link (or bare URL), render a card.
             const n: any = node;
             const kids = n?.children || [];
             if (kids.length === 1 && kids[0]?.type === "link") {
@@ -134,7 +134,7 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
           },
           ul: ({ children }) => <ul className="mt-4 grid gap-3">{children}</ul>,
           li: ({ node, children }) => {
-            // Turn "- [Title](url) — desc" into a card
+            // Turn "- [Title](url) - desc" into a card.
             const n: any = node;
             const kids = n?.children || [];
 
@@ -159,7 +159,7 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
               );
             }
 
-            // Default list item
+            // Default list item.
             return (
               <li className={cn("list-none rounded-xl px-4 py-3 border", isDark ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5")}>
                 {children}

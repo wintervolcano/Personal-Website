@@ -1,8 +1,8 @@
 import { kv } from "@vercel/kv";
 
-// POST /api/detections?id=<pulsarId>
+// POST /api/detections?id=<pulsarId>.
 // Increments the global detection count for that pulsar and returns { id, count }.
-// Also appends a small event record (time + country) to a rolling log in KV.
+// Also appends a small event record (time and country) to a rolling log in KV.
 // GET /api/detections?id=<pulsarId> returns the current { id, count } without incrementing.
 export default async function handler(req: any, res: any) {
   let idParam: string | null = null;
@@ -12,7 +12,7 @@ export default async function handler(req: any, res: any) {
       idParam = url.searchParams.get("id");
     }
   } catch {
-    // ignore URL parsing errors; we'll fall back to req.query below
+    // Ignore URL parsing errors, fall back to req.query below.
   }
 
   if (!idParam && req.query && typeof req.query === "object") {
@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
 
   const id = typeof idParam === "string" ? idParam.trim() : "";
 
-  // Optional page key (where the detection occurred)
+  // Optional page key (where the detection occurred).
   let pageParam: string | null = null;
   try {
     if (req.url) {
@@ -34,7 +34,7 @@ export default async function handler(req: any, res: any) {
       pageParam = url.searchParams.get("page");
     }
   } catch {
-    // ignore
+    // Ignore URL parsing errors.
   }
   if (!pageParam && req.query && typeof req.query === "object") {
     const q = req.query as any;
@@ -57,7 +57,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === "POST") {
       const count = await kv.incr(key);
 
-      // lightweight event entry so the internal dashboard can show when / where detections happened.
+      // Lightweight event entry so the internal dashboard can show when and where detections happened.
       try {
         const headers = req.headers || {};
         const country =
@@ -82,10 +82,10 @@ export default async function handler(req: any, res: any) {
           await kv.lpush(listKey, JSON.stringify(event));
           await kv.ltrim(listKey, 0, 999);
         } catch {
-          // ignore list logging failures
+          // Ignore list logging failures.
         }
 
-        // Also keep a JSON-array mirror under a v2 key as a fallback.
+        // Also keep a JSON array mirror under a v2 key as a fallback.
         try {
           const logKey = "pulsar:detections:events:v2";
           const existing = await kv.get(logKey);
@@ -97,17 +97,17 @@ export default async function handler(req: any, res: any) {
               const parsed = JSON.parse(existing);
               if (Array.isArray(parsed)) arr = parsed;
             } catch {
-              // ignore corrupt logs
+              // Ignore corrupt logs.
             }
           }
           arr.unshift(event);
           if (arr.length > 1000) arr = arr.slice(0, 1000);
           await kv.set(logKey, arr);
         } catch {
-          // ignore JSON-array logging failures
+          // Ignore JSON array logging failures.
         }
       } catch {
-        // Ignore logging failures; never block the user-facing action.
+        // Ignore logging failures, never block the user facing action.
       }
 
       res.status(200).json({ id, count });

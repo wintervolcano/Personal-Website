@@ -42,7 +42,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
         setToken(stored);
       }
     } catch {
-      // ignore storage errors
+      // Ignore storage errors.
     }
   }, []);
 
@@ -51,7 +51,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
   const rows: DetectionEvent[] = useMemo(() => {
     if (!data) return [];
 
-    // Prefer the full per-detection log if it exists; otherwise synthesize
+    // Prefer the full per-detection log if it exists. Otherwise, synthesize
     // one row per pulsar from the summary counts so the table always renders.
     let source: DetectionEvent[] = [];
     if (data.events && data.events.length > 0) {
@@ -137,7 +137,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
         try {
           window.localStorage.setItem("fk-pulsar-dashboard-token", token);
         } catch {
-          // ignore persistence errors
+          // Ignore persistence errors.
         }
       }
 

@@ -111,6 +111,11 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
     return r;
   }, [data, filter, sortKey, sortDir]);
 
+  const totalDetections = useMemo(() => {
+    if (!data || !data.pulsars || data.pulsars.length === 0) return 0;
+    return data.pulsars.reduce((sum, p) => sum + (p.count || 0), 0);
+  }, [data]);
+
   function toggleSort(key: "count" | "id" | "name" | "ts") {
     setSortKey((prevKey) => {
       if (prevKey === key) {
@@ -206,97 +211,111 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
       </form>
 
       {hasAnySource ? (
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <section className="lg:col-span-2">
-            <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
-              Pulsars
-            </h3>
-            <p className="mt-2 text-sm text-black/60 dark:text-white/60">
-              Total detections:{" "}
-              <span className="font-semibold text-black dark:text-white">{data?.totalDetections ?? 0}</span>
+        <div className="mt-10 space-y-8">
+          <section className="rounded-3xl border border-black/10 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] px-6 py-8">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-black/60 dark:text-white/60">
+              Total detections
             </p>
-            <div className="mt-3 max-w-xs">
-              <input
-                type="text"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter by ID, name, country, page…"
-                className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-black/5 dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
-              />
+            <div className="mt-3 text-5xl sm:text-6xl lg:text-7xl font-semibold text-black dark:text-white">
+              {totalDetections.toLocaleString()}
             </div>
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-black/60">
-              <table className="min-w-full text-left text-xs sm:text-sm">
-                <thead className="border-b border-black/10 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.04]">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">#</th>
-                    <th
-                      className="px-3 py-2 font-semibold cursor-pointer select-none"
-                      onClick={() => toggleSort("id")}
-                    >
-                      Pulsar
-                    </th>
-                    <th
-                      className="px-3 py-2 font-semibold cursor-pointer select-none"
-                      onClick={() => toggleSort("name")}
-                    >
-                      Name
-                    </th>
-                    <th className="px-3 py-2 font-semibold">Country</th>
-                    <th className="px-3 py-2 font-semibold">Page</th>
-                    <th
-                      className="px-3 py-2 font-semibold cursor-pointer select-none"
-                      onClick={() => toggleSort("ts")}
-                    >
-                      Time
-                    </th>
-                    <th
-                      className="px-3 py-2 font-semibold text-right cursor-pointer select-none"
-                      onClick={() => toggleSort("count")}
-                    >
-                      Detections
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((p, idx) => (
-                    <tr
-                      key={`${p.id}-${p.ts || idx}`}
-                      className={idx % 2 === 0 ? "bg-transparent" : "bg-black/[0.03] dark:bg-white/[0.02]"}
-                    >
-                      <td className="px-3 py-2 text-black/60 dark:text-white/60">{idx + 1}</td>
-                      <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">{p.id}</td>
-                      <td className="px-3 py-2">{p.name}</td>
-                      <td className="px-3 py-2">{p.country || "—"}</td>
-                      <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">
-                        {p.page || "—"}
-                      </td>
-                      <td className="px-3 py-2 text-xs sm:text-[13px] text-black/70 dark:text-white/75">
-                        {p.ts
-                          ? (() => {
-                            try {
-                                return new Date(p.ts).toLocaleString();
-                              } catch {
-                                return p.ts;
-                              }
-                            })()
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right font-semibold">{p.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!hasRows ? (
-                <div className="px-4 py-6 text-sm text-black/60 dark:text-white/60">
-                  {rows.length === 0 && data && (data.events?.length || data.pulsars?.some((p) => p.count > 0))
-                    ? "No detections match this filter."
-                    : "No detections recorded yet."}
-                </div>
-              ) : null}
-            </div>
+            <p className="mt-2 text-xs sm:text-sm text-black/60 dark:text-white/60">
+              Sum of all pulsar detections recorded by Search Mode.
+            </p>
           </section>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section className="lg:col-span-2">
+              <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
+                Pulsars
+              </h3>
+              <p className="mt-2 text-sm text-black/60 dark:text-white/60">
+                Total detections:{" "}
+                <span className="font-semibold text-black dark:text-white">
+                  {totalDetections.toLocaleString()}
+                </span>
+              </p>
+              <div className="mt-3 max-w-xs">
+                <input
+                  type="text"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Filter by ID, name, country, page…"
+                  className="w-full rounded-lg border border-black/10 dark:border-white/20 bg-black/5 dark:bg-black/60 px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40"
+                />
+              </div>
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-black/60">
+                <table className="min-w-full text-left text-xs sm:text-sm">
+                  <thead className="border-b border-black/10 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.04]">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">#</th>
+                      <th
+                        className="px-3 py-2 font-semibold cursor-pointer select-none"
+                        onClick={() => toggleSort("id")}
+                      >
+                        Pulsar
+                      </th>
+                      <th
+                        className="px-3 py-2 font-semibold cursor-pointer select-none"
+                        onClick={() => toggleSort("name")}
+                      >
+                        Name
+                      </th>
+                      <th className="px-3 py-2 font-semibold">Country</th>
+                      <th className="px-3 py-2 font-semibold">Page</th>
+                      <th
+                        className="px-3 py-2 font-semibold cursor-pointer select-none"
+                        onClick={() => toggleSort("ts")}
+                      >
+                        Time
+                      </th>
+                      <th
+                        className="px-3 py-2 font-semibold text-right cursor-pointer select-none"
+                        onClick={() => toggleSort("count")}
+                      >
+                        Detections
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((p, idx) => (
+                      <tr
+                        key={`${p.id}-${p.ts || idx}`}
+                        className={idx % 2 === 0 ? "bg-transparent" : "bg-black/[0.03] dark:bg-white/[0.02]"}
+                      >
+                        <td className="px-3 py-2 text-black/60 dark:text-white/60">{idx + 1}</td>
+                        <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">{p.id}</td>
+                        <td className="px-3 py-2">{p.name}</td>
+                        <td className="px-3 py-2">{p.country || "—"}</td>
+                        <td className="px-3 py-2 font-mono text-[11px] sm:text-xs">
+                          {p.page || "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs sm:text-[13px] text-black/70 dark:text-white/75">
+                          {p.ts
+                            ? (() => {
+                              try {
+                                  return new Date(p.ts).toLocaleString();
+                                } catch {
+                                  return p.ts;
+                                }
+                              })()
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold">{p.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!hasRows ? (
+                  <div className="px-4 py-6 text-sm text-black/60 dark:text-white/60">
+                    {rows.length === 0 && data && (data.events?.length || data.pulsars?.some((p) => p.count > 0))
+                      ? "No detections match this filter."
+                      : "No detections recorded yet."}
+                  </div>
+                ) : null}
+              </div>
+            </section>
 
-          <section className="lg:col-span-1">
+            <section className="lg:col-span-1">
             <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
               Recent events
             </h3>
@@ -338,6 +357,7 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
               )}
             </div>
           </section>
+          </div>
         </div>
       ) : null}
     </SectionShell>

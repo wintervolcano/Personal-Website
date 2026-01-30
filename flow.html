@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elden-Ring Pipeline — Modern Flowchart</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff !important;
+        }
+
+        * {
+            box-shadow: none !important;
+        }
+
+        body {
+            overflow: auto;
+        }
+
+        /* Center + auto-scale to any screen (export at 1:1 via ?scale=1) */
+        #viewport {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff !important;
+        }
+
+        #wrap {
+            width: 1920px;
+            height: 1160px;
+            transform-origin: top left;
+            background: #ffffff !important;
+        }
+
+        /* Make SVG text crisp */
+        svg {
+            text-rendering: geometricPrecision;
+            shape-rendering: geometricPrecision;
+            background: #ffffff !important;
+        }
+
+        svg * {
+            filter: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewport">
+        <div id="wrap">
+            <svg width="1920" height="1160" viewBox="0 0 1920 1160" xmlns="http://www.w3.org/2000/svg"
+                aria-label="Pipeline flowchart">
+                <defs>
+                    <!-- ========= Minimal modern theme ========= -->
+                    <style>
+                        /* Typography */
+                        .tH {
+                            font: 800 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            letter-spacing: 0.2px;
+                            fill: #0f172a;
+                        }
+
+                        .tS {
+                            font: 700 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #0f172a;
+                        }
+
+                        .tB {
+                            font: 600 11px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #334155;
+                        }
+
+                        .tM {
+                            font: 700 11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+                            fill: #0f172a;
+                        }
+
+                        .tP {
+                            font: 600 10.5px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+                            fill: #334155;
+                        }
+
+                        .tTiny {
+                            font: 600 10px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #475569;
+                        }
+
+                        /* Cards / surfaces */
+                        .card {
+                            fill: #ffffff;
+                            stroke: rgba(15, 23, 42, 0.16);
+                            stroke-width: 1.4;
+                        }
+
+                        .cardSoft {
+                            fill: #ffffff;
+                            stroke: rgba(15, 23, 42, 0.16);
+                            stroke-width: 1.2;
+                        }
+
+                        /* Phase accent bars */
+                        .bar {
+                            rx: 14;
+                        }
+
+                        .barTxt {
+                            font: 800 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #ffffff;
+                            letter-spacing: 0.25px;
+                        }
+
+                        /* Process + decision */
+                        .proc {
+                            fill: #ffffff;
+                            stroke: rgba(15, 23, 42, 0.22);
+                            stroke-width: 1.2;
+                            rx: 10;
+                        }
+
+                        .procTag {
+                            fill: rgba(2, 6, 23, 0.04);
+                            stroke: rgba(2, 6, 23, 0.10);
+                            stroke-width: 1;
+                            rx: 8;
+                        }
+
+                        .decision {
+                            fill: #ffffff;
+                            stroke-width: 1.8;
+                        }
+
+                        .yesLine {
+                            stroke: #059669;
+                        }
+
+                        .noLine {
+                            stroke: #94a3b8;
+                        }
+
+                        .mainLine {
+                            stroke: rgba(51, 65, 85, 0.55);
+                        }
+
+                        .mainLine2 {
+                            stroke: rgba(51, 65, 85, 0.40);
+                        }
+
+                        .line {
+                            stroke-width: 2.8;
+                            fill: none;
+                        }
+
+                        .thin {
+                            stroke-width: 2.2;
+                            fill: none;
+                        }
+
+                        .chipYes {
+                            fill: rgba(5, 150, 105, 0.10);
+                            stroke: rgba(5, 150, 105, 0.45);
+                            stroke-width: 1;
+                            rx: 10;
+                        }
+
+                        .chipNo {
+                            fill: #ffffff;
+                            stroke: rgba(148, 163, 184, 0.8);
+                            stroke-width: 1;
+                            rx: 10;
+                        }
+
+                        .chipTxtYes {
+                            font: 800 10px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #047857;
+                        }
+
+                        .chipTxtNo {
+                            font: 800 10px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+                            fill: #475569;
+                        }
+
+                        /* Background */
+                    </style>
+
+                    <!-- Markers -->
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="rgba(51,65,85,0.75)" />
+                    </marker>
+                    <marker id="arrowYes" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#059669" />
+                    </marker>
+                    <marker id="arrowNo" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8" />
+                    </marker>
+
+                    <!-- Reusable symbols -->
+                    <symbol id="procBox" viewBox="0 0 520 56">
+                        <rect x="0" y="0" width="520" height="56" class="proc" />
+                    </symbol>
+
+                    <symbol id="tag" viewBox="0 0 160 26">
+                        <rect x="0" y="0" width="160" height="26" class="procTag" />
+                    </symbol>
+
+                    <!-- Diamond (decision) : size 64x64 -->
+                    <symbol id="diamond" viewBox="0 0 64 64">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" />
+                    </symbol>
+                </defs>
+
+                <!-- Plain white background -->
+                <rect x="0" y="0" width="1920" height="1160" fill="#ffffff" />
+
+                <!-- ===== Layout =====
+            Row 1: x=40, 500, 960, 1420  (w=440), y=60, h=420
+            Row 2: x=40(w=580), 640(w=600), 1260(w=620), y=540, h=480
+          -->
+
+                <!-- ======================= PHASE 1 ======================= -->
+                <g transform="translate(40,60)">
+                    <rect x="0" y="0" width="440" height="420" rx="18" class="card" />
+                    <rect x="0" y="0" width="440" height="44" class="bar" fill="#2563eb" />
+                    <text x="220" y="28" text-anchor="middle" class="barTxt">Phase 1 — Intake</text>
+
+                    <!-- Workflow tag -->
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:intake</text>
+                    </g>
+
+                    <!-- Process -->
+                    <g transform="translate(18,96)">
+                        <use href="#procBox" />
+                        <text x="16" y="23" class="tP">read params.files_list → tuples(pointing, fits_files, cluster,
+                            beam, ...)</text>
+                        <text x="16" y="42" class="tTiny">Output: orig_fits_channel</text>
+                    </g>
+
+                    <!-- Decision: copy_from_tape? -->
+                    <g transform="translate(170,175)">
+                        <use href="#diamond" />
+                        <use href="#diamond" opacity="0" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <use href="#diamond" />
+                        <!-- style for this decision -->
+                        <style>
+                            #p1d {}
+                        </style>
+                    </g>
+                    <!-- Set phase-specific decision stroke -->
+                    <g transform="translate(170,175)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#2563eb" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">copy_from</tspan>
+                            <tspan x="32" dy="14">_tape?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- Yes branch -->
+                    <line x1="234" y1="207" x2="352" y2="207" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(258,190)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(306,182)">
+                        <rect x="0" y="0" width="116" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tM">syncFiles</text>
+                    </g>
+
+                    <!-- No branch -->
+                    <line x1="202" y1="239" x2="202" y2="298" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(214,258)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(88,300)">
+                        <rect x="0" y="0" width="264" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">path</text>
+                        <text x="12" y="35" class="tP">use input paths directly</text>
+                    </g>
+
+                    <!-- workflow:dada_intake -->
+                    <g transform="translate(18,360)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:dada_intake</text>
+                    </g>
+                    <g transform="translate(18,392)">
+                        <rect x="0" y="0" width="404" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tP">read dada_csv → expand cdm_list</text>
+                    </g>
+                </g>
+
+                <!-- ======================= PHASE 2 ======================= -->
+                <g transform="translate(500,60)">
+                    <rect x="0" y="0" width="440" height="420" rx="18" class="card" />
+                    <rect x="0" y="0" width="440" height="44" class="bar" fill="#7c3aed" />
+                    <text x="220" y="28" text-anchor="middle" class="barTxt">Phase 2 — Conversion & Metadata</text>
+
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">process:dada_to_fits</text>
+                    </g>
+
+                    <g transform="translate(18,96)">
+                        <rect x="0" y="0" width="404" height="56" rx="12" class="cardSoft" />
+                        <text x="12" y="20" class="tS">optional conversion</text>
+                        <text x="12" y="40" class="tP">digifits: DADA → FITS</text>
+                    </g>
+
+                    <!-- Decision -->
+                    <g transform="translate(188,170)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#7c3aed" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">insufficient</tspan>
+                            <tspan x="32" dy="14">RAM?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- No → fail -->
+                    <line x1="188" y1="202" x2="92" y2="202" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(114,185)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,180)">
+                        <rect x="0" y="0" width="72" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">exit</text>
+                        <text x="12" y="35" class="tM">fail</text>
+                    </g>
+
+                    <!-- Yes → retry -U -->
+                    <line x1="250" y1="202" x2="348" y2="202" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(270,185)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(324,180)">
+                        <rect x="0" y="0" width="98" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">action</text>
+                        <text x="12" y="35" class="tM">retry -U</text>
+                    </g>
+
+                    <!-- Metadata -->
+                    <g transform="translate(18,258)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">process:readfile</text>
+                    </g>
+                    <g transform="translate(18,292)">
+                        <rect x="0" y="0" width="404" height="88" rx="12" class="cardSoft" />
+                        <text x="12" y="20" class="tS">metadata extraction</text>
+                        <text x="12" y="42" class="tP">tsamp, nsamples, BW, fch1, nchan, …</text>
+                        <text x="12" y="64" class="tTiny">Output: metadata bundle</text>
+                    </g>
+                </g>
+
+                <!-- ======================= PHASE 3 ======================= -->
+                <g transform="translate(960,60)">
+                    <rect x="0" y="0" width="440" height="420" rx="18" class="card" />
+                    <rect x="0" y="0" width="440" height="44" class="bar" fill="#db2777" />
+                    <text x="220" y="28" text-anchor="middle" class="barTxt">Phase 3 — RFI Filter & Clean</text>
+
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:rfi_filter</text>
+                    </g>
+
+                    <g transform="translate(18,96)">
+                        <rect x="0" y="0" width="404" height="46" rx="12" class="cardSoft" />
+                        <text x="12" y="28" class="tP">build/apply RFI zap strategy</text>
+                    </g>
+
+                    <!-- Decision: run_rfi_filter? -->
+                    <g transform="translate(64,162)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#db2777" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">run_rfi</tspan>
+                            <tspan x="32" dy="14">_filter?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- No → static -->
+                    <line x1="64" y1="194" x2="18" y2="194" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(26,176)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,212)">
+                        <rect x="0" y="0" width="94" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">mode</text>
+                        <text x="12" y="35" class="tM">static</text>
+                    </g>
+
+                    <!-- Yes → generateRfiFilter -->
+                    <line x1="96" y1="224" x2="96" y2="274" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(108,242)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(18,276)">
+                        <rect x="0" y="0" width="404" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tM">generateRfiFilter</text>
+                    </g>
+
+                    <!-- Nested decision cdm <= 60 -->
+                    <g transform="translate(188,334)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#db2777" />
+                        <text x="32" y="32" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">cdm ≤ 60?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- No → + zdot -->
+                    <line x1="188" y1="366" x2="112" y2="366" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(124,348)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,348)">
+                        <rect x="0" y="0" width="90" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">opts</text>
+                        <text x="12" y="35" class="tM">+ zdot</text>
+                    </g>
+
+                    <!-- Yes → no zdot -->
+                    <line x1="252" y1="366" x2="352" y2="366" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(270,348)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(330,348)">
+                        <rect x="0" y="0" width="92" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">opts</text>
+                        <text x="12" y="35" class="tM">no zdot</text>
+                    </g>
+                </g>
+
+                <!-- ======================= PHASE 4 ======================= -->
+                <g transform="translate(1420,60)">
+                    <rect x="0" y="0" width="440" height="420" rx="18" class="card" />
+                    <rect x="0" y="0" width="440" height="44" class="bar" fill="#64748b" />
+                    <text x="220" y="28" text-anchor="middle" class="barTxt">Phase 4 — Optional Split / Stack</text>
+
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:rfi_clean</text>
+                    </g>
+
+                    <!-- Decision: run_filtool? -->
+                    <g transform="translate(168,98)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#64748b" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">run</tspan>
+                            <tspan x="32" dy="14">_filtool?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- No → pass -->
+                    <line x1="168" y1="130" x2="94" y2="130" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(106,112)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,108)">
+                        <rect x="0" y="0" width="72" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">mode</text>
+                        <text x="12" y="35" class="tM">pass</text>
+                    </g>
+
+                    <!-- Yes → filtool -->
+                    <line x1="232" y1="130" x2="350" y2="130" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(252,112)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(312,108)">
+                        <rect x="0" y="0" width="110" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tM">filtool</text>
+                    </g>
+
+                    <!-- Options header -->
+                    <text x="18" y="212" class="tS">pre-segmentation</text>
+
+                    <!-- split_fil? -->
+                    <g transform="translate(168,232)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#64748b" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">split</tspan>
+                            <tspan x="32" dy="14">_fil?</tspan>
+                        </text>
+                    </g>
+                    <line x1="168" y1="264" x2="94" y2="264" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(106,246)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,242)">
+                        <rect x="0" y="0" width="72" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">skip</text>
+                        <text x="12" y="35" class="tM">—</text>
+                    </g>
+                    <line x1="232" y1="264" x2="350" y2="264" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(252,246)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(258,292)">
+                        <rect x="0" y="0" width="164" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tP">split_filterbank (beam 1 cuts)</text>
+                    </g>
+
+                    <!-- stack_by_cdm? -->
+                    <g transform="translate(168,320)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#64748b" />
+                        <text x="32" y="28" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">stack_by</tspan>
+                            <tspan x="32" dy="14">_cdm?</tspan>
+                        </text>
+                    </g>
+                    <line x1="168" y1="352" x2="94" y2="352" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(106,334)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,330)">
+                        <rect x="0" y="0" width="72" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">skip</text>
+                        <text x="12" y="35" class="tM">—</text>
+                    </g>
+                    <line x1="232" y1="352" x2="350" y2="352" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(252,334)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(258,380)">
+                        <rect x="0" y="0" width="164" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tP">merge_filterbanks (stack by cdm)</text>
+                    </g>
+                </g>
+
+                <!-- ======= Main spine connectors (row 1) ======= -->
+                <line x1="480" y1="270" x2="500" y2="270" class="line mainLine" marker-end="url(#arrow)" />
+                <line x1="940" y1="270" x2="960" y2="270" class="line mainLine" marker-end="url(#arrow)" />
+                <line x1="1400" y1="270" x2="1420" y2="270" class="line mainLine" marker-end="url(#arrow)" />
+
+                <!-- ======= Route down to row 2 (clean “busbar” line) ======= -->
+                <path d="M 1640 480 L 1640 520 L 330 520 L 330 540" class="line mainLine2" marker-end="url(#arrow)" />
+
+                <!-- ======================= PHASE 5 ======================= -->
+                <g transform="translate(40,540)">
+                    <rect x="0" y="0" width="580" height="560" rx="18" class="card" />
+                    <rect x="0" y="0" width="580" height="44" class="bar" fill="#059669" />
+                    <text x="290" y="28" text-anchor="middle" class="barTxt">Phase 5 — Segmentation Setup</text>
+
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:segmentation</text>
+                    </g>
+
+                    <g transform="translate(18,96)">
+                        <rect x="0" y="0" width="544" height="64" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tP">for segment in params.peasoup.segments:</text>
+                        <text x="12" y="44" class="tTiny">derive segment windows → per-segment tuples</text>
+                    </g>
+
+                    <g transform="translate(18,176)">
+                        <rect x="0" y="0" width="544" height="150" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tM">process: segmented_params</text>
+                        <text x="12" y="52" class="tTiny">• readfile → nsamples_per_segment</text>
+                        <text x="12" y="74" class="tTiny">• fft_size from rounded log2</text>
+                        <text x="12" y="96" class="tTiny">• write params CSV per segment</text>
+                        <text x="12" y="126" class="tTiny">Output: peasoup_input</text>
+                    </g>
+
+                    <g transform="translate(18,344)">
+                        <rect x="0" y="0" width="544" height="56" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tP">expand params CSV → tuples(segment_id, dm_file, fft_size,
+                            start_sample, …)</text>
+                        <text x="12" y="44" class="tTiny">feeds Phase 6</text>
+                    </g>
+                </g>
+
+                <!-- ======================= PHASE 6 ======================= -->
+                <g transform="translate(640,540)">
+                    <rect x="0" y="0" width="600" height="560" rx="18" class="card" />
+                    <rect x="0" y="0" width="600" height="44" class="bar" fill="#ca8a04" />
+                    <text x="300" y="28" text-anchor="middle" class="barTxt">Phase 6 — Search & Candidate Lists</text>
+
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:search</text>
+                    </g>
+
+                    <g transform="translate(18,96)">
+                        <rect x="0" y="0" width="564" height="46" rx="12" class="cardSoft" />
+                        <text x="12" y="28" class="tP">process: birdies (peasoup -p)</text>
+                    </g>
+
+                    <g transform="translate(18,156)">
+                        <rect x="0" y="0" width="564" height="88" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tM">process: generateDMFiles</text>
+                        <text x="12" y="48" class="tTiny">DM range from cdm + ddplan → split into multiple .dm
+                            files</text>
+                        <text x="12" y="70" class="tTiny">Output: dm_file batches</text>
+                    </g>
+
+                    <!-- Decision: zero_dm? -->
+                    <g transform="translate(250,262)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#ca8a04" />
+                        <text x="32" y="32" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">zero_dm?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- Yes → prepend DM=0 -->
+                    <line x1="312" y1="294" x2="430" y2="294" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(328,276)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(400,270)">
+                        <rect x="0" y="0" width="182" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">action</text>
+                        <text x="12" y="35" class="tP">prepend DM=0</text>
+                    </g>
+
+                    <!-- No: just a chip -->
+                    <line x1="250" y1="294" x2="150" y2="294" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(162,276)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+
+                    <g transform="translate(18,332)">
+                        <rect x="0" y="0" width="564" height="52" rx="12" class="cardSoft" />
+                        <text x="12" y="30" class="tP">process: peasoup → per segment + dm_file → overview.xml</text>
+                    </g>
+
+                    <g transform="translate(18,400)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:xml_parse</text>
+                    </g>
+
+                    <g transform="translate(18,432)">
+                        <rect x="0" y="0" width="564" height="56" rx="12" class="cardSoft" />
+                        <text x="12" y="24" class="tP">process: parse_xml → filtered_candidates.csv + candfiles +
+                            metadata</text>
+                        <text x="12" y="44" class="tTiny">Output: splitcands_ch</text>
+                    </g>
+                </g>
+
+                <!-- ======================= PHASE 7 ======================= -->
+                <g transform="translate(1260,540)">
+                    <rect x="0" y="0" width="620" height="560" rx="18" class="card" />
+                    <rect x="0" y="0" width="620" height="44" class="bar" fill="#4f46e5" />
+                    <text x="310" y="28" text-anchor="middle" class="barTxt">Phase 7 — Fold → Merge → Classify →
+                        Package</text>
+
+                    <!-- fold -->
+                    <g transform="translate(18,58)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:fold</text>
+                    </g>
+                    <g transform="translate(18,96)">
+                        <rect x="0" y="0" width="584" height="50" rx="12" class="cardSoft" />
+                        <text x="12" y="30" class="tP">process: psrfold → .ar + .png + .cands</text>
+                    </g>
+
+                    <!-- Decision: PNG missing? -->
+                    <g transform="translate(210,166)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#4f46e5" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">PNG</tspan>
+                            <tspan x="32" dy="14">missing?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- Yes → dmffdot -->
+                    <line x1="272" y1="198" x2="420" y2="198" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(288,180)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(388,174)">
+                        <rect x="0" y="0" width="214" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">action</text>
+                        <text x="12" y="35" class="tP">run dmffdot (regen PNGs)</text>
+                    </g>
+
+                    <!-- No chip only -->
+                    <line x1="210" y1="198" x2="120" y2="198" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(132,180)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+
+                    <!-- fold_merge -->
+                    <g transform="translate(18,248)">
+                        <use href="#tag" />
+                        <text x="12" y="17" class="tM">workflow:fold_merge</text>
+                    </g>
+                    <g transform="translate(18,282)">
+                        <rect x="0" y="0" width="584" height="56" rx="12" class="cardSoft" />
+                        <text x="12" y="26" class="tP">process: search_fold_merge → master.cands + picked CSV</text>
+                        <text x="12" y="46" class="tTiny">cluster logic decides picker path</text>
+                    </g>
+
+                    <!-- Decision: cluster_folded? -->
+                    <g transform="translate(210,354)">
+                        <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#4f46e5" />
+                        <text x="32" y="30" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                            fill="#0f172a">
+                            <tspan x="32" dy="-2">cluster</tspan>
+                            <tspan x="32" dy="14">_folded?</tspan>
+                        </text>
+                    </g>
+
+                    <!-- Yes → csv_candypicker -->
+                    <line x1="272" y1="386" x2="420" y2="386" class="thin yesLine" marker-end="url(#arrowYes)" />
+                    <g transform="translate(288,368)">
+                        <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                        <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                    </g>
+                    <g transform="translate(388,362)">
+                        <rect x="0" y="0" width="214" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">process</text>
+                        <text x="12" y="35" class="tM">csv_candypicker</text>
+                    </g>
+
+                    <!-- No → default copy -->
+                    <line x1="210" y1="386" x2="120" y2="386" class="thin noLine" marker-end="url(#arrowNo)" />
+                    <g transform="translate(132,368)">
+                        <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                        <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                    </g>
+                    <g transform="translate(18,362)">
+                        <rect x="0" y="0" width="94" height="44" rx="12" class="cardSoft" />
+                        <text x="12" y="18" class="tS">path</text>
+                        <text x="12" y="35" class="tP">copy CSV</text>
+                    </g>
+
+                    <!-- Bottom: split columns for classify + tarball to keep it modern and readable -->
+                    <g transform="translate(18,450)">
+                        <rect x="0" y="0" width="300" height="100" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tM">workflow:classify</text>
+                        <text x="12" y="48" class="tP">alpha/beta/gamma + PICS</text>
+                        <text x="12" y="70" class="tTiny">Output: combined results CSV</text>
+                    </g>
+
+                    <g transform="translate(350,410)">
+                        <rect x="0" y="0" width="250" height="150" rx="12" class="cardSoft" />
+                        <text x="12" y="22" class="tM">optional</text>
+
+                        <!-- Tarball decision -->
+                        <g transform="translate(64,28)">
+                            <polygon points="32,2 62,32 32,62 2,32" class="decision" stroke="#4f46e5" />
+                            <text x="32" y="34" text-anchor="middle" class="tB" font-weight="800" font-size="11"
+                                fill="#0f172a">
+                                <tspan x="32" dy="-2">tarball?</tspan>
+                            </text>
+                        </g>
+
+                        <!-- Yes down -->
+                        <line x1="96" y1="90" x2="96" y2="92" opacity="0" />
+                        <line x1="96" y1="90" x2="96" y2="92" opacity="0" />
+                        <line x1="96" y1="90" x2="96" y2="92" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <line x1="96" y1="92" x2="96" y2="94" opacity="0" />
+
+                        <!-- Yes label + create_tarball -->
+                        <g transform="translate(124,78)">
+                            <rect x="0" y="0" width="44" height="18" class="chipYes" />
+                            <text x="22" y="13" text-anchor="middle" class="chipTxtYes">YES</text>
+                        </g>
+                        <g transform="translate(12,104)">
+                            <rect x="0" y="0" width="174" height="44" rx="12" class="cardSoft" />
+                            <text x="12" y="18" class="tS">process</text>
+                            <text x="12" y="35" class="tM">create_tarball</text>
+                        </g>
+
+                        <!-- No → end (right) -->
+                        <line x1="128" y1="60" x2="184" y2="60" class="thin noLine" marker-end="url(#arrowNo)" />
+                        <g transform="translate(140,42)">
+                            <rect x="0" y="0" width="38" height="18" class="chipNo" />
+                            <text x="19" y="13" text-anchor="middle" class="chipTxtNo">NO</text>
+                        </g>
+                        <circle cx="188" cy="60" r="8" fill="rgba(148,163,184,0.2)" stroke="rgba(148,163,184,0.9)"
+                            stroke-width="1.2" />
+                    </g>
+                </g>
+
+                <!-- ======= Row 2 main connectors ======= -->
+                <line x1="620" y1="780" x2="640" y2="780" class="line mainLine" marker-end="url(#arrow)" />
+                <line x1="1240" y1="780" x2="1260" y2="780" class="line mainLine" marker-end="url(#arrow)" />
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // Auto-fit 1920x1160 to the viewport. For true 1:1 export, open with ?scale=1
+        (function () {
+            const wrap = document.getElementById("wrap");
+            function fit() {
+                const params = new URLSearchParams(location.search);
+                const forced = params.get("scale");
+                if (forced && !Number.isNaN(parseFloat(forced))) {
+                    wrap.style.transform = `scale(${parseFloat(forced)})`;
+                    return;
+                }
+                const sx = window.innerWidth / 1920;
+                const sy = window.innerHeight / 1160;
+                wrap.style.transform = `scale(${Math.min(sx, sy)})`;
+            }
+            window.addEventListener("resize", fit);
+            fit();
+        })();
+    </script>
+</body>
+
+</html>

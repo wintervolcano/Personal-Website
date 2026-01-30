@@ -14,6 +14,7 @@ import { DiscoveryModal } from "./components/DiscoveryModal";
 import { ConfettiOverlay, type ConfettiLevel } from "./components/ConfettiOverlay";
 import type { Pulsar } from "./lib/pulsars";
 import { SearchMode } from "./pages/SearchMode";
+import { SearchModeChapter6 } from "./pages/SearchModeChapter6";
 import { Gallery } from "./pages/Gallery";
 import { Home } from "./pages/Home";
 import { Research } from "./pages/Research";
@@ -123,6 +124,7 @@ export default function App() {
   const navigate = useNavigate();
 
   const [isMobile, setIsMobile] = useState(false);
+  const [hotspotPositions, setHotspotPositions] = useState<Array<{ x: number; y: number }>>([]);
 
   const page: PageKey = useMemo(() => pageKeyFromPath(location.pathname), [location.pathname]);
   const isDark = theme === "dark";
@@ -234,8 +236,6 @@ export default function App() {
 
   const overlayPageKey = useMemo(() => pageKeyForOverlay(location.pathname), [location.pathname]);
 
-  // Do not render SearchOverlay on the Search Mode page.
-  const isSearchModePage = useMemo(() => location.pathname.startsWith("/search-mode"), [location.pathname]);
   // Do not render SearchOverlay on internal-only routes.
   const isInternalPage = useMemo(() => location.pathname.startsWith("/internal"), [location.pathname]);
 
@@ -284,8 +284,13 @@ export default function App() {
                       theme={theme}
                       setTheme={setTheme}
                       onDemoSolved={(p, stats) => handleSolved(p, 1, stats)}
+                      hotspotPositions={hotspotPositions}
                     />
                   }
+                />
+                <Route
+                  path="/search-mode/chapter-6"
+                  element={<SearchModeChapter6 theme={theme} setTheme={setTheme} />}
                 />
                 <Route path="/site-philosophy" element={<Philosophy theme={theme} />} />
                 <Route path="/resources/for-astronomers" element={<ForAstronomers theme={theme} />} />
@@ -312,14 +317,15 @@ export default function App() {
         />
       ) : null}
 
-      {/* SearchOverlay on all non-mobile pages, except /search-mode and internal pages */}
-      {!isSearchModePage && !isInternalPage && !isMobile && (
+      {/* SearchOverlay on all non-mobile pages, except internal pages */}
+      {!isInternalPage && !isMobile && (
         <SearchOverlay
           theme={theme}
           pageKey={overlayPageKey}
           onSolved={handleSolved}
           onOpenDetection={handleOpenDetection}
           sitePageKeys={SITE_PAGE_KEYS}
+          onHotspotPositionsReady={setHotspotPositions}
         />
       )}
 

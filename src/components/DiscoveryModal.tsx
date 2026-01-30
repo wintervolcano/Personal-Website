@@ -13,6 +13,7 @@ export function DiscoveryModal({
   rank,
   stats,
   onClose,
+  isTutorialMode = false,
 }: {
   theme: Theme;
   open: boolean;
@@ -20,6 +21,7 @@ export function DiscoveryModal({
   rank: number;
   stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number };
   onClose: () => void;
+  isTutorialMode?: boolean;
 }) {
   if (!open || !pulsar) return null;
 
@@ -275,6 +277,44 @@ export function DiscoveryModal({
                       )}
                     </div>
                   </div>
+
+                  {/* Tutorial: Understanding the Discovery */}
+                  {isTutorialMode && rank <= 3 && (
+                    <div
+                      className="mt-5 rounded-2xl border p-5 space-y-2"
+                      style={{
+                        borderColor: "rgba(59, 130, 246, 0.3)",
+                        backgroundColor: "rgba(59, 130, 246, 0.1)",
+                      }}
+                    >
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: "rgba(147, 197, 253, 0.95)" }}
+                      >
+                        Understanding This Discovery:
+                      </div>
+                      <ul className="text-xs space-y-1.5" style={{ color: "rgba(249,250,251,0.8)" }}>
+                        <li>
+                          • <strong>Pulsar Name</strong>: Real pulsar discovered by TRAPUM survey
+                        </li>
+                        <li>
+                          • <strong>Fold Plot</strong>: Actual telescope data showing the pulsar's periodic signal
+                        </li>
+                        <li>
+                          • <strong>Your Rank</strong>: Global leaderboard position for this specific pulsar
+                        </li>
+                        <li>
+                          • <strong>Difficulty</strong>: Based on actual signal-to-noise ratio (SNR)
+                        </li>
+                        <li>
+                          • <strong>DM (Dispersion Measure)</strong>: Indicates distance through ionized gas
+                        </li>
+                        <li>
+                          • <strong>Period</strong>: How fast the neutron star spins (in milliseconds)
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div className="lg:col-span-5">
@@ -380,6 +420,55 @@ export function DiscoveryModal({
                   </div>
                 </div>
               </div>
+
+              {/* Tutorial Completion Message */}
+              {isTutorialMode && rank <= 3 && (
+                <div
+                  className="mx-6 sm:mx-8 mb-6 rounded-2xl border p-5"
+                  style={{
+                    borderColor: "rgba(16, 185, 129, 0.3)",
+                    backgroundColor: "rgba(16, 185, 129, 0.1)",
+                  }}
+                >
+                  <div
+                    className="text-sm font-semibold mb-3"
+                    style={{ color: "rgba(110, 231, 183, 0.95)" }}
+                  >
+                    Tutorial Complete! 🎉
+                  </div>
+                  <p className="text-sm mb-3" style={{ color: "rgba(249,250,251,0.85)" }}>
+                    You've learned the basics of pulsar detection using the same signal processing techniques as
+                    astronomers!
+                  </p>
+                  <div className="text-sm space-y-1.5" style={{ color: "rgba(249,250,251,0.75)" }}>
+                    <p className="font-semibold" style={{ color: "rgba(249,250,251,0.9)" }}>
+                      Next Steps:
+                    </p>
+                    <ul className="list-none space-y-1 ml-0">
+                      <li>
+                        ↓ Scroll down to read about pulsar search methods and TRAPUM discoveries
+                      </li>
+                      <li>
+                        🌐 Explore the entire website - every page hides pulsars waiting to be found
+                      </li>
+                      <li>
+                        📖 Press{" "}
+                        <kbd
+                          className="px-1.5 py-0.5 rounded text-xs font-mono"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                          }}
+                        >
+                          L
+                        </kbd>{" "}
+                        to view your logbook of discoveries
+                      </li>
+                      <li>🎯 Try finding harder pulsars (medium/hard difficulty)</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
 
               <div
                 className="px-6 sm:px-8 py-6 border-t"

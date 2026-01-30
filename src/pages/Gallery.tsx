@@ -111,6 +111,13 @@ const GALLERY_ITEMS: GalleryItem[] = [
         description: "Sharing science with the public is always fun! We host AoT Bonn on the last tuesday of every month.",
         date: "2025-03-25",
     },
+    {
+        id: "g-14",
+        src: "/gallery/Home_WF.webp",
+        title: "Home.",
+        description: "Where my heart is at peace. ❤️",
+        date: "28-10-2025"
+    }
 ];
 
 export function Gallery({ theme }: { theme: Theme }) {

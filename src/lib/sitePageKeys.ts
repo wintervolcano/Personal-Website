@@ -45,9 +45,6 @@ function toKeyFromPageFile(file: string) {
   // Drop dynamic route segments like [slug].
   if (cleaned.includes("[") && cleaned.includes("]")) return null;
 
-  // Skip the Search Mode page.
-  if (cleaned.toLowerCase().includes("searchmode") || cleaned.toLowerCase().includes("search-mode")) return null;
-
   const segments = cleaned.split("/");
   const last = segments[segments.length - 1] || "";
   if (!last) return "home";

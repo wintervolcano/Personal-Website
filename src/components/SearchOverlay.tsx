@@ -155,6 +155,7 @@ export function SearchOverlay({
   onSolved,
   onOpenDetection,
   sitePageKeys,
+  onHotspotPositionsReady,
 }: {
   theme: Theme;
   pageKey: string;
@@ -166,6 +167,8 @@ export function SearchOverlay({
    * with no manual salt changes.
    */
   sitePageKeys?: string[];
+  /** Optional callback for tutorial to get hotspot screen positions */
+  onHotspotPositionsReady?: (positions: Array<{ x: number; y: number }>) => void;
 }) {
   const isActive = theme === "dark";
   const reduced = usePrefersReducedMotion();
@@ -578,6 +581,35 @@ export function SearchOverlay({
     }
     return map;
   }, [assignedIdsForPage, allowedCellIndices, autoSaltSeed, pageKey, CELL_COUNT, pulsarById]);
+
+  // Expose hotspot screen positions for tutorial
+  useEffect(() => {
+    if (!onHotspotPositionsReady || hotspotMap.size === 0) return;
+
+    const positions: Array<{ x: number; y: number }> = [];
+    const w = window.innerWidth || 1;
+    const doc = document.documentElement;
+    const docH = doc.scrollHeight || window.innerHeight || 1;
+
+    // Use the same safety margins as computeCellFromXY
+    const top = SAFE_TOP_PX;
+    const bottom = SAFE_BOTTOM_PX;
+    const effH = Math.max(1, docH - top - bottom);
+
+    hotspotMap.forEach((info, cellIndex) => {
+      const cellX = cellIndex % GRID_X;
+      const cellY = Math.floor(cellIndex / GRID_X);
+
+      // Convert cell position + hx/hy to page coordinates
+      // This matches the inverse of computeCellFromXY logic
+      const x = ((cellX + info.hx) / GRID_X) * w;
+      const y = ((cellY + info.hy) / GRID_Y) * effH + top;
+
+      positions.push({ x, y });
+    });
+
+    onHotspotPositionsReady(positions);
+  }, [hotspotMap, GRID_X, GRID_Y, onHotspotPositionsReady]);
 
   // Mouse move updates scan state.
   useEffect(() => {
@@ -1163,7 +1195,7 @@ export function SearchOverlay({
           >
             <div className="grid grid-cols-12 gap-3 p-3 sm:p-4">
               {/* Time series panel */}
-              <div className="col-span-12 md:col-span-3">
+              <div className="col-span-12 md:col-span-3" data-tutorial="time-domain-panel">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas ref={tsRef} className="h-[140px] w-full" data-nolock />
                 </div>
@@ -1173,7 +1205,7 @@ export function SearchOverlay({
               </div>
 
               {/* FFT panel */}
-              <div className="col-span-12 md:col-span-6">
+              <div className="col-span-12 md:col-span-6" data-tutorial="fft-panel">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <canvas
                     ref={fftRef}
@@ -1188,7 +1220,7 @@ export function SearchOverlay({
               </div>
 
               {/* Stats panel */}
-              <div className="col-span-12 md:col-span-3">
+              <div className="col-span-12 md:col-span-3" data-tutorial="stats-panel">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
                   <div className="mt-1 grid grid-cols-2 gap-3 text-xs px-3">
                     <div>

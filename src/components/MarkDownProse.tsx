@@ -105,6 +105,12 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
           h3: ({ children }) => (
             <h3 className={cn("text-xl font-extrabold mt-8 mb-2", isDark ? "text-white" : "text-black")}>{children}</h3>
           ),
+          h4: ({ children }) => (
+            <h4 className={cn("text-lg font-bold mt-6 mb-2", isDark ? "text-white" : "text-black")}>{children}</h4>
+          ),
+          h5: ({ children }) => (
+            <h5 className={cn("text-base font-bold mt-5 mb-2", isDark ? "text-white" : "text-black")}>{children}</h5>
+          ),
           p: ({ node, children }) => {
             // If the paragraph is only a single link (or bare URL), render a card.
             const n: any = node;
@@ -127,6 +133,13 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
                   <div className="my-4">
                     <LinkCard theme={theme} href={txt} title={txt.replace(/^https?:\/\//i, "")} />
                   </div>
+                );
+              }
+              if (/^Fig\\./i.test(txt)) {
+                return (
+                  <p className={cn("mt-3 text-center text-sm", isDark ? "text-white/65" : "text-black/60")}>
+                    {children}
+                  </p>
                 );
               }
             }
@@ -220,6 +233,9 @@ export function MarkdownProse({ theme, markdown }: { theme: Theme; markdown: str
             >
               {children}
             </code>
+          ),
+          img: ({ src, alt }) => (
+            <img src={src} alt={alt ?? ""} className="mx-auto my-4 max-w-full" />
           ),
         }}
       >

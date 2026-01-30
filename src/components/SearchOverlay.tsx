@@ -304,6 +304,14 @@ export function SearchOverlay({
     }, 5000);
   };
 
+  const showTutorialWarning = (message: string) => {
+    const id = Date.now();
+    setToast({ id, msg: message });
+    window.setTimeout(() => {
+      setToast((t) => (t && t.id === id ? null : t));
+    }, 6000);
+  };
+
   const showRepeatToast = () => {
     const msg = "You already detected this pulsar — nice re-detection!";
     const id = Date.now();
@@ -377,10 +385,12 @@ export function SearchOverlay({
   }, [ALL_PULSARS]);
 
   // Page list and automatic redistribution salt.
+  // Exclude search-mode page from main pulsar distribution (it has fixed tutorial pulsars only)
   const allPages = useMemo(() => {
     const base = (sitePageKeys && sitePageKeys.length ? sitePageKeys : [pageKey]).filter(Boolean);
     const set = new Set<string>(base);
     set.add(pageKey);
+    set.delete("search-mode"); // Exclude tutorial page from main hunt
     return Array.from(set).sort(); // stable order.
   }, [sitePageKeys, pageKey]);
 
@@ -552,10 +562,36 @@ export function SearchOverlay({
   };
 
   // Hotspot map (one pulsar per chosen cell).
+  // For search-mode page, use fixed positions for tutorial
   const hotspotMap = useMemo(() => {
+    const map = new Map<number, HotspotInfo>();
+
+    // Special handling for search-mode page: exactly 2 pulsars at fixed, centered positions
+    // Use first 2 pulsars from ALL_PULSARS directly (not from distribution)
+    if (pageKey === "search-mode") {
+      // Fixed cells: positioned for easy tutorial discovery
+      // Row 6 (out of 24) = upper area, about one scroll from viewport, Col 4 (out of 8) = centered horizontally
+      // hx=0.5, hy=0.5 centers them within their cells
+      const fixedCells = [
+        { cellIndex: 6 * GRID_X + 4, hx: 0.5, hy: 0.5 }, // Upper area, one scroll down: row 6, col 4
+        { cellIndex: 14 * GRID_X + 4, hx: 0.5, hy: 0.5 }, // Middle-lower area: row 14, col 4
+      ];
+
+      // Use first 2 pulsars from ALL_PULSARS for tutorial
+      const tutorialPulsars = ALL_PULSARS.slice(0, 2);
+      tutorialPulsars.forEach((pulsar, i) => {
+        const fixed = fixedCells[i];
+        map.set(fixed.cellIndex, { pulsar, hx: fixed.hx, hy: fixed.hy });
+      });
+
+      return map;
+    }
+
+    // For other pages, use assigned IDs
     const ids = assignedIdsForPage;
     if (!ids.length) return new Map<number, HotspotInfo>();
 
+    // Normal random distribution for other pages
     const cap = Math.min(CELL_COUNT, allowedCellIndices.length);
     const count = Math.min(ids.length, cap);
 
@@ -569,7 +605,6 @@ export function SearchOverlay({
       hashToUint32(`fk:pageIds:${pageKey}:${autoSaltSeed}`)
     ).slice(0, count);
 
-    const map = new Map<number, HotspotInfo>();
     for (let i = 0; i < count; i++) {
       const cellIndex = cells[i];
       const pid = idsShuffled[i];
@@ -580,7 +615,7 @@ export function SearchOverlay({
       map.set(cellIndex, { pulsar, hx: hr(), hy: hr() });
     }
     return map;
-  }, [assignedIdsForPage, allowedCellIndices, autoSaltSeed, pageKey, CELL_COUNT, pulsarById]);
+  }, [assignedIdsForPage, allowedCellIndices, autoSaltSeed, pageKey, CELL_COUNT, pulsarById, GRID_X]);
 
   // Expose hotspot screen positions for tutorial
   useEffect(() => {
@@ -682,6 +717,13 @@ export function SearchOverlay({
       const hot = hotspotMap.get(cellIndex);
       lockedPulsarRef.current = hot ? hot.pulsar : null;
 
+      // Tutorial mode: warn if clicking wrong position (no pulsar at this cell)
+      if (pageKey === "search-mode" && !hot) {
+        showTutorialWarning(
+          "⚠️ That peak is not persistent over the sky. Try moving to the highlighted area and press ESC to reset if needed."
+        );
+      }
+
       // Lock seed is stable for the captured position (prevents FFT jump).
       // Use the same seed format as the live renderer (`fk:LIVE...`) so the
       // captured spectrum matches what you saw right before capture.
@@ -704,9 +746,6 @@ export function SearchOverlay({
 
   // Proximity to hotspot inside the current tile.
   const computeProximity = (s: ScanState) => {
-    const hot = hotspotMap.get(s.cellIndex);
-    if (!hot) return 0;
-
     const w = window.innerWidth || 1;
     const doc = document.documentElement;
     const scrollY = window.scrollY || doc.scrollTop || 0;
@@ -715,6 +754,37 @@ export function SearchOverlay({
     const top = SAFE_TOP_PX;
     const bottom = SAFE_BOTTOM_PX;
     const effH = Math.max(1, docH - top - bottom);
+
+    // For search-mode tutorial, check ALL hotspots using pixel distance (not just current cell)
+    if (pageKey === "search-mode") {
+      let maxProximity = 0;
+      hotspotMap.forEach((hot, cellIndex) => {
+        const cellX = cellIndex % GRID_X;
+        const cellY = Math.floor(cellIndex / GRID_X);
+
+        // Hotspot position in pixels
+        const hotspotX = ((cellX + hot.hx) / GRID_X) * w;
+        const hotspotY = ((cellY + hot.hy) / GRID_Y) * effH + top;
+
+        // Mouse position in pixels
+        const mouseX = s.mouseX;
+        const mouseY = scrollY + s.mouseY;
+
+        // Distance in pixels
+        const pixelDist = Math.hypot(mouseX - hotspotX, mouseY - hotspotY);
+
+        // 150px = comfortable detection radius matching 300px marker
+        const pixelSigma = 150;
+        const proximity = Math.exp(-(pixelDist * pixelDist) / (pixelSigma * pixelSigma));
+
+        maxProximity = Math.max(maxProximity, proximity);
+      });
+      return maxProximity;
+    }
+
+    // Original cell-based detection for other pages
+    const hot = hotspotMap.get(s.cellIndex);
+    if (!hot) return 0;
 
     const nx = clamp01(s.mouseX / w);
     const ny = clamp01((scrollY + s.mouseY - top) / effH);
@@ -729,9 +799,38 @@ export function SearchOverlay({
 
   // Build time series and FFT for a scan snapshot.
   const buildSignal = (s: ScanState, frozenSeed: number | null) => {
-    const hot = hotspotMap.get(s.cellIndex);
-    const targetPulsar = hot ? hot.pulsar : null;
-    const proximity = hot ? computeProximity(s) : 0;
+    const proximity = computeProximity(s);
+
+    // For search-mode, find the nearest hotspot (since proximity checks all hotspots)
+    // For other pages, use the hotspot in the current cell
+    let targetPulsar: Pulsar | null = null;
+    if (pageKey === "search-mode" && proximity > 0.12) {
+      const w = window.innerWidth || 1;
+      const doc = document.documentElement;
+      const scrollY = window.scrollY || doc.scrollTop || 0;
+      const docH = doc.scrollHeight || window.innerHeight || 1;
+      const top = SAFE_TOP_PX;
+      const bottom = SAFE_BOTTOM_PX;
+      const effH = Math.max(1, docH - top - bottom);
+
+      let minDist = Infinity;
+      hotspotMap.forEach((hot, cellIndex) => {
+        const cellX = cellIndex % GRID_X;
+        const cellY = Math.floor(cellIndex / GRID_X);
+        const hotspotX = ((cellX + hot.hx) / GRID_X) * w;
+        const hotspotY = ((cellY + hot.hy) / GRID_Y) * effH + top;
+        const mouseX = s.mouseX;
+        const mouseY = scrollY + s.mouseY;
+        const dist = Math.hypot(mouseX - hotspotX, mouseY - hotspotY);
+        if (dist < minDist) {
+          minDist = dist;
+          targetPulsar = hot.pulsar;
+        }
+      });
+    } else {
+      const hot = hotspotMap.get(s.cellIndex);
+      targetPulsar = hot ? hot.pulsar : null;
+    }
 
     const targetVisible = !!targetPulsar && proximity > 0.12;
 
@@ -786,7 +885,7 @@ export function SearchOverlay({
       const vals = new Array<number>(bins);
 
       const shapePulsar =
-        (hot ? hot.pulsar : null) ??
+        targetPulsar ??
         ALL_PULSARS[hashToUint32(`fk:shape:${pageKey}:${autoSaltSeed}:${s.cellIndex}`) % ALL_PULSARS.length];
 
       const { decoys, peakW } = difficultyKnobs(shapePulsar);
@@ -1093,18 +1192,21 @@ export function SearchOverlay({
       const alreadyFound = sessionSet.has(id);
 
       // Rank from KV, fallback to local session counter on failure.
+      // Skip recording for tutorial mode (search-mode page)
       let rank = 1;
-      const remoteRank = await recordDetection(id, pageKey);
-      if (remoteRank != null && Number.isFinite(remoteRank)) {
-        rank = remoteRank;
-      } else {
-        // Fallback: approximate rank from localStorage.
-        try {
-          const k = `fk_discovery_count:${id}`;
-          const v = Number(window.localStorage.getItem(k) || "0");
-          rank = v + 1;
-        } catch {
-          rank = 1;
+      if (pageKey !== "search-mode") {
+        const remoteRank = await recordDetection(id, pageKey);
+        if (remoteRank != null && Number.isFinite(remoteRank)) {
+          rank = remoteRank;
+        } else {
+          // Fallback: approximate rank from localStorage.
+          try {
+            const k = `fk_discovery_count:${id}`;
+            const v = Number(window.localStorage.getItem(k) || "0");
+            rank = v + 1;
+          } catch {
+            rank = 1;
+          }
         }
       }
 
@@ -1152,7 +1254,14 @@ export function SearchOverlay({
       );
     } else {
       setStatus("miss");
-      showMissToast();
+      // Tutorial mode: show helpful message about trying another peak
+      if (pageKey === "search-mode") {
+        showTutorialWarning(
+          "❌ That's not the right peak. Look for the tallest, narrowest peak in the FFT and click on it. Press ESC to try a different capture."
+        );
+      } else {
+        showMissToast();
+      }
     }
   };
 
@@ -1283,15 +1392,25 @@ export function SearchOverlay({
                     Logbook ({displayLog.length})
                   </button>
 
-                  <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-white/80">
-                    {pulsarsOnThisPage === 1
-                      ? "1 pulsar on this page"
-                      : `${pulsarsOnThisPage} pulsars on this page`}
-                  </div>
+                  {pageKey !== "search-mode" && (
+                    <>
+                      <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-white/80">
+                        {pulsarsOnThisPage === 1
+                          ? "1 pulsar on this page"
+                          : `${pulsarsOnThisPage} pulsars on this page`}
+                      </div>
 
-                  <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-white/80">
-                    Session: {sessionFound} found • {sessionLeft} left
-                  </div>
+                      <div className="rounded-full border border-white/14 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-white/80">
+                        Session: {sessionFound} found • {sessionLeft} left
+                      </div>
+                    </>
+                  )}
+
+                  {pageKey === "search-mode" && (
+                    <div className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-yellow-400/90">
+                      Tutorial Mode
+                    </div>
+                  )}
 
                   <button
                     onClick={reset}

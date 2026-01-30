@@ -43,19 +43,24 @@ export default function TutorialOverlay({
     if (!step?.canAutoAdvance || !step.checkProgress) return;
 
     setAutoAdvanceChecked(false);
+    let hasScheduledAdvance = false;
+
     const interval = setInterval(() => {
-      if (step.checkProgress?.()) {
+      if (step.checkProgress?.() && !hasScheduledAdvance) {
+        hasScheduledAdvance = true;
         setAutoAdvanceChecked(true);
-        // Small delay before auto-advancing to show the checkmark
+        clearInterval(interval); // Stop checking once condition is met
+
+        // Brief delay before auto-advancing to show the checkmark
         setTimeout(() => {
           if (isLastStep) {
             onComplete();
           } else {
             onNext();
           }
-        }, 800);
+        }, 200); // Reduced from 800ms to 200ms for faster response
       }
-    }, 500); // Check every 500ms
+    }, 100); // Reduced from 500ms to 100ms for faster checking
 
     return () => clearInterval(interval);
   }, [step, isLastStep, onNext, onComplete]);
@@ -72,9 +77,6 @@ export default function TutorialOverlay({
         } else {
           onNext();
         }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        onSkip();
       }
     };
 
@@ -218,20 +220,16 @@ export default function TutorialOverlay({
             </div>
 
             {/* Keyboard shortcuts hint */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="mt-2 text-center text-xs text-white/30"
-            >
-              Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded mx-1">ESC</kbd> to skip
-              {!step.canAutoAdvance && (
-                <>
-                  {" "}or <kbd className="px-1.5 py-0.5 bg-white/10 rounded mx-1">ENTER</kbd> to
-                  continue
-                </>
-              )}
-            </motion.div>
+            {!step.canAutoAdvance && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="mt-2 text-center text-xs text-white/30"
+              >
+                Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded mx-1">ENTER</kbd> to continue
+              </motion.div>
+            )}
           </motion.div>
         </>
       )}

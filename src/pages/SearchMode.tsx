@@ -655,8 +655,7 @@ function TimeZoomDemo({ theme }: { theme: Theme }) {
         ctx.textBaseline = "top";
         ctx.textAlign = "left";
         ctx.fillText(
-            `~${approxPeriods} rotations in view · pulses ${
-                showPulse ? "highlighted" : "hidden in the noise"
+            `~${approxPeriods} rotations in view · pulses ${showPulse ? "highlighted" : "hidden in the noise"
             }`,
             8,
             6
@@ -1199,6 +1198,8 @@ export function SearchMode({
     const [tutorialCompleted, setTutorialCompleted] = useState(false);
     const [showHint, setShowHint] = useState(false);
     const [mouseMoveCount, setMouseMoveCount] = useState(0);
+    const [hasClickedToCapture, setHasClickedToCapture] = useState(false);
+    const [hasDetectedPulsar, setHasDetectedPulsar] = useState(false);
 
     // Get a hotspot position for the tutorial hint
     // We use the first available hotspot - SearchOverlay ensures these positions are accurate
@@ -1219,6 +1220,109 @@ export function SearchMode({
             return () => window.removeEventListener("mousemove", handleMouseMove);
         }
     }, [tutorialActive, theme]);
+
+    // Track clicks on page background to detect capture attempts during tutorial
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            // Only track when tutorial is active
+            if (!tutorialActive) return;
+
+            const target = e.target as HTMLElement | null;
+            // Check if click is NOT on interactive elements (buttons, links, panels, etc.)
+            const isInteractive = !!target?.closest(
+                'a,button,input,textarea,select,summary,[role="button"],[role="link"],[data-ui="nav"],[data-ui="search-overlay"],[data-nolock]'
+            );
+
+            // Only count clicks on page background (not interactive) that are near a hotspot
+            if (!isInteractive && hotspotPositions.length > 0) {
+                // Check if click is near any hotspot (within 150px radius to match detection area)
+                const clickX = e.clientX;
+                const clickY = e.clientY + window.scrollY;
+
+                const isNearHotspot = hotspotPositions.some(hotspot => {
+                    const dx = clickX - hotspot.x;
+                    const dy = clickY - hotspot.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    return distance <= 150; // Match the 150px detection radius
+                });
+
+                // Only advance tutorial if click was near a hotspot
+                if (isNearHotspot) {
+                    setHasClickedToCapture(true);
+                }
+            }
+        };
+
+        if (tutorialActive && theme === "dark") {
+            window.addEventListener("click", handleClick, true);
+            return () => window.removeEventListener("click", handleClick, true);
+        }
+    }, [tutorialActive, theme, hotspotPositions]);
+
+    // Reset capture flag when step changes
+    useEffect(() => {
+        setHasClickedToCapture(false);
+        setHasDetectedPulsar(false);
+    }, [currentStep]);
+
+    // Detect when discovery modal opens using MutationObserver for tutorial auto-advance
+    useEffect(() => {
+        if (!tutorialActive) return;
+
+        let detected = false;
+
+        // Optimized check for the discovery modal
+        const checkForModal = () => {
+            if (detected) return true;
+
+            // Use more specific selector: fixed elements with high z-index that contain modal content
+            // Check for the "Close" button with X icon which is unique to the discovery modal
+            const closeButton = document.querySelector('button[aria-label="Close"]');
+            if (closeButton && closeButton.closest('.fixed')) {
+                detected = true;
+                setHasDetectedPulsar(true);
+                return true;
+            }
+
+            // Fallback: check for elements with specific text (but limit scope)
+            const fixedElements = document.querySelectorAll('.fixed[role="dialog"], .fixed');
+            for (const el of fixedElements) {
+                // Use faster check: only check first 500 chars of textContent
+                const text = (el.textContent || '').substring(0, 500);
+                if (text.includes('Esc to close') && (text.includes('TRAPUM') || text.includes('Detection'))) {
+                    detected = true;
+                    setHasDetectedPulsar(true);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Use MutationObserver to detect when modal appears immediately
+        const observer = new MutationObserver(() => {
+            if (!detected) {
+                checkForModal();
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+
+        // Also check immediately and periodically as backup (faster polling)
+        checkForModal();
+        const interval = setInterval(() => {
+            if (!detected) {
+                checkForModal();
+            }
+        }, 50); // Reduced from 200ms to 50ms for faster response
+
+        return () => {
+            observer.disconnect();
+            clearInterval(interval);
+        };
+    }, [tutorialActive]);
 
     // Check localStorage on mount (don't auto-show if completed)
     useEffect(() => {
@@ -1282,43 +1386,20 @@ export function SearchMode({
                 action: "Got it",
             },
             {
-                id: "scan-start",
-                title: "Start Scanning",
-                content:
-                    "Now move your mouse slowly across this page background, which is a proxy for the sky. Watch how BOTH panels change - the time domain shows different noise, and the FFT shows different peaks. You are now observing different sky positions with your virtual telescope.",
-                canAutoAdvance: true,
-                checkProgress: () => mouseMoveCount > 25,
-            },
-            {
                 id: "scan-find-peak",
-                title: "Look for Persistent Peaks",
+                title: "Scan the Sky for Pulsars",
                 content:
-                    "Keep moving your mouse around. Most peaks in the FFT are just noise and disappear as you move. But if you move near a hidden pulsar, you'll see a PERSISTENT narrow peak that stays visible. The entire page is the sky, so as you scroll down, you go to new skies. Find one!",
-                canAutoAdvance: false,
-                action: "I found one!",
+                    "Move your mouse slowly across the page background - this is your telescope scanning the sky! Watch the panels change. Most FFT peaks are just noise and disappear as you move. But when you find a PERSISTENT narrow peak that stays visible, you've found a pulsar! Try scrolling down to uncover more sky. A hint marker will appear after 15 seconds to guide you to one. Click the sky where the persistent peak is to capture the data.",
+                canAutoAdvance: true,
+                checkProgress: () => hasClickedToCapture,
             },
             {
-                id: "capture",
-                title: "Capture the Signal",
+                id: "capture-and-analyze",
+                title: "Capture & Analyze the Signal",
                 content:
-                    "Found a persistent narrow peak? Click there on the page background (not on the panels) to CAPTURE the data from that position. This freezes the spectrum so you can analyze it. The status will change to 'Captured'. You can always click escape to reset and try again.",
-                canAutoAdvance: false,
-                action: "Continue",
-            },
-            {
-                id: "analyze-fft",
-                title: "Analyze the FFT",
-                content:
-                    "Look at the middle panel (FFT). Real pulsars show up as very narrow, tall peaks. Noise creates wider, shorter bumps. Can you spot the sharpest, tallest peak?",
-                action: "I see it!",
-            },
-            {
-                id: "click-peak",
-                title: "Click the Peak",
-                content:
-                    "Now click directly on the narrow peak in the FFT spectrum (middle panel). You need to click close to the peak's center frequency or the smaller ones that resemble the peak (these are the harmonics of that frequency). If you're accurate, you'll detect the pulsar!",
-                canAutoAdvance: false,
-                action: "Continue",
+                    "Great! The spectrum freezed and status changed to 'Captured'. Now look at the middle FFT panel - real pulsars show very narrow, tall peaks. Wider bumps are noise. Click directly on the tallest, narrowest peak in the FFT to confirm the pulsar! Press ESC anytime to reset and try again.",
+                canAutoAdvance: true,
+                checkProgress: () => hasDetectedPulsar,
             },
             {
                 id: "discovery-modal",
@@ -1331,7 +1412,7 @@ export function SearchMode({
                 id: "success",
                 title: "Congratulations, Astronomer!",
                 content:
-                    "You've detected a real pulsar using the same signal processing techniques as astronomers! Scroll down to read about actual search methods, then explore the entire website in search mode - every page hides pulsars waiting to be discovered.",
+                    "You've detected a real pulsar using the same signal processing techniques as astronomers! You can download the detection image and share on socials too. Scroll down to read about actual search methods, then explore the entire website in search mode - every page hides pulsars waiting to be discovered.",
                 action: "Finish Tutorial",
                 canAutoAdvance: false,
             },

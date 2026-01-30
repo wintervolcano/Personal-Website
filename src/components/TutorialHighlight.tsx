@@ -72,7 +72,7 @@ export default function TutorialHighlight({
 
   // Add bounds checking for marker type to prevent overflow
   if (finalPosition && type === "marker") {
-    const markerSize = 200; // 200x200px marker
+    const markerSize = 300; // 300x300px marker for larger search area
     const padding = markerSize / 2 + 20; // Half marker size + extra padding
 
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
@@ -123,13 +123,11 @@ export default function TutorialHighlight({
                     ease: "easeInOut",
                   }}
                 >
-                  <div className="w-[200px] h-[200px] rounded-xl border-4 border-yellow-400 bg-yellow-400/10 shadow-[0_0_30px_rgba(250,204,21,0.4)]" />
+                  <div className="w-[300px] h-[300px] rounded-xl border-4 border-yellow-400 bg-yellow-400/10 shadow-[0_0_30px_rgba(250,204,21,0.4)]" />
                 </motion.div>
 
                 {/* Inner square */}
-                <div className="relative w-[200px] h-[200px] rounded-xl border-4 border-yellow-400/80 bg-yellow-400/5 backdrop-blur-sm flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full bg-yellow-300 shadow-lg shadow-yellow-400/50" />
-                </div>
+                <div className="relative w-[300px] h-[300px] rounded-xl border-4 border-yellow-400/80 bg-yellow-400/5 backdrop-blur-sm" />
               </div>
 
               {/* "Try here" text */}

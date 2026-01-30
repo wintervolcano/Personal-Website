@@ -285,6 +285,7 @@ export default function App() {
                       setTheme={setTheme}
                       onDemoSolved={(p, stats) => handleSolved(p, 1, stats)}
                       hotspotPositions={hotspotPositions}
+                      isMobile={isMobile}
                     />
                   }
                 />

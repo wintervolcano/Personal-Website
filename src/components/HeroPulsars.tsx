@@ -271,12 +271,12 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
   const { vw, vh } = useViewport();
   const isMobile = vw < 768;
 
-  const brightOnMobileDark = isMobile && theme === "dark";
+  const bright = theme === "dark"; // Make pulsars bright in dark mode for visibility
 
   const sprites = useMemo(() => (isMobile ? makeMobilePulsars() : makePulsars()), [isMobile]);
   const binaries = useMemo(() => makeBinaries(), []);
 
-  const enabled = theme === "light";
+  const enabled = true; // Always enabled - show pulsars in both light and dark mode
   const { x, y } = useMouseXYEnabled(enabled && !reduced && !isMobile);
 
   // Smoother and subtler.
@@ -293,10 +293,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
 
   const num = (v: any) => (typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : 0);
 
-  // Render nothing in dark mode on desktop or tablet, but keep
-  // the glyphs visible on mobile so the hero feels alive when
-  // Search Mode is disabled.
-  if (!enabled && !isMobile) return null;
+  // Always render HeroPulsars (visible in both light and dark mode)
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -327,7 +324,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
               animate={{ y: [0, -6, 0], x: [0, 2, 0] }}
               transition={{ duration: s.driftSec, repeat: Infinity, ease: "easeInOut" }}
             >
-              <PulsarGlyph s={s} bright={brightOnMobileDark} />
+              <PulsarGlyph s={s} bright={bright} />
             </motion.div>
           </motion.div>
         </motion.div>
@@ -358,7 +355,7 @@ export function HeroPulsars({ theme }: { theme: Theme }) {
               animate={{ y: [0, -5, 0], x: [0, 2.5, 0] }}
               transition={{ duration: s.driftSec, repeat: Infinity, ease: "easeInOut" }}
             >
-              <BinaryGlyph s={s} bright={brightOnMobileDark} />
+              <BinaryGlyph s={s} bright={bright} />
             </motion.div>
           </motion.div>
         </motion.div>

@@ -1182,11 +1182,13 @@ export function SearchMode({
     setTheme,
     onDemoSolved,
     hotspotPositions = [],
+    isMobile = false,
 }: {
     theme: Theme;
     setTheme: (t: Theme) => void;
     onDemoSolved?: (p: Pulsar, stats?: { candidates: number; cpuHrs: number; gpuHrs: number; dataTB: number }) => void;
     hotspotPositions?: Array<{ x: number; y: number }>;
+    isMobile?: boolean;
 }) {
     const reduced = usePrefersReducedMotion();
     const navigate = useNavigate();
@@ -1197,6 +1199,14 @@ export function SearchMode({
     const [tutorialCompleted, setTutorialCompleted] = useState(false);
     const [showHint, setShowHint] = useState(false);
     const [mouseMoveCount, setMouseMoveCount] = useState(0);
+
+    // Get a hotspot position for the tutorial hint
+    // We use the first available hotspot - SearchOverlay ensures these positions are accurate
+    const getHotspotForHint = () => {
+        if (hotspotPositions.length === 0) return null;
+        // Return the first hotspot - TutorialHighlight will handle bounds checking
+        return hotspotPositions[0];
+    };
 
     // Track mouse movement for tutorial progress
     useEffect(() => {
@@ -1408,8 +1418,8 @@ export function SearchMode({
                         ← Back
                     </button>
 
-                    {/* Tutorial Button - replaces "Search Mode" subheading */}
-                    {!tutorialActive && (
+                    {/* Tutorial Button - replaces "Search Mode" subheading, hidden on mobile */}
+                    {!isMobile && !tutorialActive && (
                         <button
                             onClick={() => {
                                 setTutorialActive(true);
@@ -1431,8 +1441,8 @@ export function SearchMode({
                         </button>
                     )}
 
-                    {/* Show Search Mode text when tutorial is active */}
-                    {tutorialActive && (
+                    {/* Show Search Mode text when tutorial is active or on mobile (where tutorial is disabled) */}
+                    {(tutorialActive || isMobile) && (
                         <div
                             className={cn(
                                 "text-xs font-semibold tracking-[0.32em] uppercase",
@@ -1831,19 +1841,21 @@ export function SearchMode({
                 </div> */}
             </div>
 
-            {/* Tutorial Overlay */}
-            <TutorialOverlay
-                steps={tutorialSteps}
-                currentStep={currentStep}
-                onNext={handleTutorialNext}
-                onPrevious={handleTutorialPrevious}
-                onSkip={handleTutorialSkip}
-                onComplete={handleTutorialComplete}
-                show={tutorialActive && !tutorialCompleted}
-            />
+            {/* Tutorial Overlay - hidden on mobile */}
+            {!isMobile && (
+                <TutorialOverlay
+                    steps={tutorialSteps}
+                    currentStep={currentStep}
+                    onNext={handleTutorialNext}
+                    onPrevious={handleTutorialPrevious}
+                    onSkip={handleTutorialSkip}
+                    onComplete={handleTutorialComplete}
+                    show={tutorialActive && !tutorialCompleted}
+                />
+            )}
 
-            {/* Tutorial Highlights - show relevant UI elements for each step */}
-            {tutorialActive && !tutorialCompleted && (
+            {/* Tutorial Highlights - show relevant UI elements for each step, hidden on mobile */}
+            {!isMobile && tutorialActive && !tutorialCompleted && (
                 <>
                     {/* Highlight theme toggle when explaining it */}
                     {tutorialSteps[currentStep]?.id === "toggle-theme" && (
@@ -1888,15 +1900,18 @@ export function SearchMode({
                                 />
                             )}
 
-                            {/* Hint for finding persistent peaks - show at actual hotspot position */}
-                            {showHint && tutorialSteps[currentStep]?.id === "scan-find-peak" && hotspotPositions.length > 0 && (
-                                <TutorialHighlight
-                                    position={hotspotPositions[0]}
-                                    show={showHint}
-                                    type="marker"
-                                    delay={0}
-                                />
-                            )}
+                            {/* Hint for finding persistent peaks - point to first available hotspot */}
+                            {showHint && tutorialSteps[currentStep]?.id === "scan-find-peak" && (() => {
+                                const hotspot = getHotspotForHint();
+                                return hotspot ? (
+                                    <TutorialHighlight
+                                        position={hotspot}
+                                        show={showHint}
+                                        type="marker"
+                                        delay={0}
+                                    />
+                                ) : null;
+                            })()}
                         </>
                     )}
                 </>

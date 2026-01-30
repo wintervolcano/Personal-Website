@@ -68,7 +68,21 @@ export default function TutorialHighlight({
   }, [targetSelector, isVisible]);
 
   // Determine final position
-  const finalPosition = targetSelector ? elementPosition : position;
+  let finalPosition = targetSelector ? elementPosition : position;
+
+  // Add bounds checking for marker type to prevent overflow
+  if (finalPosition && type === "marker") {
+    const markerSize = 200; // 200x200px marker
+    const padding = markerSize / 2 + 20; // Half marker size + extra padding
+
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+    const documentHeight = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000;
+
+    finalPosition = {
+      x: Math.max(padding, Math.min(viewportWidth - padding, finalPosition.x)),
+      y: Math.max(padding, Math.min(documentHeight - padding, finalPosition.y)),
+    };
+  }
 
   if (!isVisible || !finalPosition) return null;
 

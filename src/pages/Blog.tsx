@@ -5,6 +5,7 @@ import type { Theme } from "../components/themeToggle";
 import type { MdDoc } from "../lib/content";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn";
+import { usePageMeta } from "../lib/usePageMeta";
 
 export function Blog({
   theme,
@@ -17,6 +18,11 @@ export function Blog({
   const normalizeTag = (t: string) => t.trim().toLowerCase();
 
   const navigate = useNavigate();
+
+  usePageMeta(
+    "Blog – Fazal Kareem",
+    "Short posts and reflections on science, philosophy, fiction, and life from a pulsar astronomer."
+  );
 
   const [activeTag, setActiveTag] = React.useState<"all" | string>("all");
 

@@ -4,6 +4,7 @@ import { SectionShell } from "./SectionShell";
 import { CardGrid } from "../components/CardGrid";
 import type { Theme } from "../components/themeToggle";
 import type { MdDoc } from "../lib/content";
+import { usePageMeta } from "../lib/usePageMeta";
 
 export function Resources({
   theme,
@@ -13,6 +14,11 @@ export function Resources({
   docs: MdDoc[];
 }) {
   const navigate = useNavigate();
+
+  usePageMeta(
+    "Resources – Fazal Kareem",
+    "Curated resources for students, astronomers, and media—helpful links, software, and outreach materials."
+  );
 
   return (
     <SectionShell

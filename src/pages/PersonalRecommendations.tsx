@@ -4,6 +4,7 @@ import { SectionShell } from "./SectionShell";
 import type { Theme } from "../components/themeToggle";
 import { cn } from "../lib/cn";
 import { ArrowUpRight } from "lucide-react";
+import { usePageMeta } from "../lib/usePageMeta";
 
 type RecItem = {
   title: string;
@@ -173,6 +174,11 @@ function RecSection({
 export function PersonalRecommendations({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
   const navigate = useNavigate();
+
+  usePageMeta(
+    "Personal Recommendations – Fazal Kareem",
+    "Books, films, music, and other obsessions—a curated shelf of things that shape how I think about science and life."
+  );
 
   return (
     <SectionShell

@@ -348,7 +348,7 @@ export function DiscoveryModal({
                         >
                           <img
                             src={pulsar.fold_png_url}
-                            alt="Fold"
+                            alt={`Folded pulse profile for ${pulsar.name}`}
                             className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
                           />
                           <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-2">
@@ -917,7 +917,7 @@ export function DiscoveryModal({
                     >
                       <img
                         src={pulsar.fold_png_url}
-                        alt="Fold"
+                        alt={`Folded pulse profile for ${pulsar.name}`}
                         style={{ width: "100%", display: "block" }}
                       />
                       <div

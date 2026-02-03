@@ -5,7 +5,8 @@
         "build": "vite build",
         "build:trapum": "npm run trapum:build && npm run build",
         "compress:gallery": "bash ./scripts/compress-gallery.sh",
-        "gallery:webp": "bash ./scripts/gallery-to-webp.sh"
+        "gallery:webp": "bash ./scripts/gallery-to-webp.sh",
+        "gallery:add": "node scripts/add-gallery-image.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.1.18",
@@ -29,6 +30,7 @@
         "react-dom": "^19.2.3",
         "react-markdown": "^10.1.0",
         "react-router-dom": "^7.11.0",
+        "recharts": "^3.7.0",
         "rehype-katex": "^7.0.1",
         "remark-gfm": "^4.0.1",
         "remark-math": "^6.0.0",

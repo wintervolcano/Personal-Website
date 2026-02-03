@@ -6,6 +6,7 @@ import { cn } from "../lib/cn";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePageMeta } from "../lib/usePageMeta";
+import galleryData from "../data/gallery.json";
 
 type TimelineNode = {
   id: string;
@@ -96,18 +97,26 @@ const INTERESTS: TimelineNode[] = [
 // Put these in public/about/ or swap in direct Google Photos image URLs.
 const PORTRAIT_SRC = "/Fazal_image_cropped.jpeg";
 
-const ABOUT_IMAGES: { id: string; src: string; alt: string }[] = [
-  {
-    id: "effelsberg",
-    src: "/gallery/effelsberg-far.png",
-    alt: "Effelsberg telescope from far away",
-  },
-  {
-    id: "group-sardinia",
-    src: "/gallery/sardinia-conference.png",
-    alt: "MPIfR group at Pulsar 2025, Sardinia.",
-  }
-];
+type GalleryItem = {
+  id: string;
+  filename: string;
+  title: string;
+  date: string | null;
+};
+
+const ABOUT_IMAGES: { id: string; src: string; alt: string }[] = galleryData.items
+  .filter((item: GalleryItem) => Boolean(item.date))
+  .sort((a: GalleryItem, b: GalleryItem) => {
+    const aTime = Date.parse(a.date ?? "");
+    const bTime = Date.parse(b.date ?? "");
+    return bTime - aTime;
+  })
+  .slice(0, 2)
+  .map((item: GalleryItem) => ({
+    id: item.id,
+    src: `/gallery/${item.filename}`,
+    alt: item.title,
+  }));
 
 function TimelineTree({ theme, items }: { theme: Theme; items: TimelineNode[] }) {
   const isDark = theme === "dark";
@@ -319,12 +328,11 @@ export function About({ theme }: { theme: Theme }) {
             </div>
             <div
               className={cn(
-                "mt-2 text-sm sm:text-base leading-relaxed max-w-[60ch]",
+                "mt-2 text-sm sm:text-base leading-relaxed max-w-[80ch]",
                 isDark ? "text-white/70" : "text-black/70"
               )}
             >
-              A couple of recent frames from telescopes and conferences. The full gallery collects more
-              snapshots from observing runs, coffee runs and legends.
+              A couple of recent frames from telescopes, conferences and personal. The full gallery collects more snapshots from observing runs, coffee runs and legendary scientists. 
             </div>
           </div>
           <motion.button

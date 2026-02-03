@@ -1,0 +1,130 @@
+{
+  "items": [
+    {
+      "id": "g-1",
+      "filename": "sardinia-conference.webp",
+      "title": "MPIfR group at Pulsar 2025, Sardinia.",
+      "description": "When a bunch of pulsar astronomers are asked what pulsars look like.",
+      "date": "2025-09-26",
+      "tags": ["conference", "MPIfR", "group-photo"],
+      "location": "Sardinia, Italy"
+    },
+    {
+      "id": "g-2",
+      "filename": "compact-group-lunch-2025.webp",
+      "title": "COMPACT Group (MPIfR) lunch, Dec 2025",
+      "description": "We went to Pasterei, Bonn. 1 Word. Amazing!",
+      "date": "2025-12-15",
+      "tags": ["MPIfR", "COMPACT", "group-photo"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-3",
+      "filename": "with-paulo-sardinia.webp",
+      "title": "A selfie with Paulo Freire near Sardinia Radio Telescope",
+      "description": "We rolling with legends out here.",
+      "date": "2025-09-25",
+      "tags": ["conference", "selfie"],
+      "location": "Sardinia, Italy"
+    },
+    {
+      "id": "g-4",
+      "filename": "farewell-vishnu.webp",
+      "title": "Farewell dinner for Vishnu",
+      "description": "When Harvard calls, you need to go.",
+      "date": "2024-10-15",
+      "tags": ["farewell", "dinner"],
+      "location": null
+    },
+    {
+      "id": "g-5",
+      "filename": "effelsberg-far.webp",
+      "title": "Effelsberg from far away",
+      "description": "That beast is my bread and butter.",
+      "date": "2024-11-03",
+      "tags": ["telescope", "Effelsberg"],
+      "location": "Effelsberg, Germany"
+    },
+    {
+      "id": "g-6",
+      "filename": "effelsberg-wiring.webp",
+      "title": "Effelsberg from underneath",
+      "description": "These are the wires that carry data from the dish to the faraday room. They can twist up to 720 degrees.",
+      "date": null,
+      "tags": ["telescope", "Effelsberg"],
+      "location": "Effelsberg, Germany"
+    },
+    {
+      "id": "g-7",
+      "filename": "effelsberg_cntrl.webp",
+      "title": "Effelsberg Control Room",
+      "description": "Where the magic happens.",
+      "date": "2024-11-03",
+      "tags": ["telescope", "Effelsberg"],
+      "location": "Effelsberg, Germany"
+    },
+    {
+      "id": "g-8",
+      "filename": "compact-meeting.webp",
+      "title": "A usual COMPACT group weekly meeting",
+      "description": "Discussing science and getting excited about mostly noise. :(",
+      "date": "2025-02-12",
+      "tags": ["MPIfR", "COMPACT", "meeting"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-9",
+      "filename": "fundi-fun.webp",
+      "title": "Fundamental Physics in Radio Astronomy Group",
+      "description": "The Fun@Fundi",
+      "date": "2025-06-06",
+      "tags": ["MPIfR", "group-photo"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-10",
+      "filename": "vivek-talk.webp",
+      "title": "Vivek's talk at the Fachbeirat, MPIfR",
+      "description": "My picture in the slide is a complete coincidence. ;)",
+      "date": "2025-06-06",
+      "tags": ["MPIfR", "talk"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-11",
+      "filename": "yaswant-gupta.webp",
+      "title": "With Prof. Yaswant Gupta, Director, GMRT",
+      "description": "An honour to meet him in person after 3 years of collaboration.",
+      "date": "2025-01-20",
+      "tags": ["collaboration", "GMRT"],
+      "location": null
+    },
+    {
+      "id": "g-12",
+      "filename": "compact-kids-vivek.webp",
+      "title": "COMPACT Kids with the Boss, NS Workshop 2025, Bonn",
+      "description": "'Come see our posters' pictured here!",
+      "date": "2025-05-10",
+      "tags": ["workshop", "COMPACT", "group-photo"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-13",
+      "filename": "aot-host.webp",
+      "title": "Hosting the Astronomy on Tap, Fiddler's Bonn.",
+      "description": "Sharing science with the public is always fun! We host AoT Bonn on the last tuesday of every month.",
+      "date": "2025-03-25",
+      "tags": ["outreach", "AoT"],
+      "location": "Bonn, Germany"
+    },
+    {
+      "id": "g-14",
+      "filename": "Home_WF.webp",
+      "title": "Home.",
+      "description": "Where my heart is at peace.",
+      "date": "2025-10-28",
+      "tags": ["personal", "home"],
+      "location": null
+    }
+  ]
+}

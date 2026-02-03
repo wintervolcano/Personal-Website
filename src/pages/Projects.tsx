@@ -4,10 +4,17 @@ import { SectionShell } from "./SectionShell";
 import { CardGrid } from "../components/CardGrid";
 import type { Theme } from "../components/themeToggle";
 import type { MdDoc } from "../lib/content";
+import { usePageMeta } from "../lib/usePageMeta";
 
 export function Projects({ theme, docs }: { theme: Theme; docs?: MdDoc[] }) {
   const navigate = useNavigate();
   const items = docs ?? [];
+
+  usePageMeta(
+    "Projects – Fazal Kareem",
+    "Pipelines, tools, and demos for pulsar searching and analysis—built to make radio astronomy data more accessible."
+  );
+
   return (
     <SectionShell
       theme={theme}

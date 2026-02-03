@@ -6,122 +6,38 @@ import { cn } from "../lib/cn";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Heart } from "lucide-react";
 import { fetchGalleryLikes, toggleGalleryLike } from "../lib/galleryLikes";
+import galleryData from "../data/gallery.json";
+import { usePageMeta } from "../lib/usePageMeta";
 
-// Images are served from the Vite `public/` folder.
-// Drop JPG/PNG/WEBP files into `public/gallery/` and reference them here
-// as `/gallery/filename.ext`. Titles and descriptions live in this metadata
-// and can be edited anytime.
+// Gallery item type used internally with computed src path
 type GalleryItem = {
     id: string;
     src: string;
     title: string;
-    description?: string;
-    /** ISO date string (YYYY-MM-DD), used for sorting, newest first. */
-    date?: string;
+    description?: string | null;
+    date?: string | null;
+    tags?: string[];
+    location?: string | null;
 };
 
-const GALLERY_ITEMS: GalleryItem[] = [
-    {
-        id: "g-1",
-        src: "/gallery/sardinia-conference.webp",
-        title: "MPIfR group at Pulsar 2025, Sardinia.",
-        description: "When a bunch of pulsar astronomers are asked what pulsars look like.",
-        date: "2025-09-26",
-    },
-    {
-        id: "g-2",
-        src: "/gallery/compact-group-lunch-2025.webp",
-        title: "COMPACT Group (MPIfR) lunch, Dec 2025",
-        description: "We went to Pasterei, Bonn. 1 Word. Amazing! ",
-        date: "2025-12-15",
-    },
-    {
-        id: "g-3",
-        src: "/gallery/with-paulo-sardinia.webp",
-        title: "A selfie with Paulo Freire near Sardinia Radio Telescope",
-        description: "We rolling with legends out here.",
-        date: "2025-09-25",
-    },
-    {
-        id: "g-4",
-        src: "/gallery/farewell-vishnu.webp",
-        title: "Farewell dinner for Vishnu",
-        description: "When Harvard calls, you need to go.",
-        date: "2024-10-15",
-    },
-    {
-        id: "g-5",
-        src: "/gallery/effelsberg-far.webp",
-        title: "Effelsberg from far away",
-        description: "That beast is my bread and butter.",
-        date: "2024-11-03",
-    },
-    {
-        id: "g-6",
-        src: "/gallery/effelsberg-wiring.webp",
-        title: "Effelsberg from underneath",
-        description: "These are the wires that carry data from the dish to the faraday room. They can twist up to 720 degrees.",
-    },
-    {
-        id: "g-7",
-        src: "/gallery/effelsberg_cntrl.webp",
-        title: "Effelsberg Control Room",
-        description: "Where the magic happens.",
-        date: "2024-11-03",
-    },
-    {
-        id: "g-8",
-        src: "/gallery/compact-meeting.webp",
-        title: "A usual COMPACT group weekly meeting",
-        description: "Discussing science and getting excited about mostly noise. :(",
-        date: "2025-02-12",
-    },
-    {
-        id: "g-9",
-        src: "/gallery/fundi-fun.webp",
-        title: "Fundamental Physics in Radio Astronomy Group",
-        description: "The Fun@Fundi",
-        date: "2025-06-06",
-    },
-    {
-        id: "g-10",
-        src: "/gallery/vivek-talk.webp",
-        title: "Vivek's talk at the Fachbeirat, MPIfR",
-        description: "My picture in the slide is a complete coincidence. ;)",
-        date: "2025-06-06",
-    },
-    {
-        id: "g-11",
-        src: "/gallery/yaswant-gupta.webp",
-        title: "With Prof. Yaswant Gupta, Director, GMRT",
-        description: "An honour to meet him in person after 3 years of collaboration.",
-        date: "2025-01-20",
-    },
-    {
-        id: "g-12",
-        src: "/gallery/compact-kids-vivek.webp",
-        title: "COMPACT Kids with the Boss, NS Workshop 2025, Bonn",
-        description: "'Come see our posters' pictured here!",
-        date: "2025-05-10",
-    },
-    {
-        id: "g-13",
-        src: "/gallery/aot-host.webp",
-        title: "Hosting the Astronomy on Tap, Fiddler's Bonn.",
-        description: "Sharing science with the public is always fun! We host AoT Bonn on the last tuesday of every month.",
-        date: "2025-03-25",
-    },
-    {
-        id: "g-14",
-        src: "/gallery/Home_WF.webp",
-        title: "Home.",
-        description: "Where my heart is at peace. ❤️",
-        date: "28-10-2025"
-    }
-];
+// Map JSON data to include computed src path
+const GALLERY_ITEMS: GalleryItem[] = galleryData.items.map((item) => ({
+    id: item.id,
+    src: `/gallery/${item.filename}`,
+    title: item.title,
+    description: item.description,
+    date: item.date,
+    tags: item.tags,
+    location: item.location,
+}));
 
 export function Gallery({ theme }: { theme: Theme }) {
     const isDark = theme === "dark";
+
+    usePageMeta(
+        "Gallery – Fazal Kareem",
+        "Snapshots from telescopes, conferences, and personal moments—a visual collection from life in radio astronomy."
+    );
 
     const LOCAL_LIKES_KEY = "fk_gallery_likes";
 
@@ -252,6 +168,8 @@ export function Gallery({ theme }: { theme: Theme }) {
                                         <img
                                             src={item.src}
                                             alt={item.title}
+                                            loading="lazy"
+                                            decoding="async"
                                             className={cn(
                                                 "h-full w-full object-cover",
                                                 // Only apply grayscale and hover zoom on devices

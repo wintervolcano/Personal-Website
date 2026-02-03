@@ -4,9 +4,15 @@ import { SectionShell } from "./SectionShell";
 import { CardGrid } from "../components/CardGrid";
 import type { Theme } from "../components/themeToggle";
 import type { MdDoc } from "../lib/content";
+import { usePageMeta } from "../lib/usePageMeta";
 
 export function Research({ theme, docs }: { theme: Theme; docs: MdDoc[] }) {
   const navigate = useNavigate();
+
+  usePageMeta(
+    "Research – Fazal Kareem",
+    "Research updates and deep dives into pulsars, globular clusters, timing arrays, and gravitational wave searches."
+  );
 
   return (
     <SectionShell

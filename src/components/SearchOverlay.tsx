@@ -840,38 +840,40 @@ export function SearchOverlay({
 
     const rng = mulberry32(baseSeed);
 
-    // Time series: AR-ish noise plus spikes and bursts, no obvious sinusoid.
+    // Time series: Noise with constant mean (like radio telescope data).
     let ts = locked ? frozenTSRef.current : null;
     if (!ts) {
       const N = 720;
       const vals = new Array<number>(N);
 
-      let ar = 0;
-      const arA = 0.985;
-      const whiteScale = 6.2 + 6.0 * rng();
-      const arScale = 2.8 + 2.2 * rng();
+      // Baseline value (constant mean)
+      const baseline = 9830 + 5 * (rng() - 0.5);
 
-      const burstCount = rng() < 0.45 ? 1 : rng() < 0.2 ? 2 : 0;
-      const bursts: Array<{ i0: number; w: number; a: number }> = [];
-      for (let b = 0; b < burstCount; b++) {
-        bursts.push({ i0: Math.floor(rng() * N), w: 18 + Math.floor(rng() * 42), a: 8 + 18 * rng() });
-      }
+      // Moderate white noise scale
+      const whiteScale = 8 + 4 * rng();
+
+      // Small AR component for slight correlation between adjacent samples
+      let ar = 0;
+      const arA = 0.4;
+      const arScale = 2 + 1.5 * rng();
+
+      // Occasional outlier spikes (RFI-like)
+      const spikeProb = 0.005;
 
       for (let i = 0; i < N; i++) {
+        // Small correlated noise component
         ar = arA * ar + (rng() - 0.5) * arScale;
+
+        // White noise
         const w = (rng() - 0.5) * whiteScale;
 
-        const spike = rng() < 0.012 ? (10 + 26 * rng()) * (rng() < 0.6 ? 1 : -1) : 0;
+        // Occasional spikes
+        const spike = rng() < spikeProb ? (6 + 10 * rng()) * (rng() < 0.5 ? 1 : -1) : 0;
 
-        let burst = 0;
-        for (const br of bursts) {
-          const dx = (i - br.i0) / br.w;
-          burst += Math.exp(-0.5 * dx * dx) * br.a * (rng() < 0.5 ? 1 : -1);
-        }
+        // Micro signal when near pulsar
+        const micro = targetVisible && rng() < (0.006 + 0.02 * proximity) ? (5 + 8 * rng()) : 0;
 
-        const micro = targetVisible && rng() < (0.006 + 0.02 * proximity) ? (8 + 16 * rng()) : 0;
-
-        vals[i] = ar + w + spike + burst + micro;
+        vals[i] = baseline + ar + w + spike + micro;
       }
 
       ts = vals;
@@ -907,18 +909,16 @@ export function SearchOverlay({
         decoyPeaks.push(p);
       }
 
-      // Deterministic drift, stable for a given cursor or capture seed (prevents spectrum jumping).
-      const ampDrift = 0.92 + 0.08 * Math.sin(((baseSeed % 10000) / 10000) * 2 * Math.PI);
-      const baseRipple = 0.020 + 0.028 * (s.mouseX / (window.innerWidth || 1));
+      // Flat noise floor with random variations (like real radio astronomy power spectra)
+      const baseLevel = 0.55 + 0.05 * (rng() - 0.5); // Slight random offset per spectrum
 
       for (let i = 0; i < bins; i++) {
         const u = i / (bins - 1);
 
-        const roll = 0.58 + 0.32 * (1 - u);
-        const white = (rng() - 0.5) * 0.20;
-        const ripple = Math.sin(u * 7.0 * 2 * Math.PI) * baseRipple * ampDrift;
+        // Flat baseline with white noise only (no slope, no sinusoidal pattern)
+        const white = (rng() - 0.5) * 0.12;
 
-        let y = roll + white + ripple;
+        let y = baseLevel + white;
 
         for (const dp of decoyPeaks) {
           const a = 0.06 + 0.10 * rng();
@@ -1306,7 +1306,13 @@ export function SearchOverlay({
               {/* Time series panel */}
               <div className="col-span-12 md:col-span-3" data-tutorial="time-domain-panel">
                 <div className="rounded-2xl border border-white/12 bg-black/60 overflow-hidden">
-                  <canvas ref={tsRef} className="h-[140px] w-full" data-nolock />
+                  <canvas
+                    ref={tsRef}
+                    className="h-[140px] w-full"
+                    data-nolock
+                    role="img"
+                    aria-label="Time domain signal visualization showing raw synthetic voltages"
+                  />
                 </div>
                 <div className="mt-2 text-[11px] tracking-[0.22em] uppercase text-white/55">
                   Panel A: raw voltages (synthetic)
@@ -1321,6 +1327,8 @@ export function SearchOverlay({
                     onClick={attemptFromFFTClick}
                     className="pointer-events-auto h-[140px] w-full cursor-crosshair"
                     data-nolock
+                    role="img"
+                    aria-label="Frequency domain power spectrum - click on peaks to detect pulsars after capturing"
                   />
                 </div>
                 <div className="mt-2 text-[11px] tracking-[0.22em] uppercase text-white/55">

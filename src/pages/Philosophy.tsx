@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "../lib/cn";
 import type { Theme } from "../components/themeToggle";
+import { usePageMeta } from "../lib/usePageMeta";
 
 function Pill({
     theme,
@@ -140,6 +141,11 @@ function TOCLink({
 
 export function Philosophy({ theme }: { theme: Theme }) {
     const isDark = theme === "dark";
+
+    usePageMeta(
+        "Site Philosophy – Fazal Kareem",
+        "The design philosophy behind this website—principles, layout, typography, motion, and the Search Mode experience."
+    );
 
     return (
         <div className={cn("w-full", isDark ? "bg-black" : "bg-white")}>

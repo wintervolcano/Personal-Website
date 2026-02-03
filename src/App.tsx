@@ -1,6 +1,6 @@
 // App layout and routes.
-import React, { useEffect, useMemo, useState } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Analytics } from "@vercel/analytics/react";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -12,11 +12,15 @@ import { Footer } from "./components/Footer";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { DiscoveryModal } from "./components/DiscoveryModal";
 import { ConfettiOverlay, type ConfettiLevel } from "./components/ConfettiOverlay";
+import { SkipToMain } from "./components/SkipToMain";
 import type { Pulsar } from "./lib/pulsars";
-import { SearchMode } from "./pages/SearchMode";
-import { SearchModeChapter6 } from "./pages/SearchModeChapter6";
-import { Gallery } from "./pages/Gallery";
 import { Home } from "./pages/Home";
+
+// Lazy-loaded heavy components for better initial load performance
+const SearchMode = lazy(() => import("./pages/SearchMode").then(m => ({ default: m.SearchMode })));
+const SearchModeChapter6 = lazy(() => import("./pages/SearchModeChapter6").then(m => ({ default: m.SearchModeChapter6 })));
+const Gallery = lazy(() => import("./pages/Gallery").then(m => ({ default: m.Gallery })));
+const DetectionsDashboard = lazy(() => import("./pages/DetectionsDashboard").then(m => ({ default: m.DetectionsDashboard })));
 import { Research } from "./pages/Research";
 import { Projects } from "./pages/Projects";
 import { Publications } from "./pages/Publications";
@@ -25,6 +29,7 @@ import { Blog } from "./pages/Blog";
 import { About } from "./pages/About";
 import { PersonalRecommendations } from "./pages/PersonalRecommendations";
 import { Philosophy } from "./pages/Philosophy";
+import { NotFound } from "./pages/NotFound";
 import { ForStudents } from "./content/resources/for-Students";
 import { ForAstronomers } from "./content/resources/for-Astronomers";
 import { ForMedia } from "./content/resources/for-Media";
@@ -35,7 +40,6 @@ import ResearchPost from "./pages/ResearchPost";
 import ProjectsPost from "./pages/ProjectsPost";
 import BlogPost from "./pages/BlogPost";
 import ResourcePost from "./pages/ResourcePost";
-import { DetectionsDashboard } from "./pages/DetectionsDashboard";
 
 // Auto page key list for distributing pulsars across the site.
 import { SITE_PAGE_KEYS } from "./lib/sitePageKeys";
@@ -248,9 +252,10 @@ export default function App() {
       )}
     >
       <ScrollToTop />
+      <SkipToMain theme={theme} />
       <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} isMobile={isMobile} />
 
-      <main className="flex-1 pt-24 sm:pt-28">
+      <main id="main-content" className="flex-1 pt-24 sm:pt-28">
         <AnimatePresence mode="wait">
           <motion.div key={location.pathname}>
             <PageTransition>
@@ -280,27 +285,47 @@ export default function App() {
                 <Route
                   path="/search-mode"
                   element={
-                    <SearchMode
-                      theme={theme}
-                      setTheme={setTheme}
-                      onDemoSolved={(p, stats) => handleSolved(p, 1, stats)}
-                      hotspotPositions={hotspotPositions}
-                      isMobile={isMobile}
-                    />
+                    <Suspense fallback={null}>
+                      <SearchMode
+                        theme={theme}
+                        setTheme={setTheme}
+                        onDemoSolved={(p, stats) => handleSolved(p, 1, stats)}
+                        hotspotPositions={hotspotPositions}
+                        isMobile={isMobile}
+                      />
+                    </Suspense>
                   }
                 />
                 <Route
                   path="/search-mode/chapter-6"
-                  element={<SearchModeChapter6 theme={theme} setTheme={setTheme} />}
+                  element={
+                    <Suspense fallback={null}>
+                      <SearchModeChapter6 theme={theme} setTheme={setTheme} />
+                    </Suspense>
+                  }
                 />
                 <Route path="/site-philosophy" element={<Philosophy theme={theme} />} />
                 <Route path="/resources/for-astronomers" element={<ForAstronomers theme={theme} />} />
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />
                 <Route path="/resources/for-media" element={<ForMedia theme={theme} />} />
-                <Route path="/gallery" element={<Gallery theme={theme} />} />
+                <Route
+                  path="/gallery"
+                  element={
+                    <Suspense fallback={null}>
+                      <Gallery theme={theme} />
+                    </Suspense>
+                  }
+                />
                 {/* Internal-only diagnostics page, no nav link */}
-                <Route path="/internal/detections" element={<DetectionsDashboard theme={theme} />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route
+                  path="/internal/detections"
+                  element={
+                    <Suspense fallback={null}>
+                      <DetectionsDashboard theme={theme} />
+                    </Suspense>
+                  }
+                />
+                <Route path="*" element={<NotFound theme={theme} />} />
               </Routes>
             </PageTransition>
           </motion.div>

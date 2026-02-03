@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Search } from "lucide-react";
 import type { Theme } from "../components/themeToggle";
 import { fetchOrcidPublications, searchPublications, type PublicationItem } from "../lib/publications";
+import { usePageMeta } from "../lib/usePageMeta";
 
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
@@ -78,6 +79,11 @@ function PubRow({ theme, p }: { theme: Theme; p: PublicationItem }) {
 
 export function Publications({ theme }: { theme: Theme }) {
   const isDark = theme === "dark";
+
+  usePageMeta(
+    "Publications – Fazal Kareem",
+    "Journal papers, conference talks, and posters on pulsars, gravitational waves, and radio astronomy."
+  );
 
   // Put your IDs here, or read them from env or config.
   const ORCID_ID = "0000-0003-2444-838X";

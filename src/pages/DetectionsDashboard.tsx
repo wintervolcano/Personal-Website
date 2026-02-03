@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionShell } from "./SectionShell";
 import type { Theme } from "../components/themeToggle";
+import { DetectionsLineChart } from "../components/dashboard/DetectionsLineChart";
+import { DetectionsBarChart } from "../components/dashboard/DetectionsBarChart";
+import { CountryPieChart } from "../components/dashboard/CountryPieChart";
 
 type PulsarSummary = {
   id: string;
@@ -14,13 +17,31 @@ type DetectionEvent = {
   country: string;
   userAgent?: string;
   ts: string;
-   name: string;
-   page?: string | null;
+  name: string;
+  page?: string | null;
+};
+
+type DailyCount = {
+  date: string;
+  count: number;
+};
+
+type HourlyCount = {
+  hour: number;
+  count: number;
+};
+
+type CountryCount = {
+  country: string;
+  count: number;
 };
 
 type SummaryResponse = {
   pulsars: PulsarSummary[];
   events?: DetectionEvent[];
+  dailyCounts?: DailyCount[];
+  hourlyDistribution?: HourlyCount[];
+  countryDistribution?: CountryCount[];
 };
 
 export function DetectionsDashboard({ theme }: { theme: Theme }) {
@@ -215,13 +236,62 @@ export function DetectionsDashboard({ theme }: { theme: Theme }) {
             <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-black/60 dark:text-white/60">
               Total detections
             </p>
-            <div className="mt-3 text-5xl sm:text-6xl lg:text-7xl font-semibold text-black">
+            <div className="mt-3 text-5xl sm:text-6xl lg:text-7xl font-semibold text-black dark:text-white">
               {totalDetections.toLocaleString()}
             </div>
             <p className="mt-2 text-xs sm:text-sm text-black/60 dark:text-white/60">
               Sum of all pulsar detections recorded by Search Mode.
             </p>
           </section>
+
+          {/* Analytics Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Detection Trends */}
+            {data?.dailyCounts && data.dailyCounts.length > 0 && (
+              <section className="rounded-3xl border border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] p-5">
+                <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
+                  Detection Trends (Last 30 Days)
+                </h3>
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+                  Daily detection counts over the past month.
+                </p>
+                <div className="mt-4">
+                  <DetectionsLineChart data={data.dailyCounts} theme={theme} />
+                </div>
+              </section>
+            )}
+
+            {/* Activity by Hour */}
+            {data?.hourlyDistribution && data.hourlyDistribution.length > 0 && (
+              <section className="rounded-3xl border border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] p-5">
+                <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
+                  Activity by Hour (UTC)
+                </h3>
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+                  Distribution of detections by hour of day.
+                </p>
+                <div className="mt-4">
+                  <DetectionsBarChart data={data.hourlyDistribution} theme={theme} />
+                </div>
+              </section>
+            )}
+
+            {/* Geographic Distribution */}
+            {data?.countryDistribution && data.countryDistribution.length > 0 && (
+              <section className="rounded-3xl border border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] p-5 lg:col-span-2">
+                <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">
+                  Geographic Distribution
+                </h3>
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+                  Top 10 countries by detection count.
+                </p>
+                <div className="mt-4 max-w-md mx-auto">
+                  <CountryPieChart data={data.countryDistribution} theme={theme} />
+                </div>
+              </section>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <section className="lg:col-span-2">
               <h3 className="text-sm font-semibold tracking-[0.22em] uppercase text-black/60 dark:text-white/60">

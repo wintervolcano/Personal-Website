@@ -194,6 +194,58 @@ export default async function handler(req: any, res: any) {
       })
       .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
 
+    // Compute aggregated data for charts
+    const dailyCounts = (() => {
+      const counts = new Map<string, number>();
+      const now = new Date();
+      // Initialize last 30 days with 0
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split("T")[0];
+        counts.set(key, 0);
+      }
+      // Count events per day
+      for (const ev of events) {
+        try {
+          const date = ev.ts.split("T")[0];
+          if (counts.has(date)) {
+            counts.set(date, (counts.get(date) || 0) + 1);
+          }
+        } catch {
+          // Skip malformed timestamps
+        }
+      }
+      return Array.from(counts.entries())
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    })();
+
+    const hourlyDistribution = (() => {
+      const counts = new Array(24).fill(0);
+      for (const ev of events) {
+        try {
+          const hour = new Date(ev.ts).getUTCHours();
+          if (hour >= 0 && hour < 24) counts[hour]++;
+        } catch {
+          // Skip malformed timestamps
+        }
+      }
+      return counts.map((count, hour) => ({ hour, count }));
+    })();
+
+    const countryDistribution = (() => {
+      const counts = new Map<string, number>();
+      for (const ev of events) {
+        const country = ev.country || "Unknown";
+        counts.set(country, (counts.get(country) || 0) + 1);
+      }
+      return Array.from(counts.entries())
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10); // Top 10 countries
+    })();
+
     res.status(200).json({
       pulsars: await (async () => {
         const entries = Array.from(idMap.values());
@@ -212,6 +264,9 @@ export default async function handler(req: any, res: any) {
         return items;
       })(),
       events,
+      dailyCounts,
+      hourlyDistribution,
+      countryDistribution,
     });
   } catch (e) {
     res.status(500).json({ error: "KV error", detail: String(e) });

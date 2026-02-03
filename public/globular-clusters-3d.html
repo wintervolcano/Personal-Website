@@ -186,6 +186,7 @@
       transition: transform .12s ease, background .12s ease, border-color .12s ease;
       pointer-events: auto;
       white-space: nowrap;
+      touch-action: manipulation;
     }
 
     .btn:hover {
@@ -884,10 +885,12 @@
       .btn {
         padding: 10px 12px;
         font-size: .74rem;
+        min-height: 44px;
       }
 
       #search {
         font-size: .9rem;
+        min-height: 44px;
       }
 
       #panel header,
@@ -1175,7 +1178,7 @@
 
         <p><strong>Features:</strong></p>
         <ul>
-          <li><strong>Navigation:</strong> Click & drag to rotate, scroll to zoom, right-click to pan</li>
+          <li><strong>Navigation:</strong> Drag to rotate, pinch to zoom, two-finger pan</li>
           <li><strong>Search:</strong> Type cluster names (NGC 104, Ter 5) or pulsar names in the search bar</li>
           <li><strong>Selection:</strong> Click on any cluster to pin its information panel</li>
           <li><strong>Filtering: Filter clusters by pulsars, distance, mass</strong></li>
@@ -1223,7 +1226,7 @@
       <header>
         <div>
           <h2 id="ui-title">—</h2>
-          <div class="sub" id="ui-sub">Hover preview — click a cluster to pin</div>
+        <div class="sub" id="ui-sub">Hover preview — click a cluster to pin</div>
         </div>
         <button id="close" title="Close panel">✕</button>
       </header>
@@ -1291,7 +1294,7 @@
         <div class="pulsars">
           <div class="phead">
             <div>Pulsars in this cluster</div>
-            <div id="ui-note">click empty space to unpin</div>
+          <div id="ui-note">click empty space to unpin</div>
           </div>
           <div class="plist" id="ui-psrs"></div>
         </div>
@@ -1383,6 +1386,8 @@
       lstha: el("ui-lstha"),
     };
 
+    const isTouchPointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
     function setStatus(message) {
       if (!status) return;
       status.textContent = message;
@@ -1393,6 +1398,17 @@
       if (!toast) return;
       toast.textContent = message;
       toast.classList.add("visible");
+    }
+
+    if (isTouchPointer) {
+      ui.sub.textContent = "Tap to preview — tap again to pin";
+      const uiNote = el("ui-note");
+      if (uiNote) uiNote.textContent = "tap empty space to unpin";
+      const hintKey = "gc3d_mobile_hint_v1";
+      if (!localStorage.getItem(hintKey)) {
+        showToast("Controls: drag to rotate • pinch to zoom • two-finger pan");
+        localStorage.setItem(hintKey, "1");
+      }
     }
 
     // Auto-hide HUD on mobile to give more canvas space.
@@ -1504,6 +1520,7 @@
     renderer.setClearColor(0x000000);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.getElementById("canvas-container").appendChild(renderer.domElement);
+    renderer.domElement.style.touchAction = "none";
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -1513,6 +1530,8 @@
     controls.rotateSpeed = 0.55;
     controls.minDistance = 0.7;
     controls.maxDistance = 7500;
+    controls.touches.ONE = THREE.TOUCH.ROTATE;
+    controls.touches.TWO = THREE.TOUCH.PAN;
 
     // Lighting.
     scene.add(new THREE.AmbientLight(0xffffff, 0.38));
@@ -2324,7 +2343,9 @@
       const psrs = pulsarsForCluster(c);
 
       ui.title.textContent = c.name || c.id;
-      ui.sub.textContent = pin ? "Pinned (Esc or ✕ to close)" : "Hover preview — click a cluster to pin";
+      ui.sub.textContent = pin
+        ? "Pinned (Esc or ✕ to close)"
+        : (isTouchPointer ? "Tap to preview — tap again to pin" : "Hover preview — click a cluster to pin");
       ui.id.textContent = c.id || c.name || "—";
       ui.pcount.textContent = `${psrs.length} pulsars`;
       ui.rsun.textContent = `R⊙ ${Number(c.rsun_kpc).toFixed(2)} kpc`;
@@ -2885,31 +2906,99 @@
     });
 
     // Mouse interaction.
-    renderer.domElement.addEventListener("mousemove", (e) => {
-      if (pinned) return;
-      const c = pickCluster(e);
-      hovered = c;
-      if (c) {
-        showPanel(c, { pin: false });
-        if (sunLineVisible) {
-          const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
-          sunLine.geometry.setFromPoints([sunPos, pos]);
-          sunLine.visible = true;
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      renderer.domElement.addEventListener("mousemove", (e) => {
+        if (pinned) return;
+        const c = pickCluster(e);
+        hovered = c;
+        if (c) {
+          showPanel(c, { pin: false });
+          if (sunLineVisible) {
+            const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+            sunLine.geometry.setFromPoints([sunPos, pos]);
+            sunLine.visible = true;
+          }
+        } else {
+          hidePanel();
+          sunLine.visible = false;
+          hovered = null;
         }
-      } else {
-        hidePanel();
-        sunLine.visible = false;
-        hovered = null;
-      }
-    });
+      });
+    }
 
     renderer.domElement.addEventListener("click", (e) => {
+      if (isTouchPointer) return;
       const c = pickCluster(e);
       if (!c) return;
       lastView = snapshotView();
       focusCluster(c, { pin: true });
       syncURLStateDebounced();
     });
+
+    // Touch-friendly tap handling on mobile.
+    if (isTouchPointer) {
+      const TAP_MOVE_PX = 8;
+      const TAP_TIME_MS = 350;
+      const DOUBLE_TAP_MS = 500;
+      let tapStart = null;
+      let lastTapKey = null;
+      let lastTapAt = 0;
+      let activePointers = 0;
+
+      renderer.domElement.addEventListener("pointerdown", (e) => {
+        if (e.pointerType !== "touch") return;
+        activePointers += 1;
+        tapStart = { x: e.clientX, y: e.clientY, t: performance.now() };
+      });
+
+      renderer.domElement.addEventListener("pointerup", (e) => {
+        if (e.pointerType !== "touch") return;
+        activePointers = Math.max(0, activePointers - 1);
+        if (!tapStart) return;
+        const dt = performance.now() - tapStart.t;
+        const dx = e.clientX - tapStart.x;
+        const dy = e.clientY - tapStart.y;
+        const dist = Math.hypot(dx, dy);
+        const isTap = dt <= TAP_TIME_MS && dist <= TAP_MOVE_PX && activePointers === 0;
+        tapStart = null;
+        if (!isTap) return;
+
+        const c = pickCluster(e);
+        if (!c) {
+          if (pinned) {
+            pinned = null;
+            hovered = null;
+            hidePanel();
+            sunLine.visible = false;
+            restoreView(lastView);
+            lastView = null;
+            syncURLStateDebounced();
+          }
+          return;
+        }
+
+        const now = performance.now();
+        const tapKey = c.id || c.cluster_token || String(c.name || "");
+        const isDoubleTap = lastTapKey === tapKey && (now - lastTapAt) <= DOUBLE_TAP_MS;
+        lastTapKey = tapKey;
+        lastTapAt = now;
+
+        if (isDoubleTap) {
+          lastView = snapshotView();
+          focusCluster(c, { pin: true });
+          syncURLStateDebounced();
+        } else {
+          hovered = c;
+          const label = c.name || c.id || c.cluster_token || "Cluster";
+          showToast(`Preview: ${label}`);
+          if (sunLineVisible) {
+            const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
+            sunLine.geometry.setFromPoints([sunPos, pos]);
+            sunLine.visible = true;
+          }
+        }
+      });
+    }
 
     // Close panel.
     el("close").addEventListener("click", () => {

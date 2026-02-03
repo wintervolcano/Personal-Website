@@ -806,6 +806,30 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    #toast.toast-closable {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    #toast .toast-text {
+      display: block;
+    }
+
+    #toast .toast-close {
+      border: 0;
+      background: rgba(255, 255, 255, .10);
+      color: rgba(255, 255, 255, .92);
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: .85rem;
+    }
+
     @media (max-width: 980px) {
       #topbar {
         top: 16px;
@@ -1295,7 +1319,7 @@
           <h2 id="ui-title">—</h2>
         <div class="sub" id="ui-sub">Hover preview — click a cluster to pin</div>
         </div>
-        <button id="close" title="Close panel">✕</button>
+        <button id="close" title="Close panel" data-no-drag="true">✕</button>
       </header>
 
       <div class="body">
@@ -1385,6 +1409,9 @@
     import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
     import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
     import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+    import { Line2 } from "three/addons/lines/Line2.js";
+    import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+    import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
     const CONFIG = {
       apiBase: "https://gc-worker.fazalabdulkareem12.workers.dev",
@@ -1465,9 +1492,35 @@
     }
 
     // Toast helper used as a persistent legend.
-    function showToast(message) {
+    function showToast(message, options = {}) {
       if (!toast) return;
-      toast.textContent = message;
+      const { closable = false, onClose } = options;
+      toast.classList.remove("toast-closable");
+      toast.innerHTML = "";
+
+      if (!closable) {
+        toast.textContent = message;
+      } else {
+        toast.classList.add("toast-closable");
+        const span = document.createElement("span");
+        span.className = "toast-text";
+        span.textContent = message;
+        const btn = document.createElement("button");
+        btn.className = "toast-close";
+        btn.type = "button";
+        btn.setAttribute("aria-label", "Close");
+        btn.textContent = "✕";
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toast.classList.remove("visible");
+          toast.classList.remove("toast-closable");
+          toast.innerHTML = "";
+          if (onClose) onClose();
+        });
+        toast.appendChild(span);
+        toast.appendChild(btn);
+      }
+
       toast.classList.add("visible");
     }
 
@@ -2081,13 +2134,22 @@
 
     // Sun line.
     let sunLineVisible = true;
-    const sunLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({
+    const sunLineGeometry = new LineGeometry();
+    const sunLineMaterial = new LineMaterial({
       color: CONFIG.colors.line,
       transparent: true,
-      opacity: 0.55
-    }));
+      opacity: 0.7,
+      linewidth: 2.25,
+    });
+    sunLineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+    const sunLine = new Line2(sunLineGeometry, sunLineMaterial);
     sunLine.visible = sunLineVisible;
     scene.add(sunLine);
+
+    function updateSunLine(pos) {
+      sunLineGeometry.setPositions([sunPos.x, sunPos.y, sunPos.z, pos.x, pos.y, pos.z]);
+      sunLine.computeLineDistances();
+    }
 
     // Clusters group.
     const clustersGroup = new THREE.Group();
@@ -2530,6 +2592,13 @@
         let dragStartY = null;
         let dragDelta = 0;
 
+        const shouldStartDrag = (target) => {
+          if (!target) return false;
+          if (target.closest("[data-no-drag]")) return false;
+          const tag = target.tagName?.toLowerCase?.() || "";
+          return !["button", "input", "select", "textarea"].includes(tag);
+        };
+
         const onStart = (clientY) => {
           dragStartY = clientY;
           dragDelta = 0;
@@ -2553,6 +2622,7 @@
 
         el.addEventListener("touchstart", (e) => {
           if (!e.touches?.length) return;
+          if (!shouldStartDrag(e.target)) return;
           onStart(e.touches[0].clientY);
         }, { passive: true });
         el.addEventListener("touchmove", (e) => {
@@ -2563,6 +2633,7 @@
 
         el.addEventListener("pointerdown", (e) => {
           if (e.pointerType !== "touch") return;
+          if (!shouldStartDrag(e.target)) return;
           onStart(e.clientY);
           el.setPointerCapture(e.pointerId);
         });
@@ -2630,7 +2701,7 @@
       }
 
       if (sunLineVisible) {
-        sunLine.geometry.setFromPoints([sunPos, pos]);
+          updateSunLine(pos);
         sunLine.visible = true;
       }
 
@@ -2819,7 +2890,7 @@
           showPanel(c, { pin: true });
           if (sunLineVisible) {
             const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
-            sunLine.geometry.setFromPoints([sunPos, pos]);
+          updateSunLine(pos);
             sunLine.visible = true;
           }
         }
@@ -3054,7 +3125,7 @@
           showPanel(c, { pin: false });
           if (sunLineVisible) {
             const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
-            sunLine.geometry.setFromPoints([sunPos, pos]);
+            updateSunLine(pos);
             sunLine.visible = true;
           }
         } else {
@@ -3138,10 +3209,17 @@
         } else {
           hovered = c;
           const label = c.name || c.id || c.cluster_token || "Cluster";
-          showToast(`Preview: ${label}`);
+          showToast(`Preview: ${label}`, {
+            closable: true,
+            onClose: () => {
+              hovered = null;
+              hidePanel();
+              sunLine.visible = false;
+            },
+          });
           if (sunLineVisible) {
             const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
-            sunLine.geometry.setFromPoints([sunPos, pos]);
+            updateSunLine(pos);
             sunLine.visible = true;
           }
         }
@@ -3252,6 +3330,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       composer.setSize(window.innerWidth, window.innerHeight);
+      sunLineMaterial.resolution.set(window.innerWidth, window.innerHeight);
       applyPerf();
     });
 

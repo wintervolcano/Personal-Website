@@ -312,6 +312,20 @@
       z-index: 30;
     }
 
+    .drag-handle {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 42px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .22);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .08) inset;
+      display: none;
+      z-index: 3;
+    }
+
     #panel.visible {
       opacity: 1;
       transform: translateY(0);
@@ -901,6 +915,49 @@
         backdrop-filter: blur(10px) saturate(120%);
       }
 
+      body.touch-ui #panel {
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        top: auto;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        width: auto;
+        border-radius: 22px;
+      }
+
+      body.touch-ui #panel header {
+        padding-top: 22px;
+      }
+
+      body.touch-ui #panel .drag-handle {
+        display: block;
+      }
+
+      body.touch-ui #panel.collapsed {
+        max-height: 38vh;
+        height: 38vh;
+      }
+
+      body.touch-ui #panel.expanded {
+        max-height: 70vh;
+        height: 70vh;
+      }
+
+      body.touch-ui #panel .body {
+        max-height: calc(100% - 70px);
+      }
+
+      body.touch-ui #panel.collapsed .pulsars {
+        display: none;
+      }
+
+      body.touch-ui #panel.collapsed .grid .box:nth-child(n+5) {
+        display: none;
+      }
+
+      body.touch-ui #panel.collapsed .hero button {
+        display: none;
+      }
+
       body.hud-hidden #hud {
         opacity: 0;
         transform: translateY(12px);
@@ -1223,6 +1280,7 @@
 
     <!-- Cluster panel -->
     <aside id="panel" class="glass" aria-hidden="true">
+      <div id="panel-drag" class="drag-handle" aria-hidden="true"></div>
       <header>
         <div>
           <h2 id="ui-title">—</h2>
@@ -1354,6 +1412,7 @@
     // DOM elements.
     const el = (id) => document.getElementById(id);
     const panel = el("panel");
+    const panelDrag = el("panel-drag");
     const drawer = el("drawer");
     const infoModal = el("info-modal");
     const status = el("status");
@@ -1387,6 +1446,9 @@
     };
 
     const isTouchPointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    if (isTouchPointer) {
+      document.body.classList.add("touch-ui");
+    }
 
     function setStatus(message) {
       if (!status) return;
@@ -1406,7 +1468,7 @@
       if (uiNote) uiNote.textContent = "tap empty space to unpin";
       const hintKey = "gc3d_mobile_hint_v1";
       if (!localStorage.getItem(hintKey)) {
-        showToast("Controls: drag to rotate • pinch to zoom • two-finger pan");
+        showToast("Tap to preview • double tap to pin • drag to rotate • pinch to zoom");
         localStorage.setItem(hintKey, "1");
       }
     }
@@ -2339,6 +2401,13 @@
     }
 
     // Panel display.
+    let panelState = "collapsed";
+    function setPanelState(state) {
+      panelState = state;
+      panel.classList.remove("collapsed", "expanded");
+      if (state) panel.classList.add(state);
+    }
+
     function showPanel(c, { pin = false } = {}) {
       const psrs = pulsarsForCluster(c);
 
@@ -2433,14 +2502,45 @@
 
       panel.classList.add("visible");
       panel.setAttribute("aria-hidden", "false");
+      if (isTouchPointer && pin) {
+        setPanelState("collapsed");
+      }
     }
 
     function hidePanel() {
       panel.classList.remove("visible");
       panel.setAttribute("aria-hidden", "true");
+      panel.classList.remove("collapsed", "expanded");
     }
 
     // Interaction.
+    if (isTouchPointer && panelDrag) {
+      let dragStartY = null;
+      let dragDelta = 0;
+      panelDrag.addEventListener("pointerdown", (e) => {
+        if (e.pointerType !== "touch") return;
+        dragStartY = e.clientY;
+        dragDelta = 0;
+        panelDrag.setPointerCapture(e.pointerId);
+      });
+      panelDrag.addEventListener("pointermove", (e) => {
+        if (dragStartY == null) return;
+        dragDelta = e.clientY - dragStartY;
+      });
+      panelDrag.addEventListener("pointerup", (e) => {
+        if (dragStartY == null) return;
+        panelDrag.releasePointerCapture(e.pointerId);
+        const delta = dragDelta;
+        dragStartY = null;
+        dragDelta = 0;
+        if (Math.abs(delta) < 12) {
+          setPanelState(panelState === "expanded" ? "collapsed" : "expanded");
+          return;
+        }
+        if (delta < -40) setPanelState("expanded");
+        if (delta > 40) setPanelState("collapsed");
+      });
+    }
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -2951,6 +3051,11 @@
         tapStart = { x: e.clientX, y: e.clientY, t: performance.now() };
       });
 
+      renderer.domElement.addEventListener("pointercancel", () => {
+        activePointers = 0;
+        tapStart = null;
+      });
+
       renderer.domElement.addEventListener("pointerup", (e) => {
         if (e.pointerType !== "touch") return;
         activePointers = Math.max(0, activePointers - 1);
@@ -2973,6 +3078,10 @@
             restoreView(lastView);
             lastView = null;
             syncURLStateDebounced();
+          } else if (hovered) {
+            hovered = null;
+            hidePanel();
+            sunLine.visible = false;
           }
           return;
         }

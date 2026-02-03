@@ -57,6 +57,14 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
+function StaticRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+
+  return <div className="px-4 py-6 text-center">Redirecting…</div>;
+}
+
 function pageKeyFromPath(pathname: string): PageKey {
   if (pathname === "/" || pathname === "") return "home";
   if (pathname.startsWith("/research")) return "research";
@@ -304,6 +312,7 @@ export default function App() {
                     </Suspense>
                   }
                 />
+                <Route path="/globular-cluster-explorer" element={<StaticRedirect to="/globular-clusters-3d.html" />} />
                 <Route path="/site-philosophy" element={<Philosophy theme={theme} />} />
                 <Route path="/resources/for-astronomers" element={<ForAstronomers theme={theme} />} />
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />

@@ -314,16 +314,17 @@
 
     .drag-handle {
       position: absolute;
-      top: 8px;
+      top: 6px;
       left: 50%;
       transform: translateX(-50%);
-      width: 42px;
-      height: 5px;
+      width: 56px;
+      height: 6px;
       border-radius: 999px;
       background: rgba(255, 255, 255, .22);
       box-shadow: 0 0 0 1px rgba(255, 255, 255, .08) inset;
       display: none;
       z-index: 3;
+      pointer-events: auto;
     }
 
     #panel.visible {
@@ -540,6 +541,7 @@
       max-height: calc(100vh - 110px);
       border-radius: 22px;
       overflow: hidden;
+      overflow-x: hidden;
       opacity: 0;
       transform: translateY(-8px);
       transition: opacity .16s ease, transform .16s ease;
@@ -576,6 +578,7 @@
     #drawer .body {
       padding: 14px;
       overflow: auto;
+      overflow-x: hidden;
       max-height: calc(100vh - 100px - 64px);
       background: rgba(12, 14, 22, .40);
     }
@@ -709,6 +712,11 @@
       font-size: .78rem;
       color: rgba(255, 255, 255, .72);
       line-height: 1.35
+    }
+
+    #prov {
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .pillbar {
@@ -926,6 +934,7 @@
 
       body.touch-ui #panel header {
         padding-top: 22px;
+        touch-action: none;
       }
 
       body.touch-ui #panel .drag-handle {
@@ -1593,7 +1602,7 @@
     controls.minDistance = 0.7;
     controls.maxDistance = 7500;
     controls.touches.ONE = THREE.TOUCH.ROTATE;
-    controls.touches.TWO = THREE.TOUCH.PAN;
+    controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
 
     // Lighting.
     scene.add(new THREE.AmbientLight(0xffffff, 0.38));
@@ -2514,32 +2523,62 @@
     }
 
     // Interaction.
-    if (isTouchPointer && panelDrag) {
-      let dragStartY = null;
-      let dragDelta = 0;
-      panelDrag.addEventListener("pointerdown", (e) => {
-        if (e.pointerType !== "touch") return;
-        dragStartY = e.clientY;
-        dragDelta = 0;
-        panelDrag.setPointerCapture(e.pointerId);
-      });
-      panelDrag.addEventListener("pointermove", (e) => {
-        if (dragStartY == null) return;
-        dragDelta = e.clientY - dragStartY;
-      });
-      panelDrag.addEventListener("pointerup", (e) => {
-        if (dragStartY == null) return;
-        panelDrag.releasePointerCapture(e.pointerId);
-        const delta = dragDelta;
-        dragStartY = null;
-        dragDelta = 0;
-        if (Math.abs(delta) < 12) {
-          setPanelState(panelState === "expanded" ? "collapsed" : "expanded");
-          return;
-        }
-        if (delta < -40) setPanelState("expanded");
-        if (delta > 40) setPanelState("collapsed");
-      });
+    if (isTouchPointer) {
+      const headerDragTarget = panel?.querySelector("header");
+      const bindDrag = (el) => {
+        if (!el) return;
+        let dragStartY = null;
+        let dragDelta = 0;
+
+        const onStart = (clientY) => {
+          dragStartY = clientY;
+          dragDelta = 0;
+        };
+        const onMove = (clientY) => {
+          if (dragStartY == null) return;
+          dragDelta = clientY - dragStartY;
+        };
+        const onEnd = () => {
+          if (dragStartY == null) return;
+          const delta = dragDelta;
+          dragStartY = null;
+          dragDelta = 0;
+          if (Math.abs(delta) < 12) {
+            setPanelState(panelState === "expanded" ? "collapsed" : "expanded");
+            return;
+          }
+          if (delta < -40) setPanelState("expanded");
+          if (delta > 40) setPanelState("collapsed");
+        };
+
+        el.addEventListener("touchstart", (e) => {
+          if (!e.touches?.length) return;
+          onStart(e.touches[0].clientY);
+        }, { passive: true });
+        el.addEventListener("touchmove", (e) => {
+          if (!e.touches?.length) return;
+          onMove(e.touches[0].clientY);
+        }, { passive: true });
+        el.addEventListener("touchend", () => onEnd(), { passive: true });
+
+        el.addEventListener("pointerdown", (e) => {
+          if (e.pointerType !== "touch") return;
+          onStart(e.clientY);
+          el.setPointerCapture(e.pointerId);
+        });
+        el.addEventListener("pointermove", (e) => {
+          if (e.pointerType !== "touch") return;
+          onMove(e.clientY);
+        });
+        el.addEventListener("pointerup", (e) => {
+          if (e.pointerType !== "touch") return;
+          el.releasePointerCapture(e.pointerId);
+          onEnd();
+        });
+      };
+
+      bindDrag(panelDrag);
+      bindDrag(headerDragTarget);
     }
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();

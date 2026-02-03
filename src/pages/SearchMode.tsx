@@ -1197,6 +1197,7 @@ export function SearchMode({
     const [currentStep, setCurrentStep] = useState(0);
     const [tutorialCompleted, setTutorialCompleted] = useState(false);
     const [showHint, setShowHint] = useState(false);
+    const [stepStartedAt, setStepStartedAt] = useState(() => Date.now());
     const [mouseMoveCount, setMouseMoveCount] = useState(0);
     const [hasClickedToCapture, setHasClickedToCapture] = useState(false);
     const [hasDetectedPulsar, setHasDetectedPulsar] = useState(false);
@@ -1205,7 +1206,6 @@ export function SearchMode({
     // We use the first available hotspot - SearchOverlay ensures these positions are accurate
     const getHotspotForHint = () => {
         if (hotspotPositions.length === 0) return null;
-        // Return the first hotspot - TutorialHighlight will handle bounds checking
         return hotspotPositions[0];
     };
 
@@ -1263,6 +1263,7 @@ export function SearchMode({
     useEffect(() => {
         setHasClickedToCapture(false);
         setHasDetectedPulsar(false);
+        setStepStartedAt(Date.now());
     }, [currentStep]);
 
     // Detect when discovery modal opens using MutationObserver for tutorial auto-advance
@@ -1463,19 +1464,25 @@ export function SearchMode({
             return () => clearTimeout(timer);
         }
 
-        // Scan for peak hint - show after 15 seconds or after 30 mouse moves
+        // Scan for peak hint - show after 12 seconds
         if (step.id === "scan-find-peak") {
-            const timer = setTimeout(() => setShowHint(true), 15000);
+            const timer = setTimeout(() => setShowHint(true), 12000);
             return () => clearTimeout(timer);
         }
     }, [currentStep, tutorialActive, tutorialSteps]);
 
-    // Also show hint on scan-find-peak step after user has moved mouse 30+ times
+    // Also show hint on scan-find-peak step after user has moved mouse 30+ times,
+    // but enforce a minimum delay so it doesn't pop immediately.
     useEffect(() => {
-        if (tutorialSteps[currentStep]?.id === "scan-find-peak" && mouseMoveCount >= 30) {
+        const minDelayMs = 5000;
+        if (
+            tutorialSteps[currentStep]?.id === "scan-find-peak" &&
+            mouseMoveCount >= 30 &&
+            Date.now() - stepStartedAt >= minDelayMs
+        ) {
             setShowHint(true);
         }
-    }, [mouseMoveCount, currentStep, tutorialSteps]);
+    }, [mouseMoveCount, currentStep, tutorialSteps, stepStartedAt]);
 
     return (
         <div

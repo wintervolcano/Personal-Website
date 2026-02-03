@@ -621,29 +621,47 @@ export function SearchOverlay({
   useEffect(() => {
     if (!onHotspotPositionsReady || hotspotMap.size === 0) return;
 
-    const positions: Array<{ x: number; y: number }> = [];
-    const w = window.innerWidth || 1;
-    const doc = document.documentElement;
-    const docH = doc.scrollHeight || window.innerHeight || 1;
+    const computePositions = () => {
+      const positions: Array<{ x: number; y: number }> = [];
+      const w = window.innerWidth || 1;
+      const doc = document.documentElement;
+      const docH = doc.scrollHeight || window.innerHeight || 1;
 
-    // Use the same safety margins as computeCellFromXY
-    const top = SAFE_TOP_PX;
-    const bottom = SAFE_BOTTOM_PX;
-    const effH = Math.max(1, docH - top - bottom);
+      // Use the same safety margins as computeCellFromXY
+      const top = SAFE_TOP_PX;
+      const bottom = SAFE_BOTTOM_PX;
+      const effH = Math.max(1, docH - top - bottom);
 
-    hotspotMap.forEach((info, cellIndex) => {
-      const cellX = cellIndex % GRID_X;
-      const cellY = Math.floor(cellIndex / GRID_X);
+      hotspotMap.forEach((info, cellIndex) => {
+        const cellX = cellIndex % GRID_X;
+        const cellY = Math.floor(cellIndex / GRID_X);
 
-      // Convert cell position + hx/hy to page coordinates
-      // This matches the inverse of computeCellFromXY logic
-      const x = ((cellX + info.hx) / GRID_X) * w;
-      const y = ((cellY + info.hy) / GRID_Y) * effH + top;
+        // Convert cell position + hx/hy to page coordinates
+        // This matches the inverse of computeCellFromXY logic
+        const x = ((cellX + info.hx) / GRID_X) * w;
+        const y = ((cellY + info.hy) / GRID_Y) * effH + top;
 
-      positions.push({ x, y });
-    });
+        positions.push({ x, y });
+      });
 
-    onHotspotPositionsReady(positions);
+      onHotspotPositionsReady(positions);
+    };
+
+    computePositions();
+
+    const onResize = () => computePositions();
+    window.addEventListener("resize", onResize);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => computePositions());
+      ro.observe(document.body);
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (ro) ro.disconnect();
+    };
   }, [hotspotMap, GRID_X, GRID_Y, onHotspotPositionsReady]);
 
   // Mouse move updates scan state.

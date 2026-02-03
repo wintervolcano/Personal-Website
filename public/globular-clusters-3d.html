@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#060708" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Globular Clusters & Pulsars | 3D Explorer v2 Pro</title>
   <link rel="canonical" href="https://www.fazalkareem.com/globular-cluster-explorer" />
 
@@ -151,6 +153,11 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      padding-right: 6px;
+    }
+
+    .topbar-actions > * {
+      flex: 0 0 auto;
     }
 
     #search {
@@ -924,6 +931,31 @@
 
       .psrGrid {
         grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 420px) {
+      #topbar {
+        padding: 6px 8px;
+      }
+
+      #search {
+        padding: 8px 10px;
+      }
+
+      .btn {
+        font-size: .70rem;
+        letter-spacing: .06em;
+        padding: 9px 10px;
+      }
+
+      #hud {
+        bottom: max(6px, env(safe-area-inset-bottom));
+        padding: 4px 8px 10px;
+      }
+
+      #toast {
+        bottom: calc(max(6px, env(safe-area-inset-bottom)) + 64px);
       }
     }
 

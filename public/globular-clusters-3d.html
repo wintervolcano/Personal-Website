@@ -2188,6 +2188,7 @@
 
     const searchSunLinesGroup = new THREE.Group();
     const searchHighlightGroup = new THREE.Group();
+    const searchSunLineMaterials = [];
     scene.add(searchSunLinesGroup);
     scene.add(searchHighlightGroup);
 
@@ -2878,6 +2879,7 @@
     }
 
     function clearSearchVisuals() {
+      searchSunLineMaterials.length = 0;
       searchSunLinesGroup.clear();
       searchHighlightGroup.clear();
       searchedClusters = [];
@@ -2889,13 +2891,18 @@
       for (const c of searchedClusters) {
         const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
 
-        const lineGeom = new THREE.BufferGeometry().setFromPoints([sunPos.clone(), pos.clone()]);
-        const lineMat = new THREE.LineBasicMaterial({
-          color: 0xb7b6ff,
+        const lineGeom = new LineGeometry();
+        lineGeom.setPositions([sunPos.x, sunPos.y, sunPos.z, pos.x, pos.y, pos.z]);
+        const lineMat = new LineMaterial({
+          color: CONFIG.colors.line,
           transparent: true,
-          opacity: 0.72,
+          opacity: 0.7,
+          linewidth: 2.25,
         });
-        const line = new THREE.Line(lineGeom, lineMat);
+        lineMat.resolution.set(window.innerWidth, window.innerHeight);
+        const line = new Line2(lineGeom, lineMat);
+        line.computeLineDistances();
+        searchSunLineMaterials.push(lineMat);
         searchSunLinesGroup.add(line);
 
         const ring = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -2925,7 +2932,10 @@
         if (d > maxDist) maxDist = d;
       }
 
-      const radius = Math.max(90, maxDist * 2.6);
+      const sphereRadius = Math.max(45, maxDist + 20);
+      const fov = THREE.MathUtils.degToRad(camera.fov);
+      const fitDist = sphereRadius / Math.tan(fov * 0.5);
+      const radius = clamp(fitDist * 1.18, 110, 720);
       const dir = camera.position.clone().sub(center);
       if (dir.lengthSq() < 1e-9) dir.set(1, 0.4, 0.8);
       dir.normalize();
@@ -3788,6 +3798,9 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       composer.setSize(window.innerWidth, window.innerHeight);
       sunLineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+      for (const mat of searchSunLineMaterials) {
+        mat.resolution.set(window.innerWidth, window.innerHeight);
+      }
       applyPerf();
     });
 

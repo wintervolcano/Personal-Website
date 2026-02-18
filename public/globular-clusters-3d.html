@@ -1230,6 +1230,27 @@
 
         <div class="sep"></div>
 
+        <div class="sectTitle">NE2025 DM</div>
+        <div class="mini">Comma-separated GC names. Matches aliases/fuzzy names and exports NE2025 DM.</div>
+        <div class="row" style="margin-top:10px">
+          <div class="field">
+            <label>Cluster names</label>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);font-size:.85rem;">
+              <input id="dm-enable" type="checkbox" checked />
+              <span>Run NE2025 DM</span>
+            </div>
+            <textarea id="dm-name-list" rows="4"
+              style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.25);color:rgba(255,255,255,.90);outline:none;resize:vertical;font:inherit;"
+              placeholder="NGC 104, Ter 5, M 62"></textarea>
+            <small id="dm-name-summary">Ready.</small>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ok" id="dm-export">Compute + Export</button>
+        </div>
+
+        <div class="sep"></div>
+
         <div class="sectTitle">Performance</div>
         <div class="row">
           <div class="field">
@@ -1524,6 +1545,13 @@
       toast.classList.add("visible");
     }
 
+    function hideToast() {
+      if (!toast) return;
+      toast.classList.remove("visible");
+      toast.classList.remove("toast-closable");
+      toast.innerHTML = "";
+    }
+
     if (isTouchPointer) {
       ui.sub.textContent = "Tap to preview — tap again to pin";
       const uiNote = el("ui-note");
@@ -1604,6 +1632,7 @@
     let pinned = null;
     let lastView = null;
     const compare = new Map();
+    const dmCache = new Map();
 
     // Settings.
     const filters = {
@@ -2389,7 +2418,7 @@
 
         // Add to search index.
         const addKey = (s) => {
-          const k = String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+          const k = normalizeSearchKey(s);
           if (k) searchIndex.set(k, c);
         };
         addKey(c.id);
@@ -2741,19 +2770,250 @@
       }
     }
 
-    function exportCompareCSV() {
-      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars"]];
-      for (const c of compare.values()) {
-        const ps = pulsarsForCluster(c).length;
+    function normalizeSearchKey(s) {
+      return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+    }
+
+    function splitTokens(s) {
+      return String(s || "").toLowerCase().split(/[^a-z0-9]+/g).map(x => x.trim()).filter(Boolean);
+    }
+
+    function addClusterAlias(map, alias, cluster) {
+      const k = normalizeSearchKey(alias);
+      if (!k) return;
+      if (!map.has(k)) map.set(k, cluster);
+    }
+
+    function buildClusterAliasMap() {
+      const m = new Map();
+      for (const c of clusters) {
+        addClusterAlias(m, c.id, c);
+        addClusterAlias(m, c.name, c);
+        addClusterAlias(m, c.cluster_token, c);
+
+        const raw = `${c.id || ""} ${c.name || ""} ${c.cluster_token || ""}`;
+        const ngc = raw.match(/ngc\s*([0-9]+)/i);
+        if (ngc) {
+          addClusterAlias(m, `NGC ${ngc[1]}`, c);
+          addClusterAlias(m, `NGC${ngc[1]}`, c);
+        }
+
+        const terzan = raw.match(/\bterzan\s*([0-9]+)\b/i);
+        if (terzan) {
+          addClusterAlias(m, `Ter ${terzan[1]}`, c);
+          addClusterAlias(m, `Terzan ${terzan[1]}`, c);
+        }
+        const ter = raw.match(/\bter\s*([0-9]+)\b/i);
+        if (ter) {
+          addClusterAlias(m, `Ter ${ter[1]}`, c);
+          addClusterAlias(m, `Terzan ${ter[1]}`, c);
+        }
+      }
+      return m;
+    }
+
+    function matchClusterByInput(inputName, aliasMap) {
+      const qRaw = String(inputName || "").trim();
+      const q = normalizeSearchKey(qRaw);
+      if (!q) return null;
+      if (aliasMap.has(q)) return aliasMap.get(q);
+
+      const qTokens = splitTokens(qRaw);
+      let best = null;
+      let bestScore = -1;
+
+      for (const c of clusters) {
+        const hayRaw = `${c.id || ""} ${c.name || ""} ${c.cluster_token || ""}`;
+        const hay = normalizeSearchKey(hayRaw);
+        if (!hay) continue;
+
+        let score = 0;
+        if (hay.includes(q)) score += 8;
+        if (q.includes(hay)) score += 4;
+
+        if (qTokens.length) {
+          const h = hayRaw.toLowerCase();
+          let tokenHits = 0;
+          for (const t of qTokens) {
+            if (t && h.includes(t)) tokenHits += 1;
+          }
+          score += tokenHits * 2;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = c;
+        }
+      }
+
+      return bestScore > 0 ? best : null;
+    }
+
+    function dmCacheKey(item) {
+      const l = Number(item.l_deg);
+      const b = Number(item.b_deg);
+      const r = Number(item.rsun_kpc);
+      const id = String(item.id || item.name || "");
+      return `${id}|${l.toFixed(6)}|${b.toFixed(6)}|${r.toFixed(6)}`;
+    }
+
+    async function fetchJSONWithTimeout(url, options = {}, timeoutMs = 25000) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: ctl.signal });
+        return res;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function fetchNE2025DM(items, options = {}) {
+      const {
+        chunkSize = 50,
+        retries = 1,
+        onProgress = null,
+      } = options;
+
+      const out = new Array(items.length);
+      const pending = [];
+
+      items.forEach((item, idx) => {
+        const key = dmCacheKey(item);
+        if (dmCache.has(key)) {
+          out[idx] = dmCache.get(key);
+        } else {
+          pending.push({ item, idx, key });
+        }
+      });
+
+      const chunks = [];
+      for (let i = 0; i < pending.length; i += chunkSize) {
+        chunks.push(pending.slice(i, i + chunkSize));
+      }
+
+      for (let ci = 0; ci < chunks.length; ci++) {
+        const chunk = chunks[ci];
+        if (onProgress) onProgress(ci + 1, chunks.length);
+
+        let success = false;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const response = await fetchJSONWithTimeout("/api/ne2025-dm", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                items: chunk.map(x => ({
+                  id: x.item.id ?? "",
+                  name: x.item.name ?? "",
+                  l_deg: Number(x.item.l_deg),
+                  b_deg: Number(x.item.b_deg),
+                  rsun_kpc: Number(x.item.rsun_kpc),
+                })),
+              }),
+            });
+
+            if (!response.ok) {
+              const txt = await response.text().catch(() => "");
+              throw new Error(`HTTP ${response.status}${txt ? `: ${txt.slice(0, 120)}` : ""}`);
+            }
+
+            const payload = await response.json();
+            const results = Array.isArray(payload?.results) ? payload.results : [];
+
+            chunk.forEach((entry, j) => {
+              const r = results[j] || {};
+              const dmVal = Number(r.ne2025_dm_pc_cm3);
+              const normalized = {
+                ne2025_dm_pc_cm3: Number.isFinite(dmVal) ? Number(dmVal.toFixed(2)) : "",
+                status: r.status || (Number.isFinite(dmVal) ? "ok" : "error"),
+                error: r.error || "",
+              };
+              out[entry.idx] = normalized;
+              if (normalized.status === "ok") dmCache.set(entry.key, normalized);
+            });
+
+            success = true;
+            break;
+          } catch (err) {
+            if (attempt >= retries) {
+              chunk.forEach(entry => {
+                out[entry.idx] = {
+                  ne2025_dm_pc_cm3: "",
+                  status: "DM_API_ERROR",
+                  error: err?.message || "DM API request failed",
+                };
+              });
+            }
+          }
+        }
+
+        if (!success && onProgress) onProgress(ci + 1, chunks.length);
+      }
+
+      return out.map(v => v || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "Unknown DM result error" });
+    }
+
+    async function computeDMWithToast(items, { baseMessage = "Computing NE2025 DM…" } = {}) {
+      if (!items.length) return [];
+      const dmEnabled = !!el("dm-enable")?.checked;
+      if (!dmEnabled) {
+        return items.map(() => ({
+          ne2025_dm_pc_cm3: "",
+          status: "DISABLED",
+          error: "NE2025 checkbox is unchecked",
+        }));
+      }
+      showToast(baseMessage);
+      try {
+        const results = await fetchNE2025DM(items, {
+          chunkSize: 50,
+          retries: 1,
+          onProgress: (i, total) => {
+            showToast(total > 1 ? `${baseMessage} chunk ${i}/${total}` : baseMessage);
+          },
+        });
+        hideToast();
+        return results;
+      } catch (err) {
+        showToast(`NE2025 DM failed: ${err?.message || "unknown error"}`);
+        setTimeout(() => hideToast(), 2200);
+        throw err;
+      }
+    }
+
+    async function exportCompareCSV() {
+      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars", "ne2025_dm_pc_cm3", "dm_status", "dm_error"]];
+      const base = Array.from(compare.values()).map(c => ({
+        cluster: c,
+        ps: pulsarsForCluster(c).length,
+      }));
+
+      const dmItems = base.map(({ cluster: c }) => ({
+        id: c.id ?? "",
+        name: c.name ?? "",
+        l_deg: c.l,
+        b_deg: c.b,
+        rsun_kpc: c.rsun_kpc,
+      }));
+
+      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for compare export…" });
+
+      base.forEach(({ cluster: c, ps }, i) => {
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
         rows.push([
           c.id ?? "", c.name ?? "",
           c.l ?? "", c.b ?? "",
           c.rsun_kpc ?? "", c.rgc_kpc ?? "",
           c.vmag ?? "", c.mass_msun ?? "",
           c.rc_pc ?? "", c.rhl_pc ?? "", c.rt_pc ?? "",
-          ps
+          ps,
+          dm.ne2025_dm_pc_cm3 ?? "",
+          dm.status ?? "",
+          dm.error ?? "",
         ]);
-      }
+      });
+
       downloadCSV("compare_clusters.csv", rows);
     }
 
@@ -2769,21 +3029,117 @@
     }
 
     // Export functions.
-    function exportFilteredCSV() {
-      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars"]];
-      for (const c of clusters) {
-        if (!passesFilters(c)) continue;
+    async function exportFilteredCSV() {
+      const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars", "ne2025_dm_pc_cm3", "dm_status", "dm_error"]];
+      const filtered = clusters.filter(c => passesFilters(c));
+      const dmItems = filtered.map(c => ({
+        id: c.id ?? "",
+        name: c.name ?? "",
+        l_deg: c.l,
+        b_deg: c.b,
+        rsun_kpc: c.rsun_kpc,
+      }));
+
+      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for filtered export…" });
+
+      filtered.forEach((c, i) => {
         const ps = pulsarsForCluster(c).length;
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
         rows.push([
           c.id ?? "", c.name ?? "",
           c.l ?? "", c.b ?? "",
           c.rsun_kpc ?? "", c.rgc_kpc ?? "",
           c.vmag ?? "", c.mass_msun ?? "",
           c.rc_pc ?? "", c.rhl_pc ?? "", c.rt_pc ?? "",
-          ps
+          ps,
+          dm.ne2025_dm_pc_cm3 ?? "",
+          dm.status ?? "",
+          dm.error ?? "",
         ]);
-      }
+      });
+
       downloadCSV("filtered_clusters.csv", rows);
+    }
+
+    async function exportNamedClustersDMCSV() {
+      const inputEl = el("dm-name-list");
+      const summaryEl = el("dm-name-summary");
+      const raw = String(inputEl?.value || "");
+      const names = raw.split(",").map(s => s.trim()).filter(Boolean);
+      if (!names.length) {
+        if (summaryEl) summaryEl.textContent = "Enter one or more cluster names.";
+        showToast("Enter comma-separated cluster names first.");
+        setTimeout(() => hideToast(), 1400);
+        return;
+      }
+
+      const aliasMap = buildClusterAliasMap();
+      const rowsOut = names.map((inputName) => {
+        const c = matchClusterByInput(inputName, aliasMap);
+        if (!c) {
+          return {
+            input_name: inputName,
+            matched_id: "",
+            matched_name: "",
+            l_deg: "",
+            b_deg: "",
+            rsun_kpc: "",
+            ne2025_dm_pc_cm3: "",
+            status: "NOT_FOUND",
+            error: "No matching cluster found",
+          };
+        }
+        return {
+          input_name: inputName,
+          matched_id: c.id ?? "",
+          matched_name: c.name ?? "",
+          l_deg: c.l ?? "",
+          b_deg: c.b ?? "",
+          rsun_kpc: c.rsun_kpc ?? "",
+          ne2025_dm_pc_cm3: "",
+          status: "PENDING",
+          error: "",
+        };
+      });
+
+      const matched = rowsOut.filter(r => r.status === "PENDING");
+      const dmItems = matched.map(r => ({
+        id: r.matched_id,
+        name: r.matched_name,
+        l_deg: r.l_deg,
+        b_deg: r.b_deg,
+        rsun_kpc: r.rsun_kpc,
+      }));
+      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for name list…" });
+      matched.forEach((r, i) => {
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
+        r.ne2025_dm_pc_cm3 = dm.ne2025_dm_pc_cm3 ?? "";
+        r.status = dm.status ?? "DM_API_ERROR";
+        r.error = dm.error ?? "";
+      });
+
+      const foundCount = rowsOut.filter(r => r.status !== "NOT_FOUND").length;
+      const okCount = rowsOut.filter(r => r.status === "ok").length;
+      const missCount = rowsOut.filter(r => r.status === "NOT_FOUND").length;
+      if (summaryEl) summaryEl.textContent = `Matched ${foundCount}/${rowsOut.length} | OK ${okCount} | Missing ${missCount}`;
+
+      const csvRows = [[
+        "input_name", "matched_id", "matched_name", "l_deg", "b_deg", "rsun_kpc", "ne2025_dm_pc_cm3", "status", "error"
+      ]];
+      rowsOut.forEach(r => {
+        csvRows.push([
+          r.input_name,
+          r.matched_id,
+          r.matched_name,
+          r.l_deg,
+          r.b_deg,
+          r.rsun_kpc,
+          r.ne2025_dm_pc_cm3,
+          r.status,
+          r.error,
+        ]);
+      });
+      downloadCSV("named_clusters_ne2025_dm.csv", csvRows);
     }
 
     function exportPNG() {
@@ -2877,14 +3233,14 @@
       compare.clear();
       if (Array.isArray(st.compare)) {
         for (const k of st.compare) {
-          const c = searchIndex.get(k.toLowerCase().replace(/[^a-z0-9]+/g, "").trim());
+          const c = searchIndex.get(normalizeSearchKey(k));
           if (c) compare.set(compareKey(c), c);
         }
       }
       rebuildCompareUI();
 
       if (st.pinned) {
-        const c = searchIndex.get(st.pinned.toLowerCase().replace(/[^a-z0-9]+/g, "").trim());
+        const c = searchIndex.get(normalizeSearchKey(st.pinned));
         if (c) {
           pinned = c;
           showPanel(c, { pin: true });
@@ -2950,9 +3306,9 @@
       }
     });
 
-    el("btn-export").addEventListener("click", () => {
+    el("btn-export").addEventListener("click", async () => {
       exportPNG();
-      exportFilteredCSV();
+      await exportFilteredCSV();
     });
 
     el("btn-info").addEventListener("click", () => {
@@ -3018,7 +3374,12 @@
     });
 
     el("cmp-clear").addEventListener("click", () => { compare.clear(); rebuildCompareUI(); syncURLStateDebounced(); });
-    el("cmp-export").addEventListener("click", exportCompareCSV);
+    el("cmp-export").addEventListener("click", async () => {
+      await exportCompareCSV();
+    });
+    el("dm-export").addEventListener("click", async () => {
+      await exportNamedClustersDMCSV();
+    });
 
     // Filters UI.
     el("f-rsun").addEventListener("input", (e) => { filters.rsunMax = Number(e.target.value || 200); rebuildScene(); syncURLStateDebounced(); });
@@ -3099,7 +3460,7 @@
     // Search.
     search.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
-      const q = String(search.value || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+      const q = normalizeSearchKey(search.value);
       if (!q) return;
 
       let found = null;

@@ -19,12 +19,23 @@ def tuple_key(l_deg, b_deg, rsun_kpc):
 
 
 def load_ne2025():
+    # Preferred path based on confirmed working usage:
+    # from mwprop.nemod.NE2025 import ne2025
+    try:
+        from mwprop.nemod.NE2025 import ne2025 as fn  # type: ignore
+
+        if callable(fn):
+            return fn
+    except Exception as preferred_err:
+        last_err = preferred_err
+
+    # Fallback paths for alternate package layouts.
     candidates = [
+        ("mwprop.nemod", "ne2025"),
         ("mwprop.ne2025", "ne2025"),
         ("ne2025", "ne2025"),
         ("mwprop", "ne2025"),
     ]
-    last_err = None
     for mod_name, fn_name in candidates:
         try:
             mod = __import__(mod_name, fromlist=[fn_name])

@@ -1626,6 +1626,9 @@
     // State.
     let clusters = [];
     let clustersMeta = null;
+    let ne2025DmMeta = null;
+    let ne2025DmByKey = {};
+    let ne2025DmByTuple = {};
     let pulsarByKey = {};
     let pulsarsMeta = null;
     let hovered = null;
@@ -2445,15 +2448,20 @@
         setStatus("Loading catalogs...");
         const qc = noCache ? "?nocache=1" : "";
         const qp = noCache ? "?nocache=1" : "";
-        const [cjson, pjson] = await Promise.all([
+        const qd = noCache ? `?nocache=1&t=${Date.now()}` : "";
+        const [cjson, pjson, dmjson] = await Promise.all([
           fetchJSON(`${CONFIG.apiBase}/api/clusters${qc}`),
-          fetchJSON(`${CONFIG.apiBase}/api/pulsars${qp}`)
+          fetchJSON(`${CONFIG.apiBase}/api/pulsars${qp}`),
+          fetchJSON(`/data/gc_ne2025_dm.json${qd}`).catch(() => null),
         ]);
 
         clustersMeta = cjson;
         pulsarsMeta = pjson;
+        ne2025DmMeta = dmjson;
         clusters = cjson.clusters || [];
         pulsarByKey = pjson.byKey || pjson.pulsarsByKey || {};
+        ne2025DmByKey = (dmjson && typeof dmjson.by_key === "object" && dmjson.by_key) ? dmjson.by_key : {};
+        ne2025DmByTuple = (dmjson && typeof dmjson.by_tuple === "object" && dmjson.by_tuple) ? dmjson.by_tuple : {};
 
         // Add normalized fallback keys.
         const norm = {};
@@ -2474,6 +2482,13 @@
           lines.push(`Pulsars: ${pulsarsMeta.source || "—"}`);
           if (pulsarsMeta.updated) lines.push(`Updated: ${pulsarsMeta.updated}`);
           if (pulsarsMeta.worker_version) lines.push(`Worker: ${pulsarsMeta.worker_version}`);
+        }
+        if (ne2025DmMeta) {
+          lines.push("NE2025 DM: precomputed weekly");
+          if (ne2025DmMeta.generated_at) lines.push(`DM generated: ${ne2025DmMeta.generated_at}`);
+          if (Number.isFinite(Number(ne2025DmMeta.count))) lines.push(`DM rows: ${Number(ne2025DmMeta.count)}`);
+        } else {
+          lines.push("NE2025 DM: unavailable (DM_PENDING fallback)");
         }
         prov.textContent = lines.join("\n") || "—";
 
@@ -2774,6 +2789,10 @@
       return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
     }
 
+    function dmTupleKey(lDeg, bDeg, rsunKpc) {
+      return `${Number(lDeg).toFixed(6)}|${Number(bDeg).toFixed(6)}|${Number(rsunKpc).toFixed(6)}`;
+    }
+
     function splitTokens(s) {
       return String(s || "").toLowerCase().split(/[^a-z0-9]+/g).map(x => x.trim()).filter(Boolean);
     }
@@ -2857,35 +2876,32 @@
       return `${id}|${l.toFixed(6)}|${b.toFixed(6)}|${r.toFixed(6)}`;
     }
 
-    async function fetchJSONWithTimeout(url, options = {}, timeoutMs = 25000) {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, { ...options, signal: ctl.signal });
-        return res;
-      } finally {
-        clearTimeout(timer);
+    function resolvePrecomputedDM(item) {
+      const idKey = normalizeSearchKey(item.id);
+      const nameKey = normalizeSearchKey(item.name);
+      const tupleK = dmTupleKey(item.l_deg, item.b_deg, item.rsun_kpc);
+
+      let dmVal = null;
+      if (idKey && Object.prototype.hasOwnProperty.call(ne2025DmByKey, idKey)) dmVal = ne2025DmByKey[idKey];
+      if (dmVal == null && nameKey && Object.prototype.hasOwnProperty.call(ne2025DmByKey, nameKey)) dmVal = ne2025DmByKey[nameKey];
+      if (dmVal == null && Object.prototype.hasOwnProperty.call(ne2025DmByTuple, tupleK)) dmVal = ne2025DmByTuple[tupleK];
+
+      const dmNum = Number(dmVal);
+      if (Number.isFinite(dmNum)) {
+        return { ne2025_dm_pc_cm3: Number(dmNum.toFixed(2)), status: "ok", error: "" };
       }
+      return { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "Not in weekly DM dataset yet" };
     }
 
     async function fetchNE2025DM(items, options = {}) {
       const {
         chunkSize = 50,
-        retries = 1,
         onProgress = null,
       } = options;
 
       const out = new Array(items.length);
       const pending = [];
-
-      items.forEach((item, idx) => {
-        const key = dmCacheKey(item);
-        if (dmCache.has(key)) {
-          out[idx] = dmCache.get(key);
-        } else {
-          pending.push({ item, idx, key });
-        }
-      });
+      items.forEach((item, idx) => pending.push({ item, idx, key: dmCacheKey(item) }));
 
       const chunks = [];
       for (let i = 0; i < pending.length; i += chunkSize) {
@@ -2895,63 +2911,19 @@
       for (let ci = 0; ci < chunks.length; ci++) {
         const chunk = chunks[ci];
         if (onProgress) onProgress(ci + 1, chunks.length);
-
-        let success = false;
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            const response = await fetchJSONWithTimeout("/api/ne2025-dm", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                items: chunk.map(x => ({
-                  id: x.item.id ?? "",
-                  name: x.item.name ?? "",
-                  l_deg: Number(x.item.l_deg),
-                  b_deg: Number(x.item.b_deg),
-                  rsun_kpc: Number(x.item.rsun_kpc),
-                })),
-              }),
-            });
-
-            if (!response.ok) {
-              const txt = await response.text().catch(() => "");
-              throw new Error(`HTTP ${response.status}${txt ? `: ${txt.slice(0, 120)}` : ""}`);
-            }
-
-            const payload = await response.json();
-            const results = Array.isArray(payload?.results) ? payload.results : [];
-
-            chunk.forEach((entry, j) => {
-              const r = results[j] || {};
-              const dmVal = Number(r.ne2025_dm_pc_cm3);
-              const normalized = {
-                ne2025_dm_pc_cm3: Number.isFinite(dmVal) ? Number(dmVal.toFixed(2)) : "",
-                status: r.status || (Number.isFinite(dmVal) ? "ok" : "error"),
-                error: r.error || "",
-              };
-              out[entry.idx] = normalized;
-              if (normalized.status === "ok") dmCache.set(entry.key, normalized);
-            });
-
-            success = true;
-            break;
-          } catch (err) {
-            if (attempt >= retries) {
-              chunk.forEach(entry => {
-                out[entry.idx] = {
-                  ne2025_dm_pc_cm3: "",
-                  status: "DM_API_ERROR",
-                  error: err?.message || "DM API request failed",
-                };
-              });
-            }
+        chunk.forEach(entry => {
+          const cached = dmCache.get(entry.key);
+          if (cached) {
+            out[entry.idx] = cached;
+            return;
           }
-        }
-
-        if (!success && onProgress) onProgress(ci + 1, chunks.length);
+          const resolved = resolvePrecomputedDM(entry.item);
+          out[entry.idx] = resolved;
+          if (resolved.status === "ok") dmCache.set(entry.key, resolved);
+        });
       }
 
-      return out.map(v => v || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "Unknown DM result error" });
+      return out.map(v => v || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "Unknown DM lookup error" });
     }
 
     async function computeDMWithToast(items, { baseMessage = "Computing NE2025 DM…" } = {}) {
@@ -2968,7 +2940,6 @@
       try {
         const results = await fetchNE2025DM(items, {
           chunkSize: 50,
-          retries: 1,
           onProgress: (i, total) => {
             showToast(total > 1 ? `${baseMessage} chunk ${i}/${total}` : baseMessage);
           },
@@ -3000,7 +2971,7 @@
       const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for compare export…" });
 
       base.forEach(({ cluster: c, ps }, i) => {
-        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "No DM result" };
         rows.push([
           c.id ?? "", c.name ?? "",
           c.l ?? "", c.b ?? "",
@@ -3044,7 +3015,7 @@
 
       filtered.forEach((c, i) => {
         const ps = pulsarsForCluster(c).length;
-        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "No DM result" };
         rows.push([
           c.id ?? "", c.name ?? "",
           c.l ?? "", c.b ?? "",
@@ -3112,9 +3083,9 @@
       }));
       const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for name list…" });
       matched.forEach((r, i) => {
-        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_API_ERROR", error: "No DM result" };
+        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "No DM result" };
         r.ne2025_dm_pc_cm3 = dm.ne2025_dm_pc_cm3 ?? "";
-        r.status = dm.status ?? "DM_API_ERROR";
+        r.status = dm.status ?? "DM_PENDING";
         r.error = dm.error ?? "";
       });
 

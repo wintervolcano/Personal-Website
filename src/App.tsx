@@ -21,6 +21,7 @@ const SearchMode = lazy(() => import("./pages/SearchMode").then(m => ({ default:
 const SearchModeChapter6 = lazy(() => import("./pages/SearchModeChapter6").then(m => ({ default: m.SearchModeChapter6 })));
 const Gallery = lazy(() => import("./pages/Gallery").then(m => ({ default: m.Gallery })));
 const DetectionsDashboard = lazy(() => import("./pages/DetectionsDashboard").then(m => ({ default: m.DetectionsDashboard })));
+const BinaryPulsarLab = lazy(() => import("./components/BinaryPulsarTeachingLab"));
 import { Research } from "./pages/Research";
 import { Projects } from "./pages/Projects";
 import { Publications } from "./pages/Publications";
@@ -250,6 +251,7 @@ export default function App() {
 
   // Do not render SearchOverlay on internal-only routes.
   const isInternalPage = useMemo(() => location.pathname.startsWith("/internal"), [location.pathname]);
+  const isStandaloneLab = useMemo(() => location.pathname === "/resources/binary-pulsar-lab", [location.pathname]);
 
   return (
     <div
@@ -261,9 +263,9 @@ export default function App() {
     >
       <ScrollToTop />
       <SkipToMain theme={theme} />
-      <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} isMobile={isMobile} />
+      {!isStandaloneLab && <TopNav theme={theme} setTheme={setTheme} page={page} setPage={setPage} isMobile={isMobile} />}
 
-      <main id="main-content" className="flex-1 pt-24 sm:pt-28">
+      <main id="main-content" className={cn("flex-1", !isStandaloneLab && "pt-24 sm:pt-28")}>
         <AnimatePresence mode="wait">
           <motion.div key={location.pathname}>
             <PageTransition>
@@ -318,6 +320,14 @@ export default function App() {
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />
                 <Route path="/resources/for-media" element={<ForMedia theme={theme} />} />
                 <Route
+                  path="/resources/binary-pulsar-lab"
+                  element={
+                    <Suspense fallback={null}>
+                      <BinaryPulsarLab fullPage />
+                    </Suspense>
+                  }
+                />
+                <Route
                   path="/gallery"
                   element={
                     <Suspense fallback={null}>
@@ -341,10 +351,10 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <Footer theme={theme} />
+      {!isStandaloneLab && <Footer theme={theme} />}
 
       {/* In Search Mode, add a gutter after the footer so it can scroll above the FFT panel on desktop and tablet */}
-      {isDark && !isMobile ? (
+      {isDark && !isMobile && !isStandaloneLab ? (
         <div
           aria-hidden
           className="h-[220px] sm:h-[210px] md:h-[190px]"
@@ -353,7 +363,7 @@ export default function App() {
       ) : null}
 
       {/* SearchOverlay on all non-mobile pages, except internal pages */}
-      {!isInternalPage && !isMobile && (
+      {!isInternalPage && !isMobile && !isStandaloneLab && (
         <SearchOverlay
           theme={theme}
           pageKey={overlayPageKey}

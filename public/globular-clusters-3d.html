@@ -95,6 +95,51 @@
       pointer-events: none
     }
 
+    #site-nav {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 120;
+      pointer-events: auto;
+    }
+
+    .site-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+      box-shadow: var(--glow);
+      color: rgba(255, 255, 255, .9);
+      text-decoration: none;
+      font-size: .82rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .site-chip:hover {
+      background: rgba(255, 255, 255, .09);
+    }
+
+    .site-logo {
+      padding: 0 10px;
+    }
+
+    .site-logo img {
+      display: block;
+      height: 28px;
+      width: auto;
+      filter: invert(1);
+    }
+
     .glass {
       background: var(--glass);
       backdrop-filter: blur(10px) saturate(120%);
@@ -1082,6 +1127,15 @@
   <div id="scale-label">300 parsecs</div>
 
   <div id="ui-layer">
+    <div id="site-nav">
+      <a class="site-chip site-logo" href="/" aria-label="Go home">
+        <img src="/FK.svg" alt="Fazal Kareem" />
+      </a>
+      <button class="site-chip" id="site-back-button" type="button" onclick="window.navigateBackFromExplorer && window.navigateBackFromExplorer()">
+        ← Back
+      </button>
+    </div>
+
     <div id="topbar" class="glass">
       <input id="search" placeholder="Search cluster or pulsar (Enter) — e.g. NGC 104, Ter 5, J0024-7204" />
       <div class="topbar-actions">
@@ -1221,17 +1275,7 @@
         <div class="sep"></div>
 
         <div class="sectTitle">Compare</div>
-        <div class="mini">Add clusters from the right panel. Export a quick CSV for notes/talks.</div>
-        <div class="list" id="cmp-list" style="margin-top:10px"></div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn" id="cmp-clear">Clear</button>
-          <button class="btn ok" id="cmp-export">Export CSV</button>
-        </div>
-
-        <div class="sep"></div>
-
-        <div class="sectTitle">Compare and Export</div>
-        <div class="mini">Comma-separated GC names. Search highlights matches in 3D; export adds NE2025 DM.</div>
+        <div class="mini">Add clusters from the right panel. Comma-separated names can also be searched below; export includes NE2025 DM when enabled.</div>
         <div class="row" style="margin-top:10px">
           <div class="field">
             <label>Cluster names</label>
@@ -1248,8 +1292,10 @@
         </div>
         <div class="row" style="margin-top:10px">
           <button class="btn" id="dm-search">SEARCH</button>
-          <button class="btn ok" id="dm-export">EXPORT</button>
+          <button class="btn" id="cmp-clear">Clear</button>
+          <button class="btn ok" id="cmp-export">EXPORT</button>
         </div>
+        <div class="list" id="cmp-list" style="margin-top:10px"></div>
 
         <div class="sep"></div>
 
@@ -1480,6 +1526,31 @@
     const search = el("search");
     const hud = el("hud");
     const topbar = el("topbar");
+    const siteBackButton = el("site-back-button");
+
+    function navigateBackFromExplorer() {
+      const fallback = "/resources";
+      const explorerPaths = new Set(["/globular-cluster-explorer", "/globular-clusters-3d.html"]);
+      if (document.referrer) {
+        try {
+          const refUrl = new URL(document.referrer, window.location.origin);
+          const sameOrigin = refUrl.origin === window.location.origin;
+          const currentIsExplorer = explorerPaths.has(window.location.pathname);
+          const refIsExplorer = explorerPaths.has(refUrl.pathname);
+          const samePage = refUrl.pathname === window.location.pathname || (currentIsExplorer && refIsExplorer);
+          if (sameOrigin && !samePage) {
+            window.location.href = refUrl.pathname + refUrl.search + refUrl.hash;
+            return;
+          }
+        } catch (_) {}
+      }
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = fallback;
+    }
+    window.navigateBackFromExplorer = navigateBackFromExplorer;
 
     const ui = {
       title: el("ui-title"),
@@ -2453,16 +2524,32 @@
       return await r.json();
     }
 
+    async function fetchFirstJSON(urls) {
+      for (const url of urls) {
+        try {
+          return await fetchJSON(url);
+        } catch (_) {
+          // Try next candidate.
+        }
+      }
+      return null;
+    }
+
     async function loadData({ noCache = false } = {}) {
       try {
         setStatus("Loading catalogs...");
         const qc = noCache ? "?nocache=1" : "";
         const qp = noCache ? "?nocache=1" : "";
         const qd = noCache ? `?nocache=1&t=${Date.now()}` : "";
+        const dmUrls = [
+          `./data/gc_ne2025_dm.json${qd}`,
+          `/data/gc_ne2025_dm.json${qd}`,
+          `${CONFIG.apiBase}/data/gc_ne2025_dm.json${qd}`,
+        ];
         const [cjson, pjson, dmjson] = await Promise.all([
           fetchJSON(`${CONFIG.apiBase}/api/clusters${qc}`),
           fetchJSON(`${CONFIG.apiBase}/api/pulsars${qp}`),
-          fetchJSON(`/data/gc_ne2025_dm.json${qd}`).catch(() => null),
+          fetchFirstJSON(dmUrls),
         ]);
 
         clustersMeta = cjson;
@@ -2470,8 +2557,48 @@
         ne2025DmMeta = dmjson;
         clusters = cjson.clusters || [];
         pulsarByKey = pjson.byKey || pjson.pulsarsByKey || {};
-        ne2025DmByKey = (dmjson && typeof dmjson.by_key === "object" && dmjson.by_key) ? dmjson.by_key : {};
-        ne2025DmByTuple = (dmjson && typeof dmjson.by_tuple === "object" && dmjson.by_tuple) ? dmjson.by_tuple : {};
+        ne2025DmByKey = {};
+        ne2025DmByTuple = {};
+
+        // Accept both snake_case/camelCase DM shapes and rebuild maps from rows when needed.
+        if (dmjson && typeof dmjson === "object") {
+          const srcByKey = (typeof dmjson.by_key === "object" && dmjson.by_key)
+            ? dmjson.by_key
+            : ((typeof dmjson.byKey === "object" && dmjson.byKey) ? dmjson.byKey : {});
+          const srcByTuple = (typeof dmjson.by_tuple === "object" && dmjson.by_tuple)
+            ? dmjson.by_tuple
+            : ((typeof dmjson.byTuple === "object" && dmjson.byTuple) ? dmjson.byTuple : {});
+
+          for (const [rawKey, dmVal] of Object.entries(srcByKey || {})) {
+            ne2025DmByKey[String(rawKey)] = dmVal;
+            const nk = normalizeSearchKey(rawKey);
+            if (nk) ne2025DmByKey[nk] = dmVal;
+          }
+          for (const [rawKey, dmVal] of Object.entries(srcByTuple || {})) {
+            ne2025DmByTuple[String(rawKey)] = dmVal;
+          }
+
+          const rows = Array.isArray(dmjson.rows) ? dmjson.rows : [];
+          for (const row of rows) {
+            const dmVal = row?.ne2025_dm_pc_cm3;
+            const keys = [row?.id, row?.name, row?.cluster_token];
+            for (const rawKey of keys) {
+              const nk = normalizeSearchKey(rawKey);
+              if (nk && !Object.prototype.hasOwnProperty.call(ne2025DmByKey, nk)) {
+                ne2025DmByKey[nk] = dmVal;
+              }
+            }
+            const l = row?.l_deg;
+            const b = row?.b_deg;
+            const r = row?.rsun_kpc;
+            if (l != null && b != null && r != null) {
+              const tKey = dmTupleKey(l, b, r);
+              if (!Object.prototype.hasOwnProperty.call(ne2025DmByTuple, tKey)) {
+                ne2025DmByTuple[tKey] = dmVal;
+              }
+            }
+          }
+        }
 
         // Add normalized fallback keys.
         const norm = {};
@@ -2743,6 +2870,14 @@
       startFlyTo(v.cam, v.target, 850);
     }
 
+    function moveToSunView() {
+      lastView = snapshotView();
+      const tgt = sun.position.clone();
+      const cam = tgt.clone().add(new THREE.Vector3(180, 80, 160));
+      startFlyTo(cam, tgt, 850);
+      syncURLStateDebounced();
+    }
+
     function focusCluster(c, { pin = true } = {}) {
       const pos = lbToVec3(c.l, c.b, c.rsun_kpc);
       if (pin) {
@@ -2815,6 +2950,10 @@
 
     function buildClusterAliasMap() {
       const m = new Map();
+      const shortPrefixSkip = new Set([
+        "ngc", "ter", "terzan", "pal", "fsr", "gran", "bh", "ic", "eso",
+        "vvv", "rlgc", "djor", "ton", "hp", "uks", "am", "arp", "rup", "e",
+      ]);
       for (const c of clusters) {
         addClusterAlias(m, c.id, c);
         addClusterAlias(m, c.name, c);
@@ -2837,6 +2976,20 @@
           addClusterAlias(m, `Ter ${ter[1]}`, c);
           addClusterAlias(m, `Terzan ${ter[1]}`, c);
         }
+
+        // Support shorthand like "Ko 1" -> "Koposov 1", while avoiding common catalog collisions.
+        const compact = raw.toLowerCase().replace(/[^a-z0-9\s]+/g, " ");
+        const rx = /\b([a-z]{4,})\s*([0-9]{1,3})\b/g;
+        let mt = null;
+        while ((mt = rx.exec(compact)) !== null) {
+          const word = mt[1];
+          const num = mt[2];
+          if (shortPrefixSkip.has(word)) continue;
+          addClusterAlias(m, `${word.slice(0, 2)} ${num}`, c);
+          addClusterAlias(m, `${word.slice(0, 2)}${num}`, c);
+          addClusterAlias(m, `${word.slice(0, 3)} ${num}`, c);
+          addClusterAlias(m, `${word.slice(0, 3)}${num}`, c);
+        }
       }
       return m;
     }
@@ -2848,6 +3001,7 @@
       if (aliasMap.has(q)) return aliasMap.get(q);
 
       const qTokens = splitTokens(qRaw);
+      const usefulTokens = qTokens.filter(t => /^\d+$/.test(t) ? t.length >= 2 : t.length >= 2);
       let best = null;
       let bestScore = -1;
 
@@ -2855,18 +3009,27 @@
         const hayRaw = `${c.id || ""} ${c.name || ""} ${c.cluster_token || ""}`;
         const hay = normalizeSearchKey(hayRaw);
         if (!hay) continue;
+        const hTokens = splitTokens(hayRaw);
 
         let score = 0;
-        if (hay.includes(q)) score += 8;
-        if (q.includes(hay)) score += 4;
+        if (hay === q) score += 100;
+        if (hay.startsWith(q)) score += 45;
+        if (q.length >= 3 && hay.includes(q)) score += 24;
+        if (q.includes(hay) && hay.length >= 3) score += 12;
 
-        if (qTokens.length) {
-          const h = hayRaw.toLowerCase();
-          let tokenHits = 0;
-          for (const t of qTokens) {
-            if (t && h.includes(t)) tokenHits += 1;
+        if (usefulTokens.length) {
+          let matchedAll = true;
+          let exactHits = 0;
+          for (const t of usefulTokens) {
+            const numeric = /^\d+$/.test(t);
+            const matched = hTokens.some(ht => numeric ? ht === t : (ht === t || ht.startsWith(t)));
+            if (!matched) {
+              matchedAll = false;
+              break;
+            }
+            if (hTokens.some(ht => ht === t)) exactHits += 1;
           }
-          score += tokenHits * 2;
+          if (matchedAll) score += 14 + (exactHits * 3);
         }
 
         if (score > bestScore) {
@@ -2875,7 +3038,25 @@
         }
       }
 
-      return bestScore > 0 ? best : null;
+      return bestScore >= 20 ? best : null;
+    }
+
+    function findClusterForGlobalSearch(queryRaw) {
+      const qNorm = normalizeSearchKey(queryRaw);
+      if (!qNorm) return null;
+
+      const aliasMap = buildClusterAliasMap();
+      let found = matchClusterByInput(queryRaw, aliasMap);
+      if (found) return found;
+
+      for (const c of clusters) {
+        const psrs = pulsarsForCluster(c);
+        for (const p of psrs) {
+          const pk = normalizeSearchKey(p?.name);
+          if (pk && pk.includes(qNorm)) return c;
+        }
+      }
+      return null;
     }
 
     function clearSearchVisuals() {
@@ -2981,7 +3162,7 @@
       if (matchedOrdered.length) {
         sunLineVisible = true;
         applyOverlayVisibility();
-        frameClustersForSearch(matchedOrdered);
+        moveToSunView();
       }
 
       const matched = names.length - miss;
@@ -3017,7 +3198,7 @@
       return { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "Not in weekly DM dataset yet" };
     }
 
-    async function fetchNE2025DM(items, options = {}) {
+    function fetchNE2025DM(items, options = {}) {
       const {
         chunkSize = 50,
         onProgress = null,
@@ -3050,7 +3231,7 @@
       return out.map(v => v || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "Unknown DM lookup error" });
     }
 
-    async function computeDMWithToast(items, { baseMessage = "Computing NE2025 DM…" } = {}) {
+    function computeDMWithToast(items, { baseMessage = "Computing NE2025 DM…" } = {}) {
       if (!items.length) return [];
       const dmEnabled = !!el("dm-enable")?.checked;
       if (!dmEnabled) {
@@ -3062,7 +3243,7 @@
       }
       showToast(baseMessage);
       try {
-        const results = await fetchNE2025DM(items, {
+        const results = fetchNE2025DM(items, {
           chunkSize: 50,
           onProgress: (i, total) => {
             showToast(total > 1 ? `${baseMessage} chunk ${i}/${total}` : baseMessage);
@@ -3077,12 +3258,26 @@
       }
     }
 
-    async function exportCompareCSV() {
+    function exportCompareCSV() {
+      console.log("[cmp-export] click", {
+        compareSize: compare.size,
+        dmEnabled: !!el("dm-enable")?.checked,
+        dmByKeyCount: Object.keys(ne2025DmByKey || {}).length,
+        dmByTupleCount: Object.keys(ne2025DmByTuple || {}).length,
+      });
       const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars", "ne2025_dm_pc_cm3", "dm_status", "dm_error"]];
       const base = Array.from(compare.values()).map(c => ({
         cluster: c,
         ps: pulsarsForCluster(c).length,
       }));
+      if (!base.length) {
+        console.warn("[cmp-export] no clusters in compare; exporting header-only CSV");
+        showToast("No clusters in compare. Add at least one cluster first.");
+        setTimeout(() => hideToast(), 1600);
+        setStatus("Compare export skipped: no clusters selected.");
+        downloadCSV("compare_clusters.csv", rows);
+        return rows.length;
+      }
 
       const dmItems = base.map(({ cluster: c }) => ({
         id: c.id ?? "",
@@ -3092,7 +3287,14 @@
         rsun_kpc: c.rsun_kpc,
       }));
 
-      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for compare export…" });
+      const dmResults = computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for compare export…" });
+      console.log("[cmp-export] dm results", {
+        requested: dmItems.length,
+        returned: dmResults.length,
+        ok: dmResults.filter(d => d?.status === "ok").length,
+        pending: dmResults.filter(d => d?.status === "DM_PENDING").length,
+        disabled: dmResults.filter(d => d?.status === "DISABLED").length,
+      });
 
       base.forEach(({ cluster: c, ps }, i) => {
         const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "No DM result" };
@@ -3110,21 +3312,64 @@
       });
 
       downloadCSV("compare_clusters.csv", rows);
+      console.log("[cmp-export] downloaded", { rows: rows.length });
+      setStatus(`Exported compare CSV (${base.length} clusters).`);
+      return rows.length;
     }
 
     function downloadCSV(filename, rows) {
-      const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
+      const csv = rows.map(r => r.map(esc).join(",")).join("\n");
+      console.log("[csv] preparing download", { filename, bytes: csv.length, rows: rows.length });
+
+      try {
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.rel = "noopener";
+        a.target = "_blank";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.dispatchEvent(new MouseEvent("click", {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+        }));
+        a.remove();
+        const ua = navigator.userAgent || "";
+        const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|Android/i.test(ua);
+        const inFrame = window.top !== window.self;
+        if (isSafari || inFrame) {
+          // Some preview/sandbox contexts ignore the download attribute; open blob directly as fallback.
+          const opened = window.open(url, "_blank", "noopener");
+          console.warn("[csv] forced open fallback", { isSafari, inFrame, opened: !!opened });
+          setStatus("Download fallback opened in a new tab. Save the CSV from that tab if auto-download is blocked.");
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 8000);
+        console.log("[csv] blob download triggered", { filename, isSafari, inFrame });
+      } catch (err) {
+        console.error("[csv] blob download failed; trying data URI fallback", err);
+        const a = document.createElement("a");
+        a.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+        a.download = filename;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.dispatchEvent(new MouseEvent("click", {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+        }));
+        a.remove();
+        console.log("[csv] data URI fallback triggered", { filename });
+      }
     }
 
     // Export functions.
-    async function exportFilteredCSV() {
+    function exportFilteredCSV() {
       const rows = [["id", "name", "l_deg", "b_deg", "rsun_kpc", "rgc_kpc", "vmag", "mass_msun", "rc_pc", "rh_pc", "rt_pc", "pulsars", "ne2025_dm_pc_cm3", "dm_status", "dm_error"]];
       const filtered = clusters.filter(c => passesFilters(c));
       const dmItems = filtered.map(c => ({
@@ -3135,7 +3380,7 @@
         rsun_kpc: c.rsun_kpc,
       }));
 
-      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for filtered export…" });
+      const dmResults = computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for filtered export…" });
 
       filtered.forEach((c, i) => {
         const ps = pulsarsForCluster(c).length;
@@ -3154,87 +3399,6 @@
       });
 
       downloadCSV("filtered_clusters.csv", rows);
-    }
-
-    async function exportNamedClustersDMCSV() {
-      const inputEl = el("dm-name-list");
-      const summaryEl = el("dm-name-summary");
-      const raw = String(inputEl?.value || "");
-      const names = raw.split(",").map(s => s.trim()).filter(Boolean);
-      if (!names.length) {
-        if (summaryEl) summaryEl.textContent = "Enter one or more cluster names.";
-        showToast("Enter comma-separated cluster names first.");
-        setTimeout(() => hideToast(), 1400);
-        return;
-      }
-
-      const aliasMap = buildClusterAliasMap();
-      const rowsOut = names.map((inputName) => {
-        const c = matchClusterByInput(inputName, aliasMap);
-        if (!c) {
-          return {
-            input_name: inputName,
-            matched_id: "",
-            matched_name: "",
-            l_deg: "",
-            b_deg: "",
-            rsun_kpc: "",
-            ne2025_dm_pc_cm3: "",
-            status: "NOT_FOUND",
-            error: "No matching cluster found",
-          };
-        }
-        return {
-          input_name: inputName,
-          matched_id: c.id ?? "",
-          matched_name: c.name ?? "",
-          l_deg: c.l ?? "",
-          b_deg: c.b ?? "",
-          rsun_kpc: c.rsun_kpc ?? "",
-          ne2025_dm_pc_cm3: "",
-          status: "PENDING",
-          error: "",
-        };
-      });
-
-      const matched = rowsOut.filter(r => r.status === "PENDING");
-      const dmItems = matched.map(r => ({
-        id: r.matched_id,
-        name: r.matched_name,
-        l_deg: r.l_deg,
-        b_deg: r.b_deg,
-        rsun_kpc: r.rsun_kpc,
-      }));
-      const dmResults = await computeDMWithToast(dmItems, { baseMessage: "Computing NE2025 DM for name list…" });
-      matched.forEach((r, i) => {
-        const dm = dmResults[i] || { ne2025_dm_pc_cm3: "", status: "DM_PENDING", error: "No DM result" };
-        r.ne2025_dm_pc_cm3 = dm.ne2025_dm_pc_cm3 ?? "";
-        r.status = dm.status ?? "DM_PENDING";
-        r.error = dm.error ?? "";
-      });
-
-      const foundCount = rowsOut.filter(r => r.status !== "NOT_FOUND").length;
-      const okCount = rowsOut.filter(r => r.status === "ok").length;
-      const missCount = rowsOut.filter(r => r.status === "NOT_FOUND").length;
-      if (summaryEl) summaryEl.textContent = `Matched ${foundCount}/${rowsOut.length} | OK ${okCount} | Missing ${missCount}`;
-
-      const csvRows = [[
-        "input_name", "matched_id", "matched_name", "l_deg", "b_deg", "rsun_kpc", "ne2025_dm_pc_cm3", "status", "error"
-      ]];
-      rowsOut.forEach(r => {
-        csvRows.push([
-          r.input_name,
-          r.matched_id,
-          r.matched_name,
-          r.l_deg,
-          r.b_deg,
-          r.rsun_kpc,
-          r.ne2025_dm_pc_cm3,
-          r.status,
-          r.error,
-        ]);
-      });
-      downloadCSV("named_clusters_ne2025_dm.csv", csvRows);
     }
 
     function exportPNG() {
@@ -3382,6 +3546,8 @@
       await loadData({ noCache: true });
     });
 
+    siteBackButton?.addEventListener("click", navigateBackFromExplorer);
+
     el("btn-tools").addEventListener("click", () => {
       drawer.classList.toggle("visible");
       drawer.setAttribute("aria-hidden", drawer.classList.contains("visible") ? "false" : "true");
@@ -3402,9 +3568,9 @@
       }
     });
 
-    el("btn-export").addEventListener("click", async () => {
+    el("btn-export").addEventListener("click", () => {
       exportPNG();
-      await exportFilteredCSV();
+      exportFilteredCSV();
     });
 
     el("btn-info").addEventListener("click", () => {
@@ -3424,11 +3590,7 @@
     });
 
     el("btn-sun").addEventListener("click", () => {
-      lastView = snapshotView();
-      const tgt = sun.position.clone();
-      const cam = tgt.clone().add(new THREE.Vector3(180, 80, 160));
-      startFlyTo(cam, tgt, 850);
-      syncURLStateDebounced();
+      moveToSunView();
     });
 
     el("btn-gal").addEventListener("click", () => { planeVisible = !planeVisible; applyOverlayVisibility(); });
@@ -3477,14 +3639,19 @@
       if (summaryEl) summaryEl.textContent = "Ready.";
       syncURLStateDebounced();
     });
-    el("cmp-export").addEventListener("click", async () => {
-      await exportCompareCSV();
+    el("cmp-export").addEventListener("click", () => {
+      try {
+        const count = exportCompareCSV();
+        console.log("[cmp-export] handler done", { exportedRows: count });
+      } catch (err) {
+        console.error("[cmp-export] handler failed", err);
+        showToast(`Export failed: ${err?.message || "unknown error"}`);
+        setTimeout(() => hideToast(), 1800);
+        setStatus("Compare export failed.");
+      }
     });
     el("dm-search").addEventListener("click", () => {
       searchAndHighlightNamedClusters();
-    });
-    el("dm-export").addEventListener("click", async () => {
-      await exportNamedClustersDMCSV();
     });
 
     // Filters UI.
@@ -3566,15 +3733,19 @@
     // Search.
     search.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
-      const q = normalizeSearchKey(search.value);
-      if (!q) return;
+      const raw = String(search.value || "").trim();
+      if (!raw) return;
 
-      let found = null;
-      for (const [k, c] of searchIndex.entries()) {
-        if (k.includes(q)) { found = c; break; }
+      // Use the same broad matching behavior as the compare search box.
+      let found = findClusterForGlobalSearch(raw);
+      if (!found) {
+        const q = normalizeSearchKey(raw);
+        for (const [k, c] of searchIndex.entries()) {
+          if (k.includes(q)) { found = c; break; }
+        }
       }
       if (!found) {
-        setStatus(`No match for "${search.value}".`);
+        setStatus(`No match for "${raw}".`);
         return;
       }
       lastView = snapshotView();

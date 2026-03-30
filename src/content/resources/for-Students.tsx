@@ -243,6 +243,7 @@ export function ForStudents({ theme }: { theme: Theme }) {
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <TOCLink theme={theme} href="#start" label="Start here" />
                   <TOCLink theme={theme} href="#software" label="Signals & tools" />
+                  <TOCLink theme={theme} href="#teaching-lab" label="Binary pulsar lab" />
                   <TOCLink theme={theme} href="#catalogs" label="Where pulsars live" />
                   <TOCLink theme={theme} href="#papers" label="Reading & projects" />
                 </div>
@@ -316,6 +317,15 @@ export function ForStudents({ theme }: { theme: Theme }) {
         subtitle="How raw voltages from a telescope become the folded profiles and diagnostic panels you see in talks and papers."
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-fr items-stretch">
+          <div className="lg:col-span-12" id="teaching-lab">
+            <LinkCard
+              theme={theme}
+              href="/resources/binary-pulsar-lab"
+              title="Binary Pulsar Timing Lab"
+              desc="A site-native teaching lab for exploring orbital geometry, timing delays, fitted residuals, and how a real binary pulsar turns physics into arrival-time structure."
+            />
+          </div>
+
           <div className="lg:col-span-6">
             <LinkCard
               theme={theme}

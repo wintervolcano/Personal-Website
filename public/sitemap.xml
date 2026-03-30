@@ -55,6 +55,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.fazalkareem.com/resources/binary-pulsar-lab</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.fazalkareem.com/blog</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>

@@ -37,6 +37,18 @@ export function Resources({
             onClick: () => navigate("/resources/for-students"),
           },
           {
+            k: "a1b",
+            t: "Binary Pulsar Timing Lab",
+            d: "Interactive timing workbench for orbital geometry, delays, TOAs, and residuals.",
+            onClick: () => navigate("/resources/binary-pulsar-lab"),
+          },
+          {
+            k: "a1c",
+            t: "Globular Cluster Explorer",
+            d: "Interactive 3D globular cluster visualization and exploration.",
+            onClick: () => navigate("/globular-cluster-explorer"),
+          },
+          {
             k: "a2",
             t: "For Astronomers",
             d: "Software and helpful links",

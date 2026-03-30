@@ -98,6 +98,15 @@ const DELAY_COLORS = {
   residual: { stroke: "#e07848", fill: "rgba(224,120,72,0.10)", label: "Residual", symbol: "dres" },
 };
 
+const DELAY_DESCRIPTIONS = {
+  romer: "Light-travel-time delay from the pulsar moving around the barycenter. This is usually the dominant orbital timing term.",
+  einstein: "Combined gravitational redshift and second-order Doppler delay that varies across the orbit.",
+  shapiro: "Extra delay as the pulses pass through the curved spacetime near the companion, strongest close to conjunction.",
+  secular: "Slow long-term drift term that accumulates over longer baselines rather than one orbit.",
+  dm: "Chromatic dispersive delay from free electrons along the line of sight, scaling with observing frequency.",
+  total: "Net visible timing delay after combining the active terms.",
+};
+
 const LONG_BASELINE_WINDOWS = {
   orbit: { label: "1 orbit", days: DEFAULT_MODEL_VALUES.PB_days },
   day: { label: "1 day", days: 1 },
@@ -850,6 +859,7 @@ function DelayPanel({
 }) {
   const fittable = ["romer", "einstein", "shapiro", "secular", "dm"];
   const numFitted = fittable.filter((k) => fittedDelays[k]).length;
+  const [hoveredDelay, setHoveredDelay] = useState(null);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -869,8 +879,14 @@ function DelayPanel({
           return (
             <div key={key}>
               <div
-                onMouseEnter={() => setHighlightDelay(key)}
-                onMouseLeave={() => setHighlightDelay(null)}
+                onMouseEnter={() => {
+                  setHighlightDelay(key);
+                  setHoveredDelay(key);
+                }}
+                onMouseLeave={() => {
+                  setHighlightDelay(null);
+                  setHoveredDelay(null);
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -962,6 +978,26 @@ function DelayPanel({
                   />
                 </button>
               </div>
+
+              {activeTab === "timing" && hoveredDelay === key && DELAY_DESCRIPTIONS[key] && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    marginLeft: 10,
+                    marginRight: 10,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${meta.stroke}22`,
+                    background: "rgba(9,9,11,0.76)",
+                    color: "#a1a1aa",
+                    fontSize: 10.5,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  <span style={{ color: meta.stroke, fontWeight: 700, marginRight: 6 }}>{meta.label}</span>
+                  {DELAY_DESCRIPTIONS[key]}
+                </div>
+              )}
             </div>
           );
         })}
@@ -1317,9 +1353,6 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
         <line x1={96} y1={0} x2={114} y2={0} stroke="rgba(147,197,253,1)" strokeWidth="2" strokeDasharray="6 3" strokeLinecap="round" />
         <text x={120} y={4} fill="rgba(147,197,253,0.92)" fontSize="10.5">
           template
-        </text>
-        <text x={208} y={4} fill="rgba(161,161,170,0.7)" fontSize="10">
-          dotted guide = early / late offset
         </text>
       </g>
       {displayed.length === 0 && (
@@ -2533,12 +2566,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(251,146,60,0.24)", color: "#fb923c", fontSize: 10 }}>
-                      TOAs: observed model
-                    </div>
-                    <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(147,197,253,0.24)", color: "#93c5fd", fontSize: 10 }}>
-                      curves: fit model
-                    </div>
                     {modelDeltaCount > 0 && (
                       <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(180,180,200,0.12)", color: "#d4d4d8", fontSize: 10 }}>
                         {modelDeltaCount} parameter mismatch{modelDeltaCount > 1 ? "es" : ""}

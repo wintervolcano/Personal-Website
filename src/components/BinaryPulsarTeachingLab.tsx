@@ -202,6 +202,23 @@ function sumSelectedDelayTerms(delays, selectedDelays = null) {
   return keys.reduce((sum, key) => sum + ((selectedDelays?.[key] ? 1 : 0) * (delays?.[key] ?? 0)), 0);
 }
 
+function sumVisibleDelayTerms(delays, activeDelays = null, fittedDelays = null) {
+  const keys = ["romer", "einstein", "shapiro", "secular", "dm"];
+  return keys.reduce((sum, key) => {
+    const isActive = activeDelays?.[key] ?? true;
+    const isFitted = fittedDelays?.[key] ?? false;
+    return sum + (isActive && !isFitted ? delays?.[key] ?? 0 : 0);
+  }, 0);
+}
+
+function sumVisibleNoiseTerms(toa, activeDelays = null) {
+  const keys = ["romer", "einstein", "shapiro", "secular", "dm"];
+  return keys.reduce((sum, key) => {
+    const isActive = activeDelays?.[key] ?? true;
+    return sum + (isActive ? toa?.[`noise_${key}`] ?? 0 : 0);
+  }, 0);
+}
+
 function parseMaybeNumber(raw) {
   const cleaned = `${raw}`.replace(/[dD]/g, "e");
   const value = Number(cleaned);
@@ -1158,7 +1175,7 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
   const plotW = svgW - padL - padR;
   const peakH = svgH - padT - padB;
   const baseY = padT + peakH;
-  const visScale = 0.5;
+  const visScale = 0.58;
   const samples = 420;
   const windowDays = Math.max(show * toaIntervalDays, toaIntervalDays);
   const windowStart = elapsedDays - windowDays;
@@ -1166,8 +1183,8 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
   const displayed = toas
     .filter((toa) => toa.epochDays >= windowStart - pulseMarginDays && toa.epochDays <= elapsedDays + pulseMarginDays)
     .sort((a, b) => a.epochDays - b.epochDays);
-  const templateLift = 2.4;
-  const observedDrop = 1.2;
+  const templateLift = 0.0;
+  const observedDrop = 0.0;
   const laneWidth = plotW / Math.max(show, 1);
   const phaseSpanPx = laneWidth * visScale;
   const pulseSigma = laneWidth * 0.09;
@@ -1175,11 +1192,14 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
 
   const pulseCenters = displayed.map((toa) => {
     const anchorX = xForEpoch(toa.epochDays);
-    const residualMs = (Object.values(fittedDelays || {}).some(Boolean) ? toa.residual_fit : toa.residual_total) ?? 0;
-    const observedOffsetFrac = clamp(residualMs / Math.max(pulsePeriodMs, 1e-6), -0.48, 0.48);
+    const offsetMs = toa.pulse_offset_ms ?? 0;
+    const residualFrac = offsetMs / Math.max(pulsePeriodMs, 1e-6);
+    const visibleFrac = Math.sign(residualFrac) * Math.pow(Math.abs(residualFrac), 0.72) * 2.35;
+    const observedOffsetFrac = clamp(visibleFrac, -0.6, 0.6);
     return {
       template: anchorX,
       observed: anchorX + observedOffsetFrac * phaseSpanPx,
+      residualFrac,
     };
   }).filter((center) => {
     const minX = padL - laneWidth;
@@ -1244,6 +1264,25 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {pulseCenters.slice(-8).map((center, i) => {
+        const midY = padT + peakH * 0.28 + (i % 2) * 4;
+        const isLate = center.observed > center.template;
+        return (
+          <g key={`offset-${i}`} opacity={Math.min(0.92, 0.45 + Math.abs(center.residualFrac) * 16)}>
+            <line
+              x1={center.template}
+              x2={center.observed}
+              y1={midY}
+              y2={midY}
+              stroke={isLate ? "rgba(251,146,60,0.34)" : "rgba(147,197,253,0.34)"}
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+            <circle cx={center.template} cy={midY} r="1.5" fill="rgba(147,197,253,0.78)" />
+            <circle cx={center.observed} cy={midY} r="1.5" fill="rgba(251,146,60,0.78)" />
+          </g>
+        );
+      })}
       <g transform={`translate(${padL + 4} 18)`}>
         <line x1={0} y1={0} x2={18} y2={0} stroke="rgba(251,146,60,0.82)" strokeWidth="2" strokeLinecap="round" />
         <text x={24} y={4} fill="rgba(251,146,60,0.88)" fontSize="10.5">
@@ -1251,7 +1290,10 @@ function PulseTrain({ toas, fittedDelays, pulsePeriodMs, elapsedDays, toaInterva
         </text>
         <line x1={96} y1={0} x2={114} y2={0} stroke="rgba(147,197,253,1)" strokeWidth="2" strokeDasharray="6 3" strokeLinecap="round" />
         <text x={120} y={4} fill="rgba(147,197,253,0.92)" fontSize="10.5">
-          fit template
+          template
+        </text>
+        <text x={208} y={4} fill="rgba(161,161,170,0.7)" fontSize="10">
+          dotted guide = early / late offset
         </text>
       </g>
       {displayed.length === 0 && (
@@ -1769,6 +1811,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       psrBehindCmp: losProj > 0,
       omNow,
       E,
+      r,
+      orbitalAngRate: dynamics.n * ((1 + dynamics.e * Math.cos(f)) ** 2) / Math.max((1 - dynamics.e * dynamics.e) ** 1.5, 1e-6),
       phase: ((M / (2 * Math.PI)) + 1) % 1,
       f,
     };
@@ -1881,17 +1925,26 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const timingToas = useMemo(
     () =>
       toas.map((toa) => {
-        const template = computeDelays(toa.epochDays, currentModel, freqMHz, { romer: true, einstein: true, shapiro: true, secular: true, dm: true });
-        const residualTotal = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumDelayTerms(template, null);
-        const residualFit = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumSelectedDelayTerms(template, fittedDelays);
+        const template = computeDelays(toa.epochDays, currentModel, freqMHz, {
+          romer: activeDelays.romer,
+          einstein: activeDelays.einstein,
+          shapiro: activeDelays.shapiro,
+          secular: activeDelays.secular,
+          dm: activeDelays.dm,
+        });
+        const visibleObservedTotal = sumVisibleDelayTerms(toa, activeDelays, null) + sumVisibleNoiseTerms(toa, activeDelays);
+        const fittedTemplateTotal = sumSelectedDelayTerms(template, fittedDelays);
+        const residualTotal = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumVisibleDelayTerms(template, activeDelays, null);
+        const residualFit = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumVisibleDelayTerms(template, activeDelays, fittedDelays);
         return {
           ...toa,
           template,
           residual_total: residualTotal,
           residual_fit: residualFit,
+          pulse_offset_ms: visibleObservedTotal - fittedTemplateTotal,
         };
       }),
-    [toas, currentModel, freqMHz, fittedDelays]
+    [toas, currentModel, freqMHz, activeDelays, fittedDelays]
   );
 
   useEffect(() => {
@@ -2250,7 +2303,11 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     const binaryAngle = Math.atan2(sepY, sepX);
                     const separationBoost = clamp(separation / 260, 0.7, 1.35);
                     const radialK = 0.026;
-                    const angularRate = 2 * dynamics.n * DAY;
+                    const gwAngularRate = 2 * scene.orbitalAngRate * DAY;
+                    const eccentricBurst = Math.pow(clamp(dynamics.aRel / Math.max(scene.r, 1), 0.72, 3.8), 1.18);
+                    const anisotropy = clamp(0.12 + dynamics.e * 0.38 + (eccentricBurst - 1) * 0.14, 0.12, 0.9);
+                    const phaseSkew = 0.22 + dynamics.e * 0.95;
+                    const burstGain = clamp(0.88 + (eccentricBurst - 1) * 0.62, 0.88, 2.35);
 
                     const displace = (x, y) => {
                       let tdx = 0;
@@ -2275,16 +2332,26 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                       const tx = -uy;
                       const ty = ux;
                       const angle = Math.atan2(dy, dx);
+                      const aligned = Math.cos(angle - binaryAngle);
+                      const across = Math.sin(angle - binaryAngle);
                       const rise = 1 - Math.exp(-(dist * dist) / (160 * 160));
                       const fade = Math.exp(-dist / 760);
-                      const retard = dist * radialK;
-                      const sourceAngle = binaryAngle - retard;
-                      const crest = Math.sin(radialK * dist - angularRate * elapsed);
+                      const anisotropicMetric =
+                        dist *
+                        (1 - anisotropy * aligned * aligned + 0.42 * anisotropy * across * across);
+                      const retard = anisotropicMetric * radialK;
+                      const sourceAngle = binaryAngle - 0.5 * retard * (1 + 0.55 * dynamics.e * Math.cos(scene.f));
+                      const crest =
+                        Math.sin(
+                          radialK * anisotropicMetric -
+                            gwAngularRate * elapsed +
+                            phaseSkew * dynamics.e * Math.sin(scene.f - 0.6 * retard)
+                        );
                       const plusMode = Math.cos(2 * (angle - sourceAngle));
                       const crossMode = Math.sin(2 * (angle - sourceAngle));
-                      const gwAmp = 8.5 * separationBoost * rise * fade;
+                      const gwAmp = 7.9 * separationBoost * burstGain * rise * fade;
                       const radialWave = gwAmp * plusMode * crest;
-                      const tangentialWave = gwAmp * 0.38 * crossMode * crest;
+                      const tangentialWave = gwAmp * (0.28 + 0.18 * dynamics.e) * crossMode * crest;
                       tdx += radialWave * ux + tangentialWave * tx;
                       tdy += radialWave * uy + tangentialWave * ty;
                       return { dx: tdx, dy: tdy };

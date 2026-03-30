@@ -1117,8 +1117,6 @@ function ResidualPlot({ theoryCurve, toas, activeDelays, fittedDelays, highlight
   const SVG_H = PAD_T + ROW_H * visible.length + ROW_GAP * Math.max(visible.length - 1, 0) + PAD_B;
   const xTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
   const xP = (v) => PAD_L + v * plotW;
-  const lastPhase = toas.length > 0 ? toas[toas.length - 1].phase : null;
-
   return (
     <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: "100%", height: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet" fontFamily="'DM Mono', monospace">
       {visible.map((key, idx) => {
@@ -1148,7 +1146,6 @@ function ResidualPlot({ theoryCurve, toas, activeDelays, fittedDelays, highlight
         );
       })}
 
-      {lastPhase !== null && <line x1={xP(lastPhase)} x2={xP(lastPhase)} y1={PAD_T} y2={SVG_H - PAD_B} stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeDasharray="3 5" />}
       {xTicks.map((v) => (
         <text key={v} x={xP(v)} y={SVG_H - PAD_B + 16} textAnchor="middle" fill="rgba(161,161,170,0.65)" fontSize="11">
           {v.toFixed(1)}

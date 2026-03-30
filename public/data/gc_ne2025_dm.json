@@ -340,7 +340,7 @@
   "count": 167,
   "error_count": 0,
   "errors": [],
-  "generated_at": "2026-03-23T05:43:05.979763+00:00",
+  "generated_at": "2026-03-30T06:02:29.784617+00:00",
   "rows": [
     {
       "b_deg": -44.88931115726987,
@@ -1846,6 +1846,6 @@
       "rsun_kpc": 24.39
     }
   ],
-  "source_clusters_updated": "2026-03-23T05:40:11.474Z",
+  "source_clusters_updated": "2026-03-30T05:59:36.860Z",
   "source_clusters_url": "https://gc-worker.fazalabdulkareem12.workers.dev/api/clusters?nocache=1"
 }

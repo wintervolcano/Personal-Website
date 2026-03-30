@@ -154,6 +154,28 @@ function getEpochOffsetScale(param, currentValue) {
   };
 }
 
+function getParameterSliderBounds(param, value, baselineValue) {
+  const values = [param.min, param.max, value, baselineValue].filter(Number.isFinite);
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+
+  if (min === max) {
+    const pad = Math.max(Math.abs(min) * 0.2, param.step * 10, 1);
+    min -= pad;
+    max += pad;
+  } else {
+    const span = max - min;
+    const pad = Math.max(span * 0.08, param.step * 6);
+    min -= pad;
+    max += pad;
+  }
+
+  return {
+    min,
+    max,
+  };
+}
+
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
@@ -283,6 +305,10 @@ function parseParText(text) {
     ...DEFAULT_MODEL_VALUES,
     ...known,
   };
+
+  if (Number.isFinite(values.T0_days) && Math.abs(values.T0_days) > 1000) {
+    values.T0_days = 0;
+  }
 
   return normalizeModelEnvelope({
     id: `upload-${Date.now()}`,
@@ -756,6 +782,7 @@ function ParameterEditor({ model, compareModel, originalModel, onChange, activeT
           {params.map((param) => {
             const value = model[param.key];
             const originalValue = originalModel?.[param.key];
+            const sliderBounds = getParameterSliderBounds(param, value, originalValue);
             const changedFromOriginal = Number.isFinite(value) && Number.isFinite(originalValue) && Math.abs(value - originalValue) > 1e-12;
             const missing =
               support.orbitMissing.includes(param.key) ||
@@ -778,11 +805,13 @@ function ParameterEditor({ model, compareModel, originalModel, onChange, activeT
                     onChange={(e) => onChange(param.key, Number(e.target.value))}
                     type="number"
                     step={param.step}
+                    min={sliderBounds.min}
+                    max={sliderBounds.max}
                     className="w-28 rounded-md border border-white/10 bg-zinc-950/80 px-2 py-1 font-mono text-xs text-zinc-100 outline-none"
                   />
                 </div>
                 <ControlRow label={param.unit || "value"} value={`${fmt(value, param.step < 0.01 ? 4 : 2)} ${param.unit}`.trim()}>
-                  <Slider value={value} min={param.min} max={param.max} step={param.step} onChange={(next) => onChange(param.key, next)} color="#7aa2f7" />
+                  <Slider value={value} min={sliderBounds.min} max={sliderBounds.max} step={param.step} onChange={(next) => onChange(param.key, next)} color="#7aa2f7" />
                 </ControlRow>
                 {changedFromOriginal && (
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -2093,6 +2122,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const presetSelectValue = activePresetId || (loadedModel.source === "uploaded_par" ? loadedModel.id : initialModel.id);
+
   return (
     <div
       ref={rootRef}
@@ -2346,7 +2377,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                         );
                       const plusMode = Math.cos(2 * (angle - sourceAngle));
                       const crossMode = Math.sin(2 * (angle - sourceAngle));
-                      const gwAmp = 7.9 * separationBoost * burstGain * rise * fade;
+                      const gwAmp = 20.0 * separationBoost * burstGain * rise * fade;
                       const radialWave = gwAmp * plusMode * crest;
                       const tangentialWave = gwAmp * (0.28 + 0.18 * dynamics.e) * crossMode * crest;
                       tdx += radialWave * ux + tangentialWave * tx;
@@ -2618,12 +2649,15 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                 <section>
                   <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Session</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <ControlRow label="Preset" value={activePresetId || loadedModel.source}>
+                    <ControlRow label="Preset" value={loadedModel.source === "uploaded_par" ? loadedModel.displayName : activePresetId || loadedModel.source}>
                       <select
-                        value={activePresetId}
+                        value={presetSelectValue}
                         onChange={(e) => handlePresetChange(e.target.value)}
                         className="w-full rounded-lg border border-white/10 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 outline-none"
                       >
+                        {loadedModel.source === "uploaded_par" && (
+                          <option value={loadedModel.id}>{loadedModel.displayName}</option>
+                        )}
                         {MODEL_PRESETS.map((preset) => (
                           <option key={preset.id} value={preset.id}>
                             {preset.displayName}

@@ -233,6 +233,15 @@ function sumSelectedDelayTerms(delays, selectedDelays = null) {
   return keys.reduce((sum, key) => sum + ((selectedDelays?.[key] ? 1 : 0) * (delays?.[key] ?? 0)), 0);
 }
 
+function sumSelectedVisibleDelayTerms(delays, activeDelays = null, selectedDelays = null) {
+  const keys = ["romer", "einstein", "shapiro", "secular", "dm"];
+  return keys.reduce((sum, key) => {
+    const isActive = activeDelays?.[key] ?? true;
+    const isSelected = selectedDelays?.[key] ?? false;
+    return sum + (isActive && isSelected ? delays?.[key] ?? 0 : 0);
+  }, 0);
+}
+
 function sumVisibleDelayTerms(delays, activeDelays = null, fittedDelays = null) {
   const keys = ["romer", "einstein", "shapiro", "secular", "dm"];
   return keys.reduce((sum, key) => {
@@ -1081,8 +1090,24 @@ function SubPlot({
   currentPhase,
 }) {
   const theoryVals = theoryCurve.map((p) => p[delayKey] ?? 0);
-  const signalAmp = Math.max(...theoryVals.map((v) => Math.abs(v)), 1e-4);
   const noiseSigmaMs = noiseLevel * 1e-3;
+  const scatterSamples = toas.map((t) => {
+    let val;
+    let noise;
+    if (delayKey === "residual") {
+      val = t.residual_fit ?? 0;
+      noise = 0;
+    } else {
+      val = t[delayKey] ?? 0;
+      noise = t[`noise_${delayKey}`] ?? 0;
+    }
+    return { phase: t.phase, value: val + noise };
+  });
+  const signalAmp = Math.max(
+    ...theoryVals.map((v) => Math.abs(v)),
+    ...scatterSamples.map((point) => Math.abs(point.value)),
+    1e-4
+  );
   const ySpan = Math.max(signalAmp * 1.35, noiseSigmaMs * 3.5, 1e-3);
   const yMin = -ySpan;
   const yMax = ySpan;
@@ -1095,20 +1120,12 @@ function SubPlot({
   const areaD = `${curveD} L${xP(last.phase).toFixed(1)},${y0.toFixed(1)} L${xP(0).toFixed(1)},${y0.toFixed(1)} Z`;
   const displayColor = isFitted ? "#52525b" : color;
   const dim = highlightDelay && highlightDelay !== delayKey;
-  const flatResidualState = delayKey === "residual" && theoryVals.every((v) => Math.abs(v) < 1e-8) && noiseSigmaMs < 1e-8;
+  const flatResidualState = delayKey === "residual" && scatterSamples.every((point) => Math.abs(point.value) < 1e-8) && noiseSigmaMs < 1e-8;
 
-  const scatterDots = toas.map((t) => {
-    let val;
-    let noise;
-    if (delayKey === "residual") {
-      val = t.residual_fit ?? 0;
-      noise = 0;
-    } else {
-      val = t[delayKey] ?? 0;
-      noise = t[`noise_${delayKey}`] ?? 0;
-    }
-    return { x: xP(t.phase), y: yP(val + noise) };
-  });
+  const scatterDots = scatterSamples.map((point) => ({
+    x: xP(point.phase),
+    y: yP(point.value),
+  }));
 
   return (
     <g opacity={dim ? 0.14 : isFitted ? 0.35 : 1}>
@@ -1992,9 +2009,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
           dm: activeDelays.dm,
         });
         const visibleObservedTotal = sumVisibleDelayTerms(toa, activeDelays, null) + sumVisibleNoiseTerms(toa, activeDelays);
-        const fittedTemplateTotal = sumSelectedDelayTerms(template, fittedDelays);
-        const residualTotal = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumVisibleDelayTerms(template, activeDelays, null);
-        const residualFit = (toa.total ?? 0) + (toa.noise_total ?? 0) - sumVisibleDelayTerms(template, activeDelays, fittedDelays);
+        const fittedTemplateTotal = sumSelectedVisibleDelayTerms(template, activeDelays, fittedDelays);
+        const residualTotal = visibleObservedTotal;
+        const residualFit = visibleObservedTotal - fittedTemplateTotal;
         return {
           ...toa,
           template,

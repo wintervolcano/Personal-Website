@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "../lib/usePageMeta";
@@ -124,7 +124,7 @@ const PARAMETER_META = [
   { key: "INC_deg", label: "INC", unit: "deg", min: 5, max: 89.9, step: 0.1, tabs: ["orbit", "timing", "longBaseline"], group: "binary" },
   { key: "DM", label: "DM", unit: "pc cm^-3", min: 0, max: 400, step: 0.05, tabs: ["timing", "longBaseline"], group: "timing" },
   { key: "GAMMA", label: "GAMMA", unit: "s", min: 0, max: 0.02, step: 0.00001, tabs: ["timing", "longBaseline"], group: "timing" },
-  { key: "OMDOT_deg_yr", label: "OMDOT", unit: "deg/yr", min: -10, max: 30, step: 0.001, tabs: ["timing", "longBaseline"], group: "timing" },
+  { key: "OMDOT_deg_yr", label: "OMDOT", unit: "deg/yr", min: -3600, max: 3600, step: 0.001, tabs: ["orbit", "timing", "longBaseline"], group: "timing" },
   { key: "PBDOT", label: "PBDOT", unit: "", min: -1e-11, max: 1e-11, step: 1e-14, tabs: ["timing", "longBaseline"], group: "timing" },
 ];
 
@@ -179,6 +179,10 @@ function getParameterSliderBounds(param, value, baselineValue) {
     max += pad;
   }
 
+  if (Number.isFinite(param.min) && param.min >= 0) {
+    min = Math.max(min, param.min);
+  }
+
   return {
     min,
     max,
@@ -187,6 +191,36 @@ function getParameterSliderBounds(param, value, baselineValue) {
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+function roundedRectPath(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function injectSvgFontStyle(svgMarkup) {
+  const fontStyle = `<style><![CDATA[
+    text, tspan, foreignObject, svg {
+      font-family: 'DM Mono','JetBrains Mono',monospace;
+    }
+  ]]></style>`;
+  return svgMarkup.includes("</defs>")
+    ? svgMarkup.replace("</defs>", `${fontStyle}</defs>`)
+    : svgMarkup.replace(">", `><defs>${fontStyle}</defs>`);
 }
 
 function countModelDiffs(a, b) {
@@ -622,19 +656,52 @@ function getPostFitLongValue(point, yMode, fittedDelays, scale = 1) {
   return point.residual;
 }
 
-function Slider({ value, min, max, step, onChange, color = "#e4e4e7" }) {
-  const pct = ((value - min) / (max - min)) * 100;
+// Symmetric log scale: maps linear t in [-1,1] to value in [-span,span]
+// slow near 0, fast near extremes. Uses base-10: f(t) = sign(t)*span*(10^|t| - 1)/9
+function symLogToValue(t: number, span: number): number {
+  return Math.sign(t) * span * (Math.pow(10, Math.abs(t)) - 1) / 9;
+}
+function valueToSymLog(v: number, span: number): number {
+  if (span === 0) return 0;
+  return Math.sign(v) * Math.log10(1 + Math.abs(v) * 9 / span);
+}
+
+function Slider({ value, min, max, step, onChange, color = "#e4e4e7", logScale = false }: {
+  value: number; min: number; max: number; step: number; onChange: (v: number) => void; color?: string; logScale?: boolean;
+}) {
+  let pct: number;
+  if (logScale) {
+    const span = Math.max(Math.abs(min), Math.abs(max));
+    const t = valueToSymLog(value, span);
+    // t is in [-1,1], map to [0,100]%
+    pct = ((t + 1) / 2) * 100;
+  } else {
+    pct = ((value - min) / (max - min)) * 100;
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (logScale) {
+      const span = Math.max(Math.abs(min), Math.abs(max));
+      const raw = Number(e.target.value); // in [0,1000]
+      const t = raw / 500 - 1; // map to [-1,1]
+      const v = symLogToValue(t, span);
+      onChange(v);
+    } else {
+      onChange(Number(e.target.value));
+    }
+  };
+
   return (
     <div className="relative flex h-5 items-center">
       <div className="relative h-1.5 w-full rounded-full bg-zinc-800">
         <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
         <input
           type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          min={logScale ? 0 : min}
+          max={logScale ? 1000 : max}
+          step={logScale ? 1 : step}
+          value={logScale ? (valueToSymLog(value, Math.max(Math.abs(min), Math.abs(max))) + 1) * 500 : value}
+          onChange={handleChange}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           style={{ margin: 0 }}
         />
@@ -679,14 +746,22 @@ function ControlRow({ label, value, children }) {
   );
 }
 
-function IconBtn({ onClick, children, active = false, color, disabled = false }) {
+function IconBtn({ onClick, children, active = false, color, disabled = false, light = false }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-all duration-150 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
       style={
-        active
+        light
+          ? {
+              border: "1px solid rgba(255,255,255,0.72)",
+              background: "rgba(255,255,255,0.96)",
+              color: "#111217",
+              backdropFilter: "blur(12px)",
+              boxShadow: active ? "0 0 0 1px rgba(255,255,255,0.16), 0 8px 28px rgba(255,255,255,0.08)" : "0 6px 22px rgba(255,255,255,0.05)",
+            }
+          : active
           ? color
             ? { border: `1px solid ${color}55`, background: `${color}1a`, color, backdropFilter: "blur(12px)" }
             : {
@@ -695,12 +770,19 @@ function IconBtn({ onClick, children, active = false, color, disabled = false })
                 color: "#e8e8f0",
                 backdropFilter: "blur(12px)",
               }
-          : {
-              border: "1px solid rgba(180,180,200,0.1)",
-              background: "rgba(255,255,255,0.04)",
-              color: "#a1a1aa",
-              backdropFilter: "blur(12px)",
-            }
+          : color
+            ? {
+                border: `1px solid ${color}28`,
+                background: "rgba(255,255,255,0.04)",
+                color,
+                backdropFilter: "blur(12px)",
+              }
+            : {
+                border: "1px solid rgba(180,180,200,0.1)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#a1a1aa",
+                backdropFilter: "blur(12px)",
+              }
       }
     >
       {children}
@@ -1716,6 +1798,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const rootRef = useRef(null);
   const headerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const orbitSvgRef = useRef(null);
+  const exportControlRef = useRef({ cancelled: false, recorder: null, stream: null });
+  const exportFrameResolveRef = useRef<(() => void) | null>(null);
   const elapsedRef = useRef(0);
   const lastToaRef = useRef(0);
   const lastRef = useRef(null);
@@ -1724,6 +1809,12 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const beamAngleRef = useRef(0);
   const companionBeamAngleRef = useRef(0);
   const absoluteElapsedRef = useRef(0);
+  const historyTrailRef = useRef<Array<{px: number, py: number} | null>>([]);
+  const omDotVizMultRef = useRef(1);
+  const exportStartAbsoluteRef = useRef(0);
+  const exportBeamStartRef = useRef(0);
+  const exportCompanionBeamStartRef = useRef(0);
+  const exportHistoryTrailRef = useRef<Array<{px: number, py: number} | null>>([]);
 
   const initialModel = normalizeModelEnvelope(MODEL_PRESETS[0]);
   const [viewportWidth, setViewportWidth] = useState(1400);
@@ -1743,9 +1834,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [showGW, setShowGW] = useState(true);
   const [showVelVec, setShowVelVec] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [showOmegaLine, setShowOmegaLine] = useState(false);
+  const [showCoordAxes, setShowCoordAxes] = useState(false);
+  const [showHistoryTrail, setShowHistoryTrail] = useState(false);
+  const [historyTrail, setHistoryTrail] = useState<Array<{px: number, py: number} | null>>([]);
   const [beamWidth, setBeamWidth] = useState(18);
   const [beamOpacity, setBeamOpacity] = useState(0.85);
   const [trailLen, setTrailLen] = useState(1);
+  const [omDotVizMult, setOmDotVizMult] = useState(1);
   const [noiseLevel, setNoiseLevel] = useState(10);
   const [toaInterval, setToaInterval] = useState(8);
   const [freqMHz, setFreqMHz] = useState(1277);
@@ -1784,6 +1880,15 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [toas, setToas] = useState([]);
   const [importNotice, setImportNotice] = useState("");
   const [constraintToast, setConstraintToast] = useState("");
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [exportDurationSec, setExportDurationSec] = useState(8);
+  const [isExportingOrbit, setIsExportingOrbit] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportAbsoluteElapsed, setExportAbsoluteElapsed] = useState(null);
+  const [isExportStopHovered, setIsExportStopHovered] = useState(false);
+  const [beamAngle, setBeamAngle] = useState(0);
+  const [companionBeamAngle, setCompanionBeamAngle] = useState(0);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -1812,6 +1917,17 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const workspaceTopInset = headerHeight + 10;
   const sidePanelTopInset = headerHeight + 6;
   const orbitSceneOffset = menuOpen && !isCompact ? 112 : 0;
+  const renderedAbsoluteElapsed = exportAbsoluteElapsed ?? absoluteElapsed;
+  const renderedBeamAngle =
+    exportAbsoluteElapsed != null
+      ? exportBeamStartRef.current + (renderedAbsoluteElapsed - exportStartAbsoluteRef.current) * DAY * currentModel.F0 * 2 * Math.PI
+      : beamAngle;
+  const renderedCompanionBeamAngle =
+    exportAbsoluteElapsed != null
+      ? exportCompanionBeamStartRef.current + (renderedAbsoluteElapsed - exportStartAbsoluteRef.current) * DAY * currentModel.companionF0 * 2 * Math.PI
+      : companionBeamAngle;
+  const renderOrbitSceneOffset = isExportingOrbit ? 0 : orbitSceneOffset;
+  const minOrbitExportDurationSec = useMemo(() => Math.max((currentModel.PB_days * DAY) / Math.max(timeScale, 1), 0.5), [currentModel.PB_days, timeScale]);
 
   useEffect(() => {
     if (isCompact) setMenuOpen(false);
@@ -1824,6 +1940,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   useEffect(() => {
     absoluteElapsedRef.current = absoluteElapsed;
   }, [absoluteElapsed]);
+
+  useLayoutEffect(() => {
+    if (exportFrameResolveRef.current) {
+      const resolve = exportFrameResolveRef.current;
+      exportFrameResolveRef.current = null;
+      resolve();
+    }
+  }, [exportAbsoluteElapsed]);
 
   useEffect(() => {
     if (activeTab === "longBaseline") {
@@ -1864,12 +1988,12 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   }, [currentModel]);
 
   const scene = useMemo(() => {
-    const t = elapsed * DAY;
+    const t = (renderedAbsoluteElapsed - currentModel.T0_days) * DAY;
     const M = ((dynamics.n * t) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
     const E = kepler(M, dynamics.e);
     const f = trueAnom(E, dynamics.e);
     const r = dynamics.aRel * (1 - dynamics.e * Math.cos(E));
-    const omNow = dynamics.omega + dynamics.omDot * elapsed * DAY;
+    const omNow = dynamics.omega + dynamics.omDot * omDotVizMult * t;
     const cosW = Math.cos(omNow);
     const sinW = Math.sin(omNow);
     const xOrb = r * Math.cos(f);
@@ -1892,11 +2016,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       phase: ((M / (2 * Math.PI)) + 1) % 1,
       f,
     };
-  }, [elapsed, dynamics]);
+  }, [renderedAbsoluteElapsed, currentModel.T0_days, dynamics, omDotVizMult]);
+
+  // Keep omDotVizMult in a ref so the animation tick always uses the current value
+  useEffect(() => { omDotVizMultRef.current = omDotVizMult; }, [omDotVizMult]);
 
   const currentDelays = useMemo(
-    () => computeDelays(elapsed, currentModel, freqMHz, { romer: true, einstein: true, shapiro: true, secular: true, dm: true }),
-    [elapsed, currentModel, freqMHz]
+    () => computeDelays(renderedAbsoluteElapsed, currentModel, freqMHz, { romer: true, einstein: true, shapiro: true, secular: true, dm: true }),
+    [renderedAbsoluteElapsed, currentModel, freqMHz]
   );
 
   const theoryCurve = useMemo(() => buildTheoryCurve(currentModel, freqMHz, fittedDelays), [currentModel, freqMHz, fittedDelays]);
@@ -1934,6 +2061,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   );
 
   const orbits = useMemo(() => {
+    const omNow = scene.omNow;
     const pts = (sign) => {
       const arr = [];
       for (let i = 0; i <= 400; i++) {
@@ -1941,8 +2069,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
         const r = (dynamics.aRel * (1 - dynamics.e ** 2)) / (1 + dynamics.e * Math.cos(f));
         const xO = r * Math.cos(f);
         const yO = r * Math.sin(f);
-        const cosW = Math.cos(dynamics.omega);
-        const sinW = Math.sin(dynamics.omega);
+        const cosW = Math.cos(omNow);
+        const sinW = Math.sin(omNow);
         const xR = xO * cosW - yO * sinW;
         const yR = xO * sinW + yO * cosW;
         const mu = sign > 0 ? dynamics.muC : -dynamics.muP;
@@ -1951,12 +2079,15 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       return arr;
     };
     return { psr: pts(-1), cmp: pts(1) };
-  }, [dynamics]);
+  }, [dynamics, scene.omNow]);
 
   const trail = useMemo(() => {
     const steps = 200;
     const frac = trailLen;
     const now = scene.phase * 2 * Math.PI;
+    const cosI = Math.cos(dynamics.inc);
+    const cosW = Math.cos(scene.omNow);
+    const sinW = Math.sin(scene.omNow);
     const pPts = [];
     const cPts = [];
     for (let i = 0; i <= steps; i++) {
@@ -1964,12 +2095,10 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       const r = (dynamics.aRel * (1 - dynamics.e ** 2)) / (1 + dynamics.e * Math.cos(f));
       const xO = r * Math.cos(f);
       const yO = r * Math.sin(f);
-      const cosW = Math.cos(scene.omNow);
-      const sinW = Math.sin(scene.omNow);
       const xR = xO * cosW - yO * sinW;
       const yR = xO * sinW + yO * cosW;
-      pPts.push([-dynamics.muP * xR, dynamics.muP * yR * Math.cos(dynamics.inc)]);
-      cPts.push([dynamics.muC * xR, -dynamics.muC * yR * Math.cos(dynamics.inc)]);
+      pPts.push([-dynamics.muP * xR, dynamics.muP * yR * cosI]);
+      cPts.push([dynamics.muC * xR, -dynamics.muC * yR * cosI]);
     }
     return { psr: pPts, cmp: cPts };
   }, [scene.phase, scene.omNow, dynamics, trailLen]);
@@ -1979,7 +2108,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const CENTER = { x: W * 0.5, y: H * 0.52 };
   const ORBIT_TARGET_RADIUS = 355;
   const ORBIT_CONSTRAINT_RADIUS = 420;
-  const maxExt = useMemo(() => Math.max(1, ...[...orbits.psr, ...orbits.cmp].map(([x, y]) => Math.max(Math.abs(x), Math.abs(y)))), [orbits]);
+  // Use worst-case extent over all ω angles (semi-major axis × largest mass fraction)
+  // so the scale never changes as ω precesses.
+  const maxExt = useMemo(() => Math.max(1, dynamics.aRel * Math.max(dynamics.muP, dynamics.muC)), [dynamics]);
   const baselineExtent = useMemo(() => projectedOrbitExtent(loadedModel.values), [loadedModel]);
   const defaultScale = ORBIT_TARGET_RADIUS / Math.max(baselineExtent, 1);
   const constrainedScale = ORBIT_CONSTRAINT_RADIUS / Math.max(maxExt, 1);
@@ -2077,6 +2208,44 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       if (currentModel.companionIsPulsar && currentModel.companionF0 > 0) {
         companionBeamAngleRef.current += dt * currentModel.companionF0 * 2 * Math.PI;
       }
+      {  // history trail sub-step recording (always runs; toggling on clears the ref)
+        const POINTS_PER_ORBIT = 300;
+        const MAX_HISTORY = 6000;
+        const orbitDaySim = currentModel.PB_days;
+        const recordIntervalDays = orbitDaySim / POINTS_PER_ORBIT;
+        const cosI = Math.cos(dynamics.inc);
+        const omMult = omDotVizMultRef.current;
+        const prevAbs = absoluteElapsedRef.current - dSim;
+        const startRecord = Math.ceil(prevAbs / recordIntervalDays) * recordIntervalDays;
+        let lastOrbit = Math.floor(prevAbs / currentModel.PB_days);
+        for (let tSample = startRecord; tSample <= nextAbsolute; tSample += recordIntervalDays) {
+          const orbitNum = Math.floor(tSample / currentModel.PB_days);
+          if (orbitNum !== lastOrbit) {
+            historyTrailRef.current.push(null);
+            lastOrbit = orbitNum;
+          }
+          const tAbs = (tSample - currentModel.T0_days) * DAY;
+          const Mh = ((dynamics.n * tAbs) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+          const Eh = kepler(Mh, dynamics.e);
+          const fh = trueAnom(Eh, dynamics.e);
+          const rh = dynamics.aRel * (1 - dynamics.e * Math.cos(Eh));
+          const omh = dynamics.omega + dynamics.omDot * omMult * tAbs;
+          const cosWh = Math.cos(omh);
+          const sinWh = Math.sin(omh);
+          const xOh = rh * Math.cos(fh);
+          const yOh = rh * Math.sin(fh);
+          const xRh = xOh * cosWh - yOh * sinWh;
+          const yRh = xOh * sinWh + yOh * cosWh;
+          historyTrailRef.current.push({
+            px: -dynamics.muP * xRh,
+            py: dynamics.muP * yRh * cosI,
+          });
+        }
+        if (historyTrailRef.current.length > MAX_HISTORY) {
+          historyTrailRef.current = historyTrailRef.current.slice(-MAX_HISTORY);
+        }
+      }
+
       const targetFrameMs = activeTab === "orbit" ? 1000 / 30 : 1000 / 24;
       if (appendedToa || now - lastDisplayUpdateRef.current >= targetFrameMs) {
         lastDisplayUpdateRef.current = now;
@@ -2084,6 +2253,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
         setAbsoluteElapsed(nextAbsolute);
         setBeamAngle(beamAngleRef.current);
         setCompanionBeamAngle(companionBeamAngleRef.current);
+        setHistoryTrail(historyTrailRef.current.slice());
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -2094,6 +2264,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
 
   useEffect(() => {
     setToas([]);
+    historyTrailRef.current = [];
+    setHistoryTrail([]);
     lastToaRef.current = currentModel.T0_days;
     elapsedRef.current = currentModel.T0_days;
     absoluteElapsedRef.current = currentModel.T0_days;
@@ -2101,8 +2273,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     setAbsoluteElapsed(currentModel.T0_days);
   }, [noiseLevel, currentModel, freqMHz, toaInterval]);
 
-  const [beamAngle, setBeamAngle] = useState(0);
-  const [companionBeamAngle, setCompanionBeamAngle] = useState(0);
   const wasOrbitConstrainedRef = useRef(false);
 
   useEffect(() => {
@@ -2170,6 +2340,244 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     setActivePresetId("");
     setImportNotice(parsed.unknownKeys.length ? `Ignored ${parsed.unknownKeys.length} unsupported par keys` : "par loaded");
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleOrbitExport = async () => {
+    if (!orbitSvgRef.current || typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+      setImportNotice("Orbit export is not supported in this browser");
+      return;
+    }
+
+    const durationSec = Math.max(exportDurationSec, minOrbitExportDurationSec);
+    const fps = 30;
+    const totalFrames = Math.max(1, Math.ceil(durationSec * fps));
+    const simDaysPerSecond = timeScale / DAY;
+    const startAbsolute = absoluteElapsedRef.current;
+    const wasPlaying = isPlaying;
+    const wasMenuOpen = menuOpen;
+    const canvas = document.createElement("canvas");
+    const scaleFactor = 2;
+    const rootWidth = Math.max(Math.round(rootRef.current?.clientWidth || W), 1);
+    const rootHeight = Math.max(Math.round(rootRef.current?.clientHeight || H), 1);
+    canvas.width = rootWidth * scaleFactor;
+    canvas.height = rootHeight * scaleFactor;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setImportNotice("Orbit export canvas failed to initialize");
+      return;
+    }
+
+    const logoImg = await loadImage("/FK.svg").catch(() => null);
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      await document.fonts.ready.catch(() => {});
+    }
+    const exportFormat = MediaRecorder.isTypeSupported("video/mp4;codecs=h264")
+      ? { mimeType: "video/mp4;codecs=h264", extension: "mp4", label: "MP4" }
+      : MediaRecorder.isTypeSupported("video/mp4")
+        ? { mimeType: "video/mp4", extension: "mp4", label: "MP4" }
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+          ? { mimeType: "video/webm;codecs=vp9", extension: "webm", label: "WEBM" }
+          : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+            ? { mimeType: "video/webm;codecs=vp8", extension: "webm", label: "WEBM" }
+            : { mimeType: "video/webm", extension: "webm", label: "WEBM" };
+
+    const stream = canvas.captureStream(0);
+    const recorder = new MediaRecorder(stream, { mimeType: exportFormat.mimeType, videoBitsPerSecond: 18_000_000 });
+    const chunks = [];
+    exportControlRef.current = { cancelled: false, recorder, stream };
+    const stopped = new Promise((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: exportFormat.mimeType }));
+    });
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) chunks.push(event.data);
+    };
+
+    setIsPlaying(false);
+    setMenuOpen(false);
+    setShowExportDialog(false);
+    setIsExportingOrbit(true);
+    setExportProgress(0);
+    setImportNotice(`Rendering orbit export (${exportFormat.label})...`);
+    exportStartAbsoluteRef.current = startAbsolute;
+    exportBeamStartRef.current = beamAngleRef.current;
+    exportCompanionBeamStartRef.current = companionBeamAngleRef.current;
+    exportHistoryTrailRef.current = historyTrailRef.current.slice();
+
+    // Snapshot dynamics for export trail computation
+    const expDynamics = { ...dynamics };
+    const EXPORT_POINTS_PER_ORBIT = 300;
+    const expRecordInterval = expDynamics.Pb / DAY / EXPORT_POINTS_PER_ORBIT;
+    let expLastRecordedT = startAbsolute;
+
+    try {
+      recorder.start();
+      for (let frame = 0; frame < totalFrames; frame++) {
+        if (exportControlRef.current.cancelled) {
+          throw new Error("orbit-export-cancelled");
+        }
+        const frameAbsolute = startAbsolute + (frame / fps) * simDaysPerSecond;
+
+        // Advance export history trail up to this frame
+        if (showHistoryTrail) {
+          const cosI = Math.cos(expDynamics.inc);
+          const startSample = Math.ceil(expLastRecordedT / expRecordInterval) * expRecordInterval;
+          let lastOrbit = Math.floor(expLastRecordedT / expDynamics.Pb * DAY);
+          for (let tSample = startSample; tSample <= frameAbsolute; tSample += expRecordInterval) {
+            const orbitNum = Math.floor(tSample / (expDynamics.Pb / DAY));
+            if (orbitNum !== lastOrbit) {
+              exportHistoryTrailRef.current.push(null);
+              lastOrbit = orbitNum;
+            }
+            const tAbs = (tSample - currentModel.T0_days) * DAY;
+            const Mh = ((expDynamics.n * tAbs) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const Eh = kepler(Mh, expDynamics.e);
+            const fh = trueAnom(Eh, expDynamics.e);
+            const rh = expDynamics.aRel * (1 - expDynamics.e * Math.cos(Eh));
+            const omh = expDynamics.omega + expDynamics.omDot * omDotVizMult * tAbs;
+            const cosWh = Math.cos(omh);
+            const sinWh = Math.sin(omh);
+            const xOh = rh * Math.cos(fh);
+            const yOh = rh * Math.sin(fh);
+            const xRh = xOh * cosWh - yOh * sinWh;
+            const yRh = xOh * sinWh + yOh * cosWh;
+            exportHistoryTrailRef.current.push({
+              px: -expDynamics.muP * xRh,
+              py: expDynamics.muP * yRh * cosI,
+            });
+          }
+          if (exportHistoryTrailRef.current.length > 6000) {
+            exportHistoryTrailRef.current = exportHistoryTrailRef.current.slice(-6000);
+          }
+          expLastRecordedT = frameAbsolute;
+        }
+
+        await new Promise<void>((resolve) => {
+          exportFrameResolveRef.current = resolve;
+          // Batch all frame state into one commit so the layout effect fires exactly once per frame
+          setExportProgress((frame + 1) / totalFrames);
+          setExportAbsoluteElapsed(frameAbsolute);
+        });
+
+        const svgNode = orbitSvgRef.current;
+        const serialized = new XMLSerializer().serializeToString(svgNode);
+        const svgWithNs = serialized.includes("xmlns=") ? serialized : serialized.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+        const svgMarkup = injectSvgFontStyle(svgWithNs);
+        const svgUrl = URL.createObjectURL(new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" }));
+
+        try {
+          const frameImg = await loadImage(svgUrl);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const frameX = 0;
+          const frameY = 0;
+          const frameW = canvas.width;
+          const frameH = canvas.height;
+
+          ctx.fillStyle = "#0e0e12";
+          ctx.fillRect(frameX, frameY, frameW, frameH);
+
+          const gradA = ctx.createRadialGradient(
+            frameX + frameW * 0.0,
+            frameY + frameH * 0.0,
+            0,
+            frameX + frameW * 0.0,
+            frameY + frameH * 0.0,
+            frameW * 0.26
+          );
+          gradA.addColorStop(0, "rgba(122,162,247,0.12)");
+          gradA.addColorStop(1, "rgba(122,162,247,0)");
+          ctx.fillStyle = gradA;
+          ctx.fillRect(frameX, frameY, frameW, frameH);
+
+          const gradB = ctx.createRadialGradient(
+            frameX + frameW * 1.0,
+            frameY + frameH * 0.0,
+            0,
+            frameX + frameW * 1.0,
+            frameY + frameH * 0.0,
+            frameW * 0.24
+          );
+          gradB.addColorStop(0, "rgba(77,191,150,0.08)");
+          gradB.addColorStop(1, "rgba(77,191,150,0)");
+          ctx.fillStyle = gradB;
+          ctx.fillRect(frameX, frameY, frameW, frameH);
+
+          if (showGrid) {
+            const gridSize = Math.max(1, Math.round((48 / rootWidth) * canvas.width));
+            ctx.save();
+            ctx.strokeStyle = "rgba(140,140,170,0.18)";
+            ctx.lineWidth = Math.max(1, canvas.width * 0.0005);
+            ctx.globalAlpha = 0.22;
+            for (let x = 0; x <= frameW; x += gridSize) {
+              ctx.beginPath();
+              ctx.moveTo(x, 0);
+              ctx.lineTo(x, frameH);
+              ctx.stroke();
+            }
+            for (let y = 0; y <= frameH; y += gridSize) {
+              ctx.beginPath();
+              ctx.moveTo(0, y);
+              ctx.lineTo(frameW, y);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+
+          ctx.drawImage(frameImg, frameX, frameY, frameW, frameH);
+
+          if (logoImg) {
+            const logoWidth = Math.round(canvas.width * 0.018);
+            const logoHeight = Math.round((logoImg.height / Math.max(logoImg.width, 1)) * logoWidth);
+            const logoX = frameX + frameW - logoWidth - Math.round(canvas.width * 0.012);
+            const logoY = frameY + frameH - logoHeight - Math.round(canvas.width * 0.01);
+            const logoCanvas = document.createElement("canvas");
+            logoCanvas.width = logoWidth;
+            logoCanvas.height = logoHeight;
+            const logoCtx = logoCanvas.getContext("2d");
+            if (logoCtx) {
+              logoCtx.drawImage(logoImg, 0, 0, logoWidth, logoHeight);
+              logoCtx.globalCompositeOperation = "source-in";
+              logoCtx.fillStyle = "rgba(255,255,255,0.14)";
+              logoCtx.fillRect(0, 0, logoWidth, logoHeight);
+              logoCtx.globalCompositeOperation = "source-over";
+              ctx.drawImage(logoCanvas, logoX, logoY);
+            }
+          }
+          (stream.getVideoTracks()[0] as any).requestFrame?.();
+        } finally {
+          URL.revokeObjectURL(svgUrl);
+        }
+      }
+
+      recorder.stop();
+      const blob = await stopped;
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${loadedModel.displayName.replace(/\s+/g, "-").toLowerCase()}-orbit.${exportFormat.extension}`;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+      setImportNotice(`Orbit animation downloaded (${exportFormat.label})`);
+    } catch (error) {
+      if (error?.message === "orbit-export-cancelled") {
+        setImportNotice("Orbit export cancelled");
+      } else {
+        console.error(error);
+        setImportNotice("Orbit export failed");
+      }
+    } finally {
+      if (recorder.state !== "inactive") recorder.stop();
+      stream.getTracks().forEach((track) => track.stop());
+      exportControlRef.current = { cancelled: false, recorder: null, stream: null };
+      setExportAbsoluteElapsed(null);
+      exportHistoryTrailRef.current = [];
+      setExportProgress(0);
+      setIsExportingOrbit(false);
+      setIsExportStopHovered(false);
+      setMenuOpen(wasMenuOpen);
+      setIsPlaying(wasPlaying);
+    }
   };
 
   const presetSelectValue = activePresetId || (loadedModel.source === "uploaded_par" ? loadedModel.id : initialModel.id);
@@ -2269,21 +2677,45 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <IconBtn onClick={() => setIsPlaying((prev) => !prev)} active={isPlaying} disabled={activeTab === "longBaseline"}>
+            {activeTab === "orbit" && (
+              <div
+                onMouseEnter={() => isExportingOrbit && setIsExportStopHovered(true)}
+                onMouseLeave={() => isExportingOrbit && setIsExportStopHovered(false)}
+              >
+                <IconBtn
+                  onClick={() => {
+                    if (isExportingOrbit) {
+                      exportControlRef.current.cancelled = true;
+                    } else {
+                      setShowExportDialog(true);
+                    }
+                  }}
+                  active={isExportingOrbit}
+                  color={isExportingOrbit && isExportStopHovered ? "#fb7185" : isExportingOrbit ? "#f4f4f5" : undefined}
+                >
+                  {isExportingOrbit
+                    ? isExportStopHovered
+                      ? "Stop render"
+                      : `Rendering ${Math.round(exportProgress * 100)}%`
+                    : "Export orbit"}
+                </IconBtn>
+              </div>
+            )}
+            <IconBtn onClick={() => setIsPlaying((prev) => !prev)} active={isPlaying} light disabled={activeTab === "longBaseline"}>
               {isPlaying ? "Pause" : "Play"}
             </IconBtn>
-          <IconBtn
-            onClick={() => {
-              setElapsed(currentModel.T0_days);
-              setAbsoluteElapsed(currentModel.T0_days);
-              setToas([]);
-              lastToaRef.current = currentModel.T0_days;
-              elapsedRef.current = currentModel.T0_days;
-              absoluteElapsedRef.current = currentModel.T0_days;
-              lastDisplayUpdateRef.current = 0;
-            }}
-          >
-            Reset phase
+            <IconBtn
+              onClick={() => {
+                setElapsed(currentModel.T0_days);
+                setAbsoluteElapsed(currentModel.T0_days);
+                setToas([]);
+                lastToaRef.current = currentModel.T0_days;
+                elapsedRef.current = currentModel.T0_days;
+                absoluteElapsedRef.current = currentModel.T0_days;
+                lastDisplayUpdateRef.current = 0;
+              }}
+            >
+              Reset phase
             </IconBtn>
             <IconBtn onClick={() => setToas([])}>Clear TOAs</IconBtn>
             <IconBtn onClick={() => {
@@ -2291,7 +2723,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
               setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
             }}>Reset model</IconBtn>
-            <IconBtn onClick={() => fileInputRef.current?.click()}>Load .par</IconBtn>
+            <IconBtn onClick={() => setShowHelpDialog(true)}>Help</IconBtn>
           </div>
         </div>
       </div>
@@ -2324,11 +2756,290 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showExportDialog && activeTab === "orbit" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 40,
+              background: "rgba(6,6,10,0.52)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              style={{
+                width: "min(420px, 100%)",
+                borderRadius: 18,
+                border: "1px solid rgba(180,180,200,0.12)",
+                background: "rgba(12,12,16,0.92)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
+                padding: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Export orbit animation</div>
+                <div style={{ marginTop: 6, fontSize: 11, lineHeight: 1.5, color: "#a1a1aa" }}>
+                  High-resolution orbit-only export. The header and control panel are excluded, and the animation includes a small white FK mark in the bottom right.
+                </div>
+              </div>
+
+              <ControlRow label="Duration" value={`${fmt(Math.max(exportDurationSec, minOrbitExportDurationSec), 1)} s`}>
+                <Slider
+                  value={exportDurationSec}
+                  min={Math.ceil(minOrbitExportDurationSec * 10) / 10}
+                  max={Math.max(24, Math.ceil(minOrbitExportDurationSec * 10) / 10)}
+                  step={0.5}
+                  onChange={setExportDurationSec}
+                  color="#f4f4f5"
+                />
+              </ControlRow>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[1, 1.5, 2].map((multiplier) => {
+                  const option = Math.ceil(minOrbitExportDurationSec * multiplier * 10) / 10;
+                  return (
+                    <button
+                      key={multiplier}
+                      onClick={() => setExportDurationSec(option)}
+                      className="transition-all duration-150 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(180,180,200,0.12)",
+                        background: "rgba(255,255,255,0.03)",
+                        color: "#d4d4d8",
+                        fontSize: 10.5,
+                      }}
+                    >
+                      {multiplier === 1 ? `1 orbit · ${fmt(option, 1)} s` : `${fmt(multiplier, 1)}x orbit · ${fmt(option, 1)} s`}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ fontSize: 10.5, color: "#71717a", lineHeight: 1.5 }}>
+                Minimum duration at the current {timeScale}x time scale: {fmt(minOrbitExportDurationSec, 2)} s.
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  onClick={() => setShowExportDialog(false)}
+                  className="transition-all duration-150 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+                  style={{
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(180,180,200,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#a1a1aa",
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleOrbitExport}
+                  className="transition-all duration-150 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+                  style={{
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(244,244,245,0.18)",
+                    background: "rgba(244,244,245,0.08)",
+                    color: "#f4f4f5",
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}
+                >
+                  Download animation
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showHelpDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 40,
+              background: "rgba(6,6,10,0.60)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+              backdropFilter: "blur(10px)",
+            }}
+            onClick={() => setShowHelpDialog(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "min(680px, 100%)",
+                maxHeight: "80vh",
+                borderRadius: 18,
+                border: "1px solid rgba(180,180,200,0.12)",
+                background: "rgba(12,12,16,0.96)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Binary Pulsar Teaching Lab</div>
+                  <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Interactive guide to timing physics</div>
+                </div>
+                <button
+                  onClick={() => setShowHelpDialog(false)}
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }}
+                  className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              <div style={{ overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 22 }}>
+
+                <div>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 8 }}>Overview</div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "#a1a1aa" }}>
+                    Simulate a binary pulsar system in real time. Adjust orbital and timing parameters, observe how relativistic delay terms shape the timing residuals, and explore how astronomers use pulsar timing to measure fundamental physics. Load a real <span style={{ color: "#d4d4d8", fontFamily: "monospace" }}>.par</span> file via the <span style={{ color: "#d4d4d8" }}>Controls</span> panel to work with published pulsar parameters.
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Views</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {[
+                      {
+                        label: "Orbit",
+                        color: "#7aa2f7",
+                        desc: "Watch the pulsar and companion evolve in real time around their common centre of mass. Toggle gravitational wave ripples, the rotating beam, velocity vectors, orbit guides, and body labels from the Controls panel. Use the time-scale slider to speed up or slow down the simulation, and drag the manual-phase slider to jump to any orbital phase. Export the animation as a high-resolution video with the Export orbit button.",
+                      },
+                      {
+                        label: "Timing residuals",
+                        color: "#4dbf96",
+                        desc: "Shows the cumulative timing signature over one full orbit. Each coloured curve is a separate delay term — Römer (light travel time), Einstein (gravitational redshift + Doppler), Shapiro (curved spacetime near companion), Secular (long-term drift), and DM (dispersion from free electrons). Toggle or fit individual terms to understand their contribution. Adjust the TOA interval, noise level, and observing frequency to simulate realistic observations.",
+                      },
+                      {
+                        label: "Epoch residuals",
+                        color: "#c084b8",
+                        desc: "Spans a longer baseline (1 orbit · 1 day · 30 days · 1 year) and shows pre-fit and post-fit residuals across many orbits. Inject parameter offsets to shift individual binary or timing parameters away from the true values and watch how characteristic residual signatures appear — exactly how timing astronomers detect errors or new effects. Toggle fitted terms to subtract modelled contributions and isolate what remains.",
+                      },
+                    ].map(({ label, color, desc }) => (
+                      <div key={label} style={{ display: "flex", gap: 12, padding: "11px 13px", borderRadius: 10, border: "1px solid rgba(180,180,200,0.07)", background: "rgba(255,255,255,0.02)" }}>
+                        <div style={{ width: 3, borderRadius: 99, background: color, flexShrink: 0, alignSelf: "stretch" }} />
+                        <div>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#e4e4e7", marginBottom: 4 }}>{label}</div>
+                          <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Parameters</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    {[
+                      ["PB", "d", "Orbital period — sets how long one full orbit takes."],
+                      ["ECC", "", "Eccentricity — 0 is a perfect circle, values near 1 are highly elliptical."],
+                      ["OM", "deg", "Longitude of periastron — rotates the orbit orientation. Precession (OMDOT) advances this over time."],
+                      ["A1", "lt-s", "Projected semi-major axis of the pulsar orbit in light-seconds — directly sets the Römer delay amplitude."],
+                      ["T0", "d", "Reference epoch — time of periastron passage relative to the simulation start."],
+                      ["M2", "M☉", "Companion mass — governs the Shapiro delay amplitude and orbital dynamics."],
+                      ["INC", "deg", "Orbital inclination — 90° is edge-on. Values near 90° greatly enhance the Shapiro delay."],
+                      ["DM", "pc cm⁻³", "Dispersion measure — column density of free electrons. Causes a frequency-dependent, chromatic delay."],
+                      ["GAMMA", "s", "Einstein delay amplitude — gravitational redshift plus time dilation, varying around the orbit."],
+                      ["OMDOT", "deg/yr", "Periastron advance rate — a relativistic effect directly measurable in tight double neutron star systems."],
+                      ["PBDOT", "", "Orbital period derivative — negative values indicate energy loss to gravitational wave emission."],
+                    ].map(([key, unit, desc]) => (
+                      <div key={key} style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, alignItems: "baseline" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7", fontFamily: "monospace" }}>{key}</span>
+                          {unit && <span style={{ fontSize: 10, color: "#52525b" }}>{unit}</span>}
+                        </div>
+                        <div style={{ fontSize: 11.5, lineHeight: 1.6, color: "#a1a1aa" }}>{desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Delay terms</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[
+                      ["Römer", "#7aa2f7", "Light-travel-time delay from the pulsar moving around the barycentre. Usually the dominant orbital term — its amplitude is set directly by A1."],
+                      ["Einstein", "#f7b267", "Combined gravitational redshift and second-order Doppler delay. Largest at periastron, varies smoothly around the orbit."],
+                      ["Shapiro", "#4dbf96", "Extra delay as pulses pass through curved spacetime near the companion. Strongest near superior conjunction; its shape constrains M2 and INC."],
+                      ["Secular", "#c084b8", "Slow long-term drift that accumulates across many orbits rather than varying within a single one."],
+                      ["DM", "#60a5fa", "Chromatic dispersive delay from free electrons. Scales as 1/f² — comparing two observing frequencies isolates this term uniquely."],
+                    ].map(([name, color, desc]) => (
+                      <div key={name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
+                        <div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7" }}>{name} — </span>
+                          <span style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Tips</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[
+                      "Load a real pulsar via the preset dropdown, or import a published .par file using Load .par in the Controls panel.",
+                      "In Epoch residuals, inject a small offset to one parameter and identify which delay term's signature it mimics — this is how timing astronomers diagnose systematic errors.",
+                      "Set INC close to 90° and watch the Shapiro delay spike near conjunction. The sharpness of that spike constrains both M2 and the system geometry.",
+                      "Raise OMDOT to see periastron advance. Because real rates are tiny (B1913+16 precesses ~4.2°/yr), use the ω̇ viz × slider in Sampling to exaggerate the advance for visualisation only — the timing residuals always use the true OMDOT value. Enable History trail in Display to watch the precessing rosette build up.",
+                      "A negative PBDOT means the orbit is shrinking due to gravitational-wave energy loss. B1913+16 provided the first indirect evidence for gravitational waves.",
+                      "Use dual-frequency mode in Epoch residuals to isolate the DM term: it shifts with 1/f² while all other delays are achromatic.",
+                    ].map((tip, i) => (
+                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <div style={{ fontSize: 10.5, color: "#3f3f46", fontWeight: 700, marginTop: 1, flexShrink: 0, minWidth: 14, textAlign: "right" }}>{i + 1}</div>
+                        <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{tip}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="absolute inset-0 z-10">
         <AnimatePresence mode="wait">
           {activeTab === "orbit" ? (
             <motion.div key="orbit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-              <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full">
+              <svg ref={orbitSvgRef} viewBox={`0 0 ${W} ${H}`} className="h-full w-full">
                 <defs>
                   <radialGradient id="glowW" cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
@@ -2358,11 +3069,11 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   </linearGradient>
                 </defs>
 
-                <motion.g animate={{ x: orbitSceneOffset }} transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}>
+                <motion.g animate={{ x: renderOrbitSceneOffset }} transition={isExportingOrbit ? { duration: 0 } : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }}>
                 {showGW &&
                   (() => {
-                    const lineSpacing = 30;
-                    const sampleStep = 12;
+                    const lineSpacing = isExportingOrbit ? 36 : 30;
+                    const sampleStep = isExportingOrbit ? 18 : 12;
                     const cols = Math.ceil(W / lineSpacing) + 6;
                     const rows = Math.ceil(H / lineSpacing) + 6;
                     const px = pXY.x;
@@ -2464,6 +3175,173 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   </>
                 )}
 
+                {showOmegaLine && (() => {
+                  const cosI = Math.cos(dynamics.inc);
+                  // Periastron direction in SVG coords: from barycenter toward pulsar periastron
+                  const rPeri = dynamics.aRel * (1 - dynamics.e);
+                  const cosW = Math.cos(scene.omNow);
+                  const sinW = Math.sin(scene.omNow);
+                  const xPsrPeri = -dynamics.muP * rPeri * cosW;
+                  const yPsrPeri = dynamics.muP * rPeri * sinW * cosI;
+                  const periPt = toSvg({ x: xPsrPeri, y: yPsrPeri });
+                  // Direction unit vector from barycenter to periastron (in SVG space)
+                  const dx = periPt.x - CENTER.x;
+                  const dy = periPt.y - CENTER.y;
+                  const dLen = Math.sqrt(dx * dx + dy * dy) || 1;
+                  const ux = dx / dLen;
+                  const uy = dy / dLen;
+                  // Extend line to lineLen past the barycenter
+                  const lineLen = Math.max(dLen + 60, 160);
+                  const rawTipX = CENTER.x + ux * lineLen;
+                  const rawTipY = CENTER.y + uy * lineLen;
+                  const margin = 28;
+                  const tipX = clamp(rawTipX, margin, W - margin);
+                  const tipY = clamp(rawTipY, margin, H - margin);
+                  const isClipped = tipX !== rawTipX || tipY !== rawTipY;
+                  const labelX = tipX + (ux >= 0 ? 8 : -32);
+                  const labelY = tipY + (uy >= 0 ? 14 : -6);
+                  return (
+                    <g opacity={0.65}>
+                      <line x1={CENTER.x} y1={CENTER.y} x2={tipX} y2={tipY} stroke="rgba(247,178,103,0.55)" strokeWidth="1" strokeDasharray="5 6" />
+                      <circle cx={periPt.x} cy={periPt.y} r="4" fill="none" stroke="rgba(247,178,103,0.9)" strokeWidth="1.5" />
+                      {isClipped && (
+                        <polygon
+                          points={`${tipX},${tipY} ${tipX - ux * 10 + uy * 5},${tipY - uy * 10 - ux * 5} ${tipX - ux * 10 - uy * 5},${tipY - uy * 10 + ux * 5}`}
+                          fill="rgba(247,178,103,0.6)"
+                        />
+                      )}
+                      <text x={labelX} y={labelY} fill="rgba(247,178,103,0.75)" fontSize="11" fontFamily="sans-serif">ω{isClipped ? " ↗" : ""}</text>
+                      {isClipped && (
+                        <text x={labelX} y={labelY + 13} fill="rgba(247,178,103,0.5)" fontSize="9" fontFamily="sans-serif">reduce A1 or INC</text>
+                      )}
+                    </g>
+                  );
+                })()}
+
+                {showCoordAxes && (() => {
+                  const cosI = Math.cos(dynamics.inc);
+                  const cosW = Math.cos(scene.omNow);
+                  const sinW = Math.sin(scene.omNow);
+                  const axLen = 130;
+                  const arcR = 56;
+
+                  // Arrow helper (SVG space)
+                  const arrowHead = (x, y, ux2, uy2, size = 7) => {
+                    const px = -uy2, py = ux2;
+                    return `${x},${y} ${x - ux2 * size + px * size * 0.4},${y - uy2 * size - py * size * 0.4} ${x - ux2 * size - px * size * 0.4},${y - uy2 * size + py * size * 0.4}`;
+                  };
+
+                  // Sky-plane axes: +x (right), +y (up → SVG down due to toSvg negation)
+                  const skyXSvg = toSvg({ x: axLen / scale, y: 0 });
+                  const skyYSvg = toSvg({ x: 0, y: axLen / scale });
+
+                  // Ascending node = +x direction in sky plane (fixed, never rotates)
+                  // nodeSvg is the same as skyXSvg but kept separate for clarity
+                  const nodeSvg = skyXSvg;
+                  const nodeDx = nodeSvg.x - CENTER.x;
+                  const nodeDy = nodeSvg.y - CENTER.y; // = 0
+                  const nodeNegX = CENTER.x - nodeDx * 0.35;
+                  const nodeNegY = CENTER.y;
+
+                  // Periastron direction — derived from toSvg on the actual periapsis point
+                  // so it exactly matches the orbit and ω-line rendering.
+                  const rPeri = dynamics.aRel * (1 - dynamics.e);
+                  const xPsrPeri = -dynamics.muP * rPeri * cosW;
+                  const yPsrPeri = dynamics.muP * rPeri * sinW * cosI;
+                  const periPtSvg = toSvg({ x: xPsrPeri, y: yPsrPeri });
+                  const pdx = periPtSvg.x - CENTER.x;
+                  const pdy = periPtSvg.y - CENTER.y;
+                  const pLen = Math.sqrt(pdx * pdx + pdy * pdy) || 1;
+                  const pUX = pdx / pLen;
+                  const pUY = pdy / pLen;
+                  const periEnd = { x: CENTER.x + pUX * axLen, y: CENTER.y + pUY * axLen };
+                  const periEndNeg = { x: CENTER.x - pUX * axLen * 0.35, y: CENTER.y - pUY * axLen * 0.35 };
+
+                  // ω arc: sweep CCW in the sky plane from the node to the periastron direction.
+                  // toSvg negates y (sky +y = SVG -y), so sky-CCW = SVG-CCW (sweep-flag 0).
+                  // Node is along +x (SVG angle 0). Peri angle in SVG space:
+                  const nodeAngleSvg = 0; // +x direction
+                  const periAngleSvg = Math.atan2(pUY, pUX);
+                  // ω in SVG space, measured CCW from node (SVG CCW = decreasing SVG angle since y is flipped).
+                  // Normalise periAngle CCW from node: go from nodeAngle increasing CCW (= decreasing SVG angle).
+                  // CCW in SVG means angle decreases (since SVG y-down flips rotation sense).
+                  // So CCW sweep: go from periAngleSvg to nodeAngleSvg with sweep-flag=0.
+                  // The angular span = omNow (normalised 0–2π), large-arc if > π.
+                  const omNorm = ((scene.omNow % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                  const largeArc = omNorm > Math.PI ? 1 : 0;
+                  const arcStartX = CENTER.x + arcR; // node direction = +x
+                  const arcStartY = CENTER.y;
+                  const arcEndX = CENTER.x + arcR * Math.cos(periAngleSvg);
+                  const arcEndY = CENTER.y + arcR * Math.sin(periAngleSvg);
+                  // Mid-angle for label: halfway along the CCW arc (in sky = CW in SVG angle)
+                  const arcMidAngle = periAngleSvg + omNorm / 2; // go CW in SVG from peri back to node
+                  const arcLabelX = CENTER.x + (arcR + 18) * Math.cos(periAngleSvg - omNorm / 2);
+                  const arcLabelY = CENTER.y + (arcR + 18) * Math.sin(periAngleSvg - omNorm / 2) + 4;
+
+                  const omDeg = ((scene.omNow * 180 / Math.PI) % 360 + 360) % 360;
+                  const incDeg = (dynamics.inc * 180 / Math.PI).toFixed(1);
+
+                  return (
+                    <g opacity={0.85}>
+                      {/* Sky +x axis */}
+                      <line x1={CENTER.x - axLen * 0.25} y1={CENTER.y} x2={skyXSvg.x} y2={skyXSvg.y} stroke="rgba(148,163,184,0.4)" strokeWidth="1" strokeDasharray="3 5" />
+                      <polygon points={arrowHead(skyXSvg.x, skyXSvg.y, 1, 0)} fill="rgba(148,163,184,0.5)" />
+                      <text x={skyXSvg.x + 6} y={skyXSvg.y + 4} fill="rgba(148,163,184,0.55)" fontSize="10" fontFamily="sans-serif">x (sky)</text>
+
+                      {/* Sky +y axis */}
+                      <line x1={CENTER.x} y1={CENTER.y + axLen * 0.25} x2={skyYSvg.x} y2={skyYSvg.y} stroke="rgba(148,163,184,0.4)" strokeWidth="1" strokeDasharray="3 5" />
+                      <polygon points={arrowHead(skyYSvg.x, skyYSvg.y, 0, -1)} fill="rgba(148,163,184,0.5)" />
+                      <text x={skyYSvg.x + 6} y={skyYSvg.y - 4} fill="rgba(148,163,184,0.55)" fontSize="10" fontFamily="sans-serif">y (sky)</text>
+
+                      {/* Ascending node (reference direction, dashed, fixed) */}
+                      <line x1={nodeNegX} y1={nodeNegY} x2={nodeSvg.x} y2={nodeSvg.y} stroke="rgba(100,210,140,0.6)" strokeWidth="1.3" strokeDasharray="6 4" />
+                      <polygon points={arrowHead(nodeSvg.x, nodeSvg.y, 1, 0)} fill="rgba(100,210,140,0.7)" />
+                      <text x={nodeSvg.x + 8} y={nodeSvg.y - 7} fill="rgba(100,210,140,0.75)" fontSize="10" fontFamily="sans-serif">node (ω = 0)</text>
+
+                      {/* Periastron direction (rotates with ω) */}
+                      <line x1={periEndNeg.x} y1={periEndNeg.y} x2={periEnd.x} y2={periEnd.y} stroke="rgba(247,178,103,0.8)" strokeWidth="1.5" />
+                      <polygon points={arrowHead(periEnd.x, periEnd.y, pUX, pUY)} fill="rgba(247,178,103,0.9)" />
+                      <text x={periEnd.x + pUX * 9} y={periEnd.y + pUY * 9 + 4} fill="rgba(247,178,103,0.85)" fontSize="10" fontFamily="sans-serif">periapsis</text>
+
+                      {/* ω arc — CCW in sky plane (sweep-flag 0 in SVG) from node to periastron */}
+                      <path
+                        d={`M ${arcStartX.toFixed(1)} ${arcStartY.toFixed(1)} A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX.toFixed(1)} ${arcEndY.toFixed(1)}`}
+                        fill="none" stroke="rgba(247,178,103,0.5)" strokeWidth="1.2"
+                      />
+                      <text x={arcLabelX.toFixed(1)} y={arcLabelY.toFixed(1)} fill="rgba(247,178,103,0.85)" fontSize="11" fontFamily="sans-serif" textAnchor="middle">ω = {omDeg.toFixed(1)}°</text>
+
+                      {/* Inclination reminder near barycenter */}
+                      <text x={CENTER.x + 8} y={CENTER.y + 20} fill="rgba(148,163,184,0.5)" fontSize="9" fontFamily="sans-serif">i = {incDeg}°</text>
+                    </g>
+                  );
+                })()}
+
+                {showHistoryTrail && (() => {
+                  const pts = isExportingOrbit ? exportHistoryTrailRef.current : historyTrail;
+                  if (pts.length < 2) return null;
+                  const n = pts.length;
+                  const SEGS = 14;
+                  const chunkSize = Math.ceil(n / SEGS);
+                  const chunks = [];
+                  for (let s = 0; s < SEGS; s++) {
+                    const start = Math.max(0, s * chunkSize - 1);
+                    const end = Math.min(start + chunkSize + 1, n);
+                    if (start >= n) break;
+                    const opacity = 0.06 + 0.58 * ((s + 1) / SEGS);
+                    let d = "";
+                    let penDown = false;
+                    for (let i = start; i < end; i++) {
+                      const p = pts[i];
+                      if (p === null) { penDown = false; continue; }
+                      const sv = toSvg({ x: p.px, y: p.py });
+                      d += `${penDown ? "L" : "M"}${sv.x.toFixed(1)} ${sv.y.toFixed(1)} `;
+                      penDown = true;
+                    }
+                    chunks.push(<path key={s} d={d} fill="none" stroke={`rgba(122,162,247,${opacity.toFixed(2)})`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />);
+                  }
+                  return <>{chunks}</>;
+                })()}
+
                 <path d={pathD(trail.psr)} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
                 <path d={pathD(trail.cmp)} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
                 <circle cx={CENTER.x} cy={CENTER.y} r="3.5" fill="rgba(255,255,255,0.55)" />
@@ -2471,8 +3349,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
 
                 {showBeam &&
                   (() => {
-                    const cosA = Math.cos(beamAngle);
-                    const sinA = Math.sin(beamAngle);
+                    const cosA = Math.cos(renderedBeamAngle);
+                    const sinA = Math.sin(renderedBeamAngle);
                     const maxLength = 200;
                     const halfAngle = (beamWidth * Math.PI) / 360;
                     return (
@@ -2502,8 +3380,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                 {showBeam &&
                   currentModel.companionIsPulsar &&
                   (() => {
-                    const cosA = Math.cos(companionBeamAngle);
-                    const sinA = Math.sin(companionBeamAngle);
+                    const cosA = Math.cos(renderedCompanionBeamAngle);
+                    const sinA = Math.sin(renderedCompanionBeamAngle);
                     const maxLength = 160;
                     const halfAngle = (beamWidth * Math.PI) / 360;
                     return (
@@ -2530,16 +3408,38 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     );
                   })()}
 
-                {showVelVec && (
-                  <line
-                    x1={pXY.x}
-                    y1={pXY.y}
-                    x2={pXY.x - dynamics.muP * 1.2e-4 * scale * Math.sin(scene.f + scene.omNow)}
-                    y2={pXY.y + dynamics.muP * 1.2e-4 * scale * Math.cos(scene.f + scene.omNow) * Math.cos(dynamics.inc)}
-                    stroke="rgba(96,165,250,0.7)"
-                    strokeWidth="2"
-                  />
-                )}
+                {showVelVec && (() => {
+                  // Velocity direction: tangent to ellipse at current true anomaly f, rotated by ω
+                  // In orbital frame: v ∝ (-sin f, e + cos f); rotate by ω then project
+                  const e = dynamics.e;
+                  const f = scene.f;
+                  const om = scene.omNow;
+                  const vxO = -Math.sin(f);
+                  const vyO = e + Math.cos(f);
+                  const cosW = Math.cos(om);
+                  const sinW = Math.sin(om);
+                  const vxR = vxO * cosW - vyO * sinW;
+                  const vyR = vxO * sinW + vyO * cosW;
+                  const vMag = Math.sqrt(vxR * vxR + vyR * vyR) || 1;
+                  const vecLen = 60;
+                  const ux = vxR / vMag;
+                  const uy = vyR / vMag;
+                  const x2 = pXY.x + ux * vecLen;
+                  const y2 = pXY.y - uy * Math.cos(dynamics.inc) * vecLen;
+                  // Arrowhead
+                  const dx = x2 - pXY.x;
+                  const dy = y2 - pXY.y;
+                  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                  const ax = dx / len;
+                  const ay = dy / len;
+                  const arrowSize = 8;
+                  return (
+                    <g stroke="rgba(96,165,250,0.85)" fill="rgba(96,165,250,0.85)">
+                      <line x1={pXY.x} y1={pXY.y} x2={x2} y2={y2} strokeWidth="2" />
+                      <polygon points={`${x2},${y2} ${x2 - ax * arrowSize + ay * arrowSize * 0.4},${y2 - ay * arrowSize - ax * arrowSize * 0.4} ${x2 - ax * arrowSize - ay * arrowSize * 0.4},${y2 - ay * arrowSize + ax * arrowSize * 0.4}`} />
+                    </g>
+                  );
+                })()}
 
                 <circle cx={cXY.x} cy={cXY.y} r={16 + currentModel.M2 * 2.5} fill="rgba(245,240,232,0.92)" />
                 <circle cx={cXY.x} cy={cXY.y} r={55} fill="url(#glowC)" opacity="0.22" />
@@ -2785,6 +3685,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                         <ControlRow label="Trail length" value={`${Math.round(trailLen * 100)}%`}>
                           <Slider value={trailLen} min={0.05} max={1} step={0.05} onChange={setTrailLen} />
                         </ControlRow>
+                        <ControlRow label="ω̇ viz ×" value={`${omDotVizMult === 1 ? "1 (real)" : omDotVizMult.toLocaleString()}`}>
+                          <Slider value={omDotVizMult} min={1} max={50000} step={1} onChange={setOmDotVizMult} logScale color="#f7b267" />
+                        </ControlRow>
+                        {omDotVizMult > 1 && (
+                          <div style={{ fontSize: 10, color: "#a16207", lineHeight: 1.5, padding: "5px 8px", borderRadius: 7, background: "rgba(247,178,103,0.08)", border: "1px solid rgba(247,178,103,0.15)", marginTop: -4 }}>
+                            Orbit visualization only — timing residuals use the real OMDOT value. Enable <strong style={{ color: "#f7b267" }}>History trail</strong> in Display to see the precessing rosette.
+                          </div>
+                        )}
                         <ControlRow label="Manual phase" value={`${fmt(orbitalPhaseAt(elapsed, currentModel) * 360, 1)} deg`}>
                           <Slider value={orbitalPhaseAt(elapsed, currentModel)} min={0} max={1} step={0.002} onChange={(v) => {
                             setIsPlaying(false);
@@ -2881,6 +3789,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                                 step={offsetScale.step}
                                 onChange={(next) => setEpochParamOffsets((prev) => ({ ...prev, [param.key]: next }))}
                                 color={param.group === "binary" ? "#7aa2f7" : "#c084b8"}
+                                logScale
                               />
                             </div>
                             <div style={{ display: "flex", justifyContent: "flex-end", minHeight: 18 }}>
@@ -2990,6 +3899,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                           ["GW ripples", showGW, setShowGW],
                           ["Velocity vector", showVelVec, setShowVelVec],
                           ["Background grid", showGrid, setShowGrid],
+                          ["ω line", showOmegaLine, setShowOmegaLine],
+                          ["Coord axes", showCoordAxes, setShowCoordAxes],
+                          ["History trail", showHistoryTrail, (v) => { if (v) { historyTrailRef.current = []; setHistoryTrail([]); } setShowHistoryTrail(v); }],
                         ].map(([label, state, setter]) => (
                           <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(180,180,200,0.09)", padding: "8px 12px" }}>
                             <span style={{ fontSize: 13, color: "#d4d4d8" }}>{label}</span>

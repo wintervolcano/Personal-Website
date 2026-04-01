@@ -1810,6 +1810,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const companionBeamAngleRef = useRef(0);
   const absoluteElapsedRef = useRef(0);
   const historyTrailRef = useRef<Array<{px: number, py: number} | null>>([]);
+  const trailStartAbsoluteRef = useRef(0);
+  const exportTrailStartAbsoluteRef = useRef(0);
   const omDotVizMultRef = useRef(1);
   const exportStartAbsoluteRef = useRef(0);
   const exportBeamStartRef = useRef(0);
@@ -1885,6 +1887,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [exportDurationSec, setExportDurationSec] = useState(8);
   const [isExportingOrbit, setIsExportingOrbit] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatusMsg, setExportStatusMsg] = useState("");
   const [exportAbsoluteElapsed, setExportAbsoluteElapsed] = useState(null);
   const [isExportStopHovered, setIsExportStopHovered] = useState(false);
   const [beamAngle, setBeamAngle] = useState(0);
@@ -1947,7 +1950,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       exportFrameResolveRef.current = null;
       resolve();
     }
-  }, [exportAbsoluteElapsed]);
+  }, [exportAbsoluteElapsed, exportProgress]);
 
   useEffect(() => {
     if (activeTab === "longBaseline") {
@@ -2020,6 +2023,20 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
 
   // Keep omDotVizMult in a ref so the animation tick always uses the current value
   useEffect(() => { omDotVizMultRef.current = omDotVizMult; }, [omDotVizMult]);
+
+
+  const changeOmDotVizMult = useCallback((v) => {
+    setOmDotVizMult(v);
+    setElapsed(currentModel.T0_days);
+    setAbsoluteElapsed(currentModel.T0_days);
+    elapsedRef.current = currentModel.T0_days;
+    absoluteElapsedRef.current = currentModel.T0_days;
+    lastToaRef.current = currentModel.T0_days;
+    lastDisplayUpdateRef.current = 0;
+    historyTrailRef.current = [];
+    setHistoryTrail([]);
+    trailStartAbsoluteRef.current = currentModel.T0_days;
+  }, [currentModel.T0_days]);
 
   const currentDelays = useMemo(
     () => computeDelays(renderedAbsoluteElapsed, currentModel, freqMHz, { romer: true, einstein: true, shapiro: true, secular: true, dm: true }),
@@ -2343,8 +2360,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   };
 
   const handleOrbitExport = async () => {
-    if (!orbitSvgRef.current || typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+    if (!orbitSvgRef.current) {
+      setImportNotice("Orbit export: SVG not ready");
+      setShowExportDialog(false);
+      return;
+    }
+    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
       setImportNotice("Orbit export is not supported in this browser");
+      setShowExportDialog(false);
       return;
     }
 
@@ -2355,15 +2378,35 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     const startAbsolute = absoluteElapsedRef.current;
     const wasPlaying = isPlaying;
     const wasMenuOpen = menuOpen;
+
+    // Show export screen immediately so the user sees feedback right away
+    setIsPlaying(false);
+    setMenuOpen(false);
+    setShowExportDialog(false);
+    setIsExportingOrbit(true);
+    setExportProgress(0);
+    setExportStatusMsg("Preparing...");
+
     const canvas = document.createElement("canvas");
-    const scaleFactor = 2;
     const rootWidth = Math.max(Math.round(rootRef.current?.clientWidth || W), 1);
     const rootHeight = Math.max(Math.round(rootRef.current?.clientHeight || H), 1);
-    canvas.width = rootWidth * scaleFactor;
-    canvas.height = rootHeight * scaleFactor;
+    // Render sharper than the live page so orbit lines, axes, labels and counters stay crisp.
+    const maxCanvasWidth = 2560;
+    const scaleFactor = Math.min(2.5, maxCanvasWidth / rootWidth);
+    canvas.width = Math.round(rootWidth * scaleFactor);
+    canvas.height = Math.round(rootHeight * scaleFactor);
+    canvas.style.position = "fixed";
+    canvas.style.left = "-9999px";
+    canvas.style.top = "-9999px";
+    document.body.appendChild(canvas);
     const ctx = canvas.getContext("2d");
     if (!ctx) {
+      document.body.removeChild(canvas);
       setImportNotice("Orbit export canvas failed to initialize");
+      setIsExportingOrbit(false);
+      setExportStatusMsg("");
+      setMenuOpen(wasMenuOpen);
+      setIsPlaying(wasPlaying);
       return;
     }
 
@@ -2371,38 +2414,83 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     if (typeof document !== "undefined" && document.fonts?.ready) {
       await document.fonts.ready.catch(() => {});
     }
-    const exportFormat = MediaRecorder.isTypeSupported("video/mp4;codecs=h264")
-      ? { mimeType: "video/mp4;codecs=h264", extension: "mp4", label: "MP4" }
-      : MediaRecorder.isTypeSupported("video/mp4")
-        ? { mimeType: "video/mp4", extension: "mp4", label: "MP4" }
-        : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-          ? { mimeType: "video/webm;codecs=vp9", extension: "webm", label: "WEBM" }
-          : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
-            ? { mimeType: "video/webm;codecs=vp8", extension: "webm", label: "WEBM" }
-            : { mimeType: "video/webm", extension: "webm", label: "WEBM" };
+    // Use VideoEncoder (WebCodecs) for H.264 MP4 if available, else fall back to WebM MediaRecorder
+    const useVideoEncoder = typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined";
 
-    const stream = canvas.captureStream(0);
-    const recorder = new MediaRecorder(stream, { mimeType: exportFormat.mimeType, videoBitsPerSecond: 18_000_000 });
+    // Set up MediaRecorder fallback
+    const webmMimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+        ? "video/webm;codecs=vp8"
+        : "video/webm";
+    const stream = useVideoEncoder ? null : canvas.captureStream(0);
+    const recorder = useVideoEncoder ? null : new MediaRecorder(stream!, { mimeType: webmMimeType, videoBitsPerSecond: 18_000_000 });
     const chunks = [];
-    exportControlRef.current = { cancelled: false, recorder, stream };
-    const stopped = new Promise((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunks, { type: exportFormat.mimeType }));
+    const stopped = useVideoEncoder ? null : new Promise<Blob>((resolve) => {
+      recorder!.onstop = () => resolve(new Blob(chunks, { type: recorder!.mimeType || webmMimeType }));
     });
+    if (recorder) {
+      recorder.ondataavailable = (e) => { if (e.data?.size > 0) chunks.push(e.data); };
+    }
 
-    recorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) chunks.push(event.data);
-    };
+    // VideoEncoder state
+    let encodedChunks = [];
+    let videoEncoder = null;
+    let encoderConfig = null;
+    let encoderMuxCodec = null;
+    if (useVideoEncoder) {
+      const mp4Candidates = [
+        { codec: "avc1.640034", mux: "avc" },
+        { codec: "avc1.640033", mux: "avc" },
+        { codec: "avc1.640028", mux: "avc" },
+        { codec: "avc1.42E034", mux: "avc" },
+        { codec: "avc1.42E01E", mux: "avc" },
+        { codec: "avc1.4D401E", mux: "avc" },
+        { codec: "avc1.42001E", mux: "avc" },
+        { codec: "hvc1.1.6.L93.B0", mux: "hevc" },
+      ];
+      for (const { codec, mux } of mp4Candidates) {
+        const cfg = { codec, width: canvas.width, height: canvas.height, bitrate: 18_000_000, framerate: fps };
+        const result = await VideoEncoder.isConfigSupported(cfg).catch(() => ({ supported: false }));
+        console.log(`[export] VideoEncoder.isConfigSupported(${codec}):`, result.supported);
+        if (result.supported) {
+          encoderConfig = cfg;
+          encoderMuxCodec = mux;
+          break;
+        }
+      }
+      console.log("[export] encoderConfig:", encoderConfig, "mux:", encoderMuxCodec);
+    }
+    // Try to create VideoEncoder for MP4 output
+    let useVE = useVideoEncoder && !!encoderConfig;
+    console.log("[export] useVideoEncoder:", useVideoEncoder, "useVE:", useVE, "canvas:", canvas.width, "x", canvas.height);
+    if (useVE) {
+      try {
+        videoEncoder = new VideoEncoder({
+          output: (chunk, meta) => encodedChunks.push({ chunk, meta }),
+          error: (e) => console.warn("VideoEncoder error:", e),
+        });
+        videoEncoder.configure(encoderConfig);
+      } catch (e) {
+        console.warn("VideoEncoder init failed, falling back to WebM:", e);
+        useVE = false;
+        videoEncoder = null;
+      }
+    }
+    if (!useVE) {
+      setImportNotice("MP4 export is not supported by this browser on this device");
+      return;
+    }
 
-    setIsPlaying(false);
-    setMenuOpen(false);
-    setShowExportDialog(false);
-    setIsExportingOrbit(true);
-    setExportProgress(0);
-    setImportNotice(`Rendering orbit export (${exportFormat.label})...`);
+    exportControlRef.current = { cancelled: false, recorder: null, stream: null };
+
+    setExportStatusMsg("");
+    setImportNotice(`Rendering orbit export...`);
     exportStartAbsoluteRef.current = startAbsolute;
     exportBeamStartRef.current = beamAngleRef.current;
     exportCompanionBeamStartRef.current = companionBeamAngleRef.current;
-    exportHistoryTrailRef.current = historyTrailRef.current.slice();
+    exportHistoryTrailRef.current = [];
+    exportTrailStartAbsoluteRef.current = startAbsolute;
 
     // Snapshot dynamics for export trail computation
     const expDynamics = { ...dynamics };
@@ -2411,7 +2499,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     let expLastRecordedT = startAbsolute;
 
     try {
-      recorder.start();
       for (let frame = 0; frame < totalFrames; frame++) {
         if (exportControlRef.current.cancelled) {
           throw new Error("orbit-export-cancelled");
@@ -2544,21 +2631,47 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               ctx.drawImage(logoCanvas, logoX, logoY);
             }
           }
-          (stream.getVideoTracks()[0] as any).requestFrame?.();
+          const vf = new VideoFrame(canvas, { timestamp: Math.round((frame / fps) * 1_000_000), duration: Math.round(1_000_000 / fps) });
+          videoEncoder.encode(vf, { keyFrame: frame % (fps * 2) === 0 });
+          vf.close();
         } finally {
           URL.revokeObjectURL(svgUrl);
         }
       }
 
-      recorder.stop();
-      const blob = await stopped;
-      const downloadUrl = URL.createObjectURL(blob);
+      let finalBlob: Blob;
+      let finalExt: string;
+
+      setExportStatusMsg("Converting to MP4...");
+      await Promise.race([
+        videoEncoder.flush(),
+        new Promise<void>((_, reject) => setTimeout(() => reject(new Error("VideoEncoder flush timed out")), 15_000)),
+      ]);
+      videoEncoder.close();
+
+      const { Muxer, ArrayBufferTarget } = await import("mp4-muxer");
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({ target, video: { codec: encoderMuxCodec, width: canvas.width, height: canvas.height }, fastStart: "in-memory" });
+      for (const { chunk, meta } of encodedChunks) muxer.addVideoChunk(chunk, meta);
+      muxer.finalize();
+      finalBlob = new Blob([target.buffer], { type: "video/mp4" });
+      finalExt = "mp4";
+
+      const downloadUrl = URL.createObjectURL(finalBlob);
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = `${loadedModel.displayName.replace(/\s+/g, "-").toLowerCase()}-orbit.${exportFormat.extension}`;
+      link.download = `${loadedModel.displayName.replace(/\s+/g, "-").toLowerCase()}-orbit.${finalExt}`;
+      setExportAbsoluteElapsed(null);
+      exportHistoryTrailRef.current = [];
+      setExportProgress(0);
+      setExportStatusMsg("");
+      setIsExportingOrbit(false);
+      setIsExportStopHovered(false);
+      setMenuOpen(wasMenuOpen);
+      setIsPlaying(wasPlaying);
       link.click();
       URL.revokeObjectURL(downloadUrl);
-      setImportNotice(`Orbit animation downloaded (${exportFormat.label})`);
+      setImportNotice(`Orbit animation downloaded (${finalExt.toUpperCase()})`);
     } catch (error) {
       if (error?.message === "orbit-export-cancelled") {
         setImportNotice("Orbit export cancelled");
@@ -2567,12 +2680,16 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
         setImportNotice("Orbit export failed");
       }
     } finally {
-      if (recorder.state !== "inactive") recorder.stop();
-      stream.getTracks().forEach((track) => track.stop());
+      if (videoEncoder && videoEncoder.state !== "closed") { try { videoEncoder.close(); } catch (_) {} }
+      const activeRecorder = exportControlRef.current?.recorder;
+      if (activeRecorder && activeRecorder.state !== "inactive") activeRecorder.stop();
+      if (finalStream) finalStream.getTracks().forEach((track) => track.stop());
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
       exportControlRef.current = { cancelled: false, recorder: null, stream: null };
       setExportAbsoluteElapsed(null);
       exportHistoryTrailRef.current = [];
       setExportProgress(0);
+      setExportStatusMsg("");
       setIsExportingOrbit(false);
       setIsExportStopHovered(false);
       setMenuOpen(wasMenuOpen);
@@ -2686,6 +2803,12 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   onClick={() => {
                     if (isExportingOrbit) {
                       exportControlRef.current.cancelled = true;
+                      // Unblock any pending frame promise so the loop can check cancellation
+                      if (exportFrameResolveRef.current) {
+                        const r = exportFrameResolveRef.current;
+                        exportFrameResolveRef.current = null;
+                        r();
+                      }
                     } else {
                       setShowExportDialog(true);
                     }
@@ -2696,7 +2819,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   {isExportingOrbit
                     ? isExportStopHovered
                       ? "Stop render"
-                      : `Rendering ${Math.round(exportProgress * 100)}%`
+                      : exportStatusMsg || `Rendering ${Math.round(exportProgress * 100)}%`
                     : "Export orbit"}
                 </IconBtn>
               </div>
@@ -3210,7 +3333,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                           fill="rgba(247,178,103,0.6)"
                         />
                       )}
-                      <text x={labelX} y={labelY} fill="rgba(247,178,103,0.75)" fontSize="11" fontFamily="sans-serif">ω{isClipped ? " ↗" : ""}</text>
+                      <text x={labelX} y={labelY} fill="rgba(247,178,103,0.75)" fontSize="11" fontFamily="sans-serif">periastron{isClipped ? " ↗" : ""}</text>
                       {isClipped && (
                         <text x={labelX} y={labelY + 13} fill="rgba(247,178,103,0.5)" fontSize="9" fontFamily="sans-serif">reduce A1 or INC</text>
                       )}
@@ -3231,20 +3354,13 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     return `${x},${y} ${x - ux2 * size + px * size * 0.4},${y - uy2 * size - py * size * 0.4} ${x - ux2 * size - px * size * 0.4},${y - uy2 * size + py * size * 0.4}`;
                   };
 
-                  // Sky-plane axes: +x (right), +y (up → SVG down due to toSvg negation)
-                  const skyXSvg = toSvg({ x: axLen / scale, y: 0 });
+                  // Sky-plane axes: ascending node is along +x (right).
+                  const nodeSvg = toSvg({ x: axLen / scale, y: 0 });
                   const skyYSvg = toSvg({ x: 0, y: axLen / scale });
+                  const nodeUX = 1; // unit vector: right in SVG
+                  const nodeUY = 0;
 
-                  // Ascending node = +x direction in sky plane (fixed, never rotates)
-                  // nodeSvg is the same as skyXSvg but kept separate for clarity
-                  const nodeSvg = skyXSvg;
-                  const nodeDx = nodeSvg.x - CENTER.x;
-                  const nodeDy = nodeSvg.y - CENTER.y; // = 0
-                  const nodeNegX = CENTER.x - nodeDx * 0.35;
-                  const nodeNegY = CENTER.y;
-
-                  // Periastron direction — derived from toSvg on the actual periapsis point
-                  // so it exactly matches the orbit and ω-line rendering.
+                  // Periastron direction — derived from toSvg on the actual periapsis point.
                   const rPeri = dynamics.aRel * (1 - dynamics.e);
                   const xPsrPeri = -dynamics.muP * rPeri * cosW;
                   const yPsrPeri = dynamics.muP * rPeri * sinW * cosI;
@@ -3257,55 +3373,44 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   const periEnd = { x: CENTER.x + pUX * axLen, y: CENTER.y + pUY * axLen };
                   const periEndNeg = { x: CENTER.x - pUX * axLen * 0.35, y: CENTER.y - pUY * axLen * 0.35 };
 
-                  // ω arc: sweep CCW in the sky plane from the node to the periastron direction.
-                  // toSvg negates y (sky +y = SVG -y), so sky-CCW = SVG-CCW (sweep-flag 0).
-                  // Node is along +x (SVG angle 0). Peri angle in SVG space:
-                  const nodeAngleSvg = 0; // +x direction
-                  const periAngleSvg = Math.atan2(pUY, pUX);
-                  // ω in SVG space, measured CCW from node (SVG CCW = decreasing SVG angle since y is flipped).
-                  // Normalise periAngle CCW from node: go from nodeAngle increasing CCW (= decreasing SVG angle).
-                  // CCW in SVG means angle decreases (since SVG y-down flips rotation sense).
-                  // So CCW sweep: go from periAngleSvg to nodeAngleSvg with sweep-flag=0.
-                  // The angular span = omNow (normalised 0–2π), large-arc if > π.
+                  // ω arc: measured from node (+x, SVG angle 0) to periastron in direction of orbital motion.
+                  // toSvg negates y, so sky-CCW = SVG sweep-flag 0.
                   const omNorm = ((scene.omNow % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
                   const largeArc = omNorm > Math.PI ? 1 : 0;
+                  const nodeAngleSvg = 0; // node points right = SVG angle 0
                   const arcStartX = CENTER.x + arcR; // node direction = +x
                   const arcStartY = CENTER.y;
+                  const periAngleSvg = Math.atan2(pUY, pUX);
                   const arcEndX = CENTER.x + arcR * Math.cos(periAngleSvg);
                   const arcEndY = CENTER.y + arcR * Math.sin(periAngleSvg);
-                  // Mid-angle for label: halfway along the CCW arc (in sky = CW in SVG angle)
-                  const arcMidAngle = periAngleSvg + omNorm / 2; // go CW in SVG from peri back to node
-                  const arcLabelX = CENTER.x + (arcR + 18) * Math.cos(periAngleSvg - omNorm / 2);
-                  const arcLabelY = CENTER.y + (arcR + 18) * Math.sin(periAngleSvg - omNorm / 2) + 4;
+                  // Label midpoint: halfway along the CW sweep from node (angle 0) to peri
+                  const arcMidAngleSvg = nodeAngleSvg + omNorm / 2;
+                  const arcLabelX = CENTER.x + (arcR + 18) * Math.cos(arcMidAngleSvg);
+                  const arcLabelY = CENTER.y + (arcR + 18) * Math.sin(arcMidAngleSvg) + 4;
 
                   const omDeg = ((scene.omNow * 180 / Math.PI) % 360 + 360) % 360;
                   const incDeg = (dynamics.inc * 180 / Math.PI).toFixed(1);
 
                   return (
                     <g opacity={0.85}>
-                      {/* Sky +x axis */}
-                      <line x1={CENTER.x - axLen * 0.25} y1={CENTER.y} x2={skyXSvg.x} y2={skyXSvg.y} stroke="rgba(148,163,184,0.4)" strokeWidth="1" strokeDasharray="3 5" />
-                      <polygon points={arrowHead(skyXSvg.x, skyXSvg.y, 1, 0)} fill="rgba(148,163,184,0.5)" />
-                      <text x={skyXSvg.x + 6} y={skyXSvg.y + 4} fill="rgba(148,163,184,0.55)" fontSize="10" fontFamily="sans-serif">x (sky)</text>
+                      {/* Ascending node / x axis — points right (+x in sky) */}
+                      <line x1={CENTER.x - axLen * 0.25} y1={CENTER.y} x2={nodeSvg.x} y2={nodeSvg.y} stroke="rgba(100,210,140,0.6)" strokeWidth="1.3" strokeDasharray="6 4" />
+                      <polygon points={arrowHead(nodeSvg.x, nodeSvg.y, nodeUX, nodeUY)} fill="rgba(100,210,140,0.7)" />
+                      <text x={nodeSvg.x + 8} y={nodeSvg.y - 7} fill="rgba(100,210,140,0.75)" fontSize="10" fontFamily="sans-serif">node (ω = 0)</text>
 
                       {/* Sky +y axis */}
                       <line x1={CENTER.x} y1={CENTER.y + axLen * 0.25} x2={skyYSvg.x} y2={skyYSvg.y} stroke="rgba(148,163,184,0.4)" strokeWidth="1" strokeDasharray="3 5" />
                       <polygon points={arrowHead(skyYSvg.x, skyYSvg.y, 0, -1)} fill="rgba(148,163,184,0.5)" />
                       <text x={skyYSvg.x + 6} y={skyYSvg.y - 4} fill="rgba(148,163,184,0.55)" fontSize="10" fontFamily="sans-serif">y (sky)</text>
 
-                      {/* Ascending node (reference direction, dashed, fixed) */}
-                      <line x1={nodeNegX} y1={nodeNegY} x2={nodeSvg.x} y2={nodeSvg.y} stroke="rgba(100,210,140,0.6)" strokeWidth="1.3" strokeDasharray="6 4" />
-                      <polygon points={arrowHead(nodeSvg.x, nodeSvg.y, 1, 0)} fill="rgba(100,210,140,0.7)" />
-                      <text x={nodeSvg.x + 8} y={nodeSvg.y - 7} fill="rgba(100,210,140,0.75)" fontSize="10" fontFamily="sans-serif">node (ω = 0)</text>
-
                       {/* Periastron direction (rotates with ω) */}
                       <line x1={periEndNeg.x} y1={periEndNeg.y} x2={periEnd.x} y2={periEnd.y} stroke="rgba(247,178,103,0.8)" strokeWidth="1.5" />
                       <polygon points={arrowHead(periEnd.x, periEnd.y, pUX, pUY)} fill="rgba(247,178,103,0.9)" />
                       <text x={periEnd.x + pUX * 9} y={periEnd.y + pUY * 9 + 4} fill="rgba(247,178,103,0.85)" fontSize="10" fontFamily="sans-serif">periapsis</text>
 
-                      {/* ω arc — CCW in sky plane (sweep-flag 0 in SVG) from node to periastron */}
+                      {/* ω arc — CW in sky plane (orbit is CW), sweep-flag 1 in SVG, from node to periastron */}
                       <path
-                        d={`M ${arcStartX.toFixed(1)} ${arcStartY.toFixed(1)} A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX.toFixed(1)} ${arcEndY.toFixed(1)}`}
+                        d={`M ${arcStartX.toFixed(1)} ${arcStartY.toFixed(1)} A ${arcR} ${arcR} 0 ${largeArc} 1 ${arcEndX.toFixed(1)} ${arcEndY.toFixed(1)}`}
                         fill="none" stroke="rgba(247,178,103,0.5)" strokeWidth="1.2"
                       />
                       <text x={arcLabelX.toFixed(1)} y={arcLabelY.toFixed(1)} fill="rgba(247,178,103,0.85)" fontSize="11" fontFamily="sans-serif" textAnchor="middle">ω = {omDeg.toFixed(1)}°</text>
@@ -3342,8 +3447,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   return <>{chunks}</>;
                 })()}
 
-                <path d={pathD(trail.psr)} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-                <path d={pathD(trail.cmp)} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+                {showOrbits && <path d={pathD(trail.psr)} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />}
+                {showOrbits && <path d={pathD(trail.cmp)} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />}
                 <circle cx={CENTER.x} cy={CENTER.y} r="3.5" fill="rgba(255,255,255,0.55)" />
                 <line x1={pXY.x} y1={pXY.y} x2={cXY.x} y2={cXY.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
 
@@ -3463,6 +3568,66 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     </g>
                   ))}
                 </motion.g>
+
+                {showHistoryTrail && (() => {
+                  const trailStart = isExportingOrbit ? exportTrailStartAbsoluteRef.current : trailStartAbsoluteRef.current;
+                  const elapsedDays = renderedAbsoluteElapsed - trailStart;
+                  const simOrbits = elapsedDays / currentModel.PB_days;
+                  const simDays = elapsedDays;
+
+                  // Real-time equivalent: multiply by vizMult — in real life you'd need to wait longer
+                  const realDays = omDotVizMult > 1 ? simDays * omDotVizMult : null;
+                  const realYears = realDays !== null ? realDays / 365.25 : null;
+                  const realOrbits = realDays !== null ? realDays / currentModel.PB_days : null;
+
+                  const formatRealTime = (yr) => {
+                    if (yr >= 1000) return `${(yr / 1000).toFixed(1)} kyr`;
+                    if (yr >= 1) return `${yr.toFixed(2)} yr`;
+                    const days = yr * 365.25;
+                    if (days >= 1) return `${days.toFixed(1)} days`;
+                    const hours = days * 24;
+                    if (hours >= 1) return `${hours.toFixed(1)} hr`;
+                    const mins = hours * 60;
+                    if (mins >= 1) return `${mins.toFixed(1)} min`;
+                    return `${(mins * 60).toFixed(1)} sec`;
+                  };
+
+                  const boxW = 200;
+                  const rowH = 36;
+                  const rows = omDotVizMult > 1 ? 2 : 1;
+                  const boxH = rows * rowH + 16;
+                  const bx = W - boxW - 20;
+                  const by = workspaceTopInset + 8;
+
+                  return (
+                    <g fontFamily="sans-serif">
+                      <rect x={bx} y={by} rx="10" width={boxW} height={boxH} fill="rgba(12,12,16,0.82)" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+
+                      {/* Simulated row */}
+                      <text x={bx + 14} y={by + 20} fontSize="9.5" fill="rgba(148,163,184,0.6)" letterSpacing="0.08em">SIMULATED</text>
+                      <text x={bx + 14} y={by + 33} fontSize="13" fontWeight="600" fill="rgba(122,162,247,0.95)">
+                        {simOrbits.toFixed(1)} orbits
+                      </text>
+                      <text x={bx + boxW - 14} y={by + 33} fontSize="11" fill="rgba(122,162,247,0.55)" textAnchor="end">
+                        {simDays < 1 ? `${(simDays * 24).toFixed(1)} hr` : simDays < 365 ? `${simDays.toFixed(1)} days` : `${(simDays / 365.25).toFixed(2)} yr`}
+                      </text>
+
+                      {omDotVizMult > 1 && <>
+                        {/* Divider */}
+                        <line x1={bx + 10} y1={by + rowH + 10} x2={bx + boxW - 10} y2={by + rowH + 10} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+
+                        {/* Real time row */}
+                        <text x={bx + 14} y={by + rowH + 24} fontSize="9.5" fill="rgba(148,163,184,0.6)" letterSpacing="0.08em">REAL TIME  ×{Math.round(omDotVizMult).toLocaleString()}</text>
+                        <text x={bx + 14} y={by + rowH + 37} fontSize="13" fontWeight="600" fill="rgba(247,178,103,0.9)">
+                          {formatRealTime(realYears)}
+                        </text>
+                        <text x={bx + boxW - 14} y={by + rowH + 37} fontSize="11" fill="rgba(247,178,103,0.5)" textAnchor="end">
+                          {realOrbits.toFixed(1)} orbits
+                        </text>
+                      </>}
+                    </g>
+                  );
+                })()}
               </svg>
             </motion.div>
           ) : activeTab === "timing" ? (
@@ -3685,8 +3850,15 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                         <ControlRow label="Trail length" value={`${Math.round(trailLen * 100)}%`}>
                           <Slider value={trailLen} min={0.05} max={1} step={0.05} onChange={setTrailLen} />
                         </ControlRow>
-                        <ControlRow label="ω̇ viz ×" value={`${omDotVizMult === 1 ? "1 (real)" : omDotVizMult.toLocaleString()}`}>
-                          <Slider value={omDotVizMult} min={1} max={50000} step={1} onChange={setOmDotVizMult} logScale color="#f7b267" />
+                        <ControlRow label="ω̇ viz ×" value={
+                          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {omDotVizMult === 1 ? "1 (real)" : omDotVizMult.toLocaleString()}
+                            {omDotVizMult > 1 && (
+                              <button onClick={() => changeOmDotVizMult(1)} style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: "rgba(247,178,103,0.15)", border: "1px solid rgba(247,178,103,0.3)", color: "#f7b267", cursor: "pointer", lineHeight: 1.6 }}>reset</button>
+                            )}
+                          </span>
+                        }>
+                          <Slider value={omDotVizMult} min={1} max={50000} step={1} onChange={changeOmDotVizMult} logScale color="#f7b267" />
                         </ControlRow>
                         {omDotVizMult > 1 && (
                           <div style={{ fontSize: 10, color: "#a16207", lineHeight: 1.5, padding: "5px 8px", borderRadius: 7, background: "rgba(247,178,103,0.08)", border: "1px solid rgba(247,178,103,0.15)", marginTop: -4 }}>
@@ -3899,9 +4071,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                           ["GW ripples", showGW, setShowGW],
                           ["Velocity vector", showVelVec, setShowVelVec],
                           ["Background grid", showGrid, setShowGrid],
-                          ["ω line", showOmegaLine, setShowOmegaLine],
+                          ["Periastron line", showOmegaLine, setShowOmegaLine],
                           ["Coord axes", showCoordAxes, setShowCoordAxes],
-                          ["History trail", showHistoryTrail, (v) => { if (v) { historyTrailRef.current = []; setHistoryTrail([]); } setShowHistoryTrail(v); }],
+                          ["History trail", showHistoryTrail, (v) => { if (v) { historyTrailRef.current = []; setHistoryTrail([]); trailStartAbsoluteRef.current = absoluteElapsedRef.current; } setShowHistoryTrail(v); }],
                         ].map(([label, state, setter]) => (
                           <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(180,180,200,0.09)", padding: "8px 12px" }}>
                             <span style={{ fontSize: 13, color: "#d4d4d8" }}>{label}</span>

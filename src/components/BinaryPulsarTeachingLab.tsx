@@ -448,6 +448,180 @@ function shapiroS(incDeg) {
   return Math.sin((incDeg * Math.PI) / 180);
 }
 
+// ── Derived physical quantities ────────────────────────────────────────────
+const G = 6.674e-11;          // m³ kg⁻¹ s⁻²
+const MSUN = 1.989e30;        // kg
+const YEAR = 365.25 * DAY;    // s
+
+function computeDerived(model) {
+  const provided = (key) => model[key] !== undefined && model[key] !== null;
+
+  // Basic orbital elements
+  const Pb_s = model.PB_days * DAY;
+  const e = model.ECC;
+  const a1_m = model.A1_lt_s * C;                        // pulsar semi-major axis (m)
+  const inc_rad = (model.INC_deg * Math.PI) / 180;
+  const sinI = Math.sin(inc_rad);
+  const m1 = (model.pulsarMass || DEFAULT_MODEL_VALUES.pulsarMass) * MSUN;
+  const m2 = model.M2 * MSUN;
+  const M_total = m1 + m2;
+  const mu = m1 * m2 / M_total;                          // reduced mass (kg)
+
+  // Chirp mass and mass ratio
+  const Mc_kg = Math.pow(m1 * m2, 3/5) / Math.pow(M_total, 1/5);
+  const q_ratio = m1 / m2;
+
+  // Semi-major axes
+  const aP_m = sinI > 1e-6 ? a1_m / sinI : null;        // pulsar semi-major axis (true)
+  const aRel_m = aP_m != null ? aP_m * (M_total / m2) : null; // relative semi-major axis (m)
+
+  // Kepler's 3rd law: verify consistency
+  const aKepler_m = Math.pow((G * M_total * Pb_s * Pb_s) / (4 * Math.PI * Math.PI), 1 / 3);
+
+  // Orbital distances
+  const rPeri_m = aRel_m != null ? aRel_m * (1 - e) : null;
+  const rApo_m  = aRel_m != null ? aRel_m * (1 + e) : null;
+
+  // Orbital velocity at periastron and apastron (vis-viva)
+  const vPeri = aRel_m != null ? Math.sqrt(G * M_total * (2 / rPeri_m - 1 / aRel_m)) : null;
+  const vApo  = aRel_m != null ? Math.sqrt(G * M_total * (2 / rApo_m  - 1 / aRel_m)) : null;
+
+  // Orbital energy and angular momentum (total system)
+  const E_orb = aRel_m != null ? -G * m1 * m2 / (2 * aRel_m) : null;
+  const L_orb = aRel_m != null ? mu * Math.sqrt(G * M_total * aRel_m * (1 - e * e)) : null;
+
+  // Mass function
+  const f_mass = (4 * Math.PI * Math.PI / G) * Math.pow(a1_m, 3) / (Pb_s * Pb_s); // kg
+
+  // Total mass from OMDOT (post-Keplerian)
+  // ω̇ = 3 (TSUN·M)^(2/3) (Pb/2π)^(-5/3) / (1-e²)  where TSUN = GM☉/c³, M in solar masses
+  // → M = [ ω̇ (1-e²)/3 · (Pb/2π)^(5/3) ]^(3/2) / TSUN
+  let M_from_omdot = null;
+  if (provided("OMDOT_deg_yr") && Math.abs(model.OMDOT_deg_yr) > 1e-10) {
+    const omdot_rads = (model.OMDOT_deg_yr * Math.PI / 180) / YEAR;
+    const inner = (omdot_rads * (1 - e * e) / 3) * Math.pow(Pb_s / (2 * Math.PI), 5/3);
+    M_from_omdot = Math.pow(inner, 3/2) / TSUN; // solar masses
+  }
+
+  // GW merger timescale (Peters 1964)
+  // T_merge = (12/19) * (c₀⁴/β) * ∫ (e^(29/19)(1+121e²/304)^(1181/2299)) / (1-e²)^(3/2) dε
+  // Approximation: T ≈ T₀ * f(e) where T₀ is circular-orbit time
+  let T_merge_yr = null;
+  if (aRel_m != null && provided("PBDOT") && provided("ECC")) {
+    // Use Peters formula with eccentricity enhancement factor (Peters 1964 eq. 5.14)
+    const beta = (64/5) * G*G*G * m1 * m2 * M_total / (Math.pow(C, 5));
+    const fe = Math.pow(1 - e*e, 7/2) / (1 + (73/24)*e*e + (37/96)*e*e*e*e); // f(e) ≈ ecc factor
+    T_merge_yr = (aRel_m * aRel_m * aRel_m * aRel_m) / (4 * beta / fe) / YEAR;
+  } else if (provided("PBDOT") && Math.abs(model.PBDOT) > 1e-20) {
+    // Simple estimate: T ≈ Pb / (3 |Ṗb|) for circular orbit
+    T_merge_yr = Pb_s / (3 * Math.abs(model.PBDOT)) / YEAR;
+  }
+
+  // GW luminosity (Peters & Mathews 1963, averaged over orbit)
+  let L_gw = null;
+  if (aRel_m != null) {
+    const e2 = e * e;
+    const fe_gw = (1 + (73/24)*e2 + (37/96)*e2*e2) / Math.pow(1 - e2, 7/2);
+    L_gw = (32/5) * G*G*G*G * m1*m1 * m2*m2 * M_total / (Math.pow(C, 5) * Math.pow(aRel_m, 5)) * fe_gw;
+  }
+
+  // PBDOT predicted from GR (Peters 1964)
+  let PBDOT_GR = null;
+  if (aRel_m != null) {
+    const e2 = e * e;
+    const fe_pb = (1 + (73/24)*e2 + (37/96)*e2*e2) / Math.pow(1 - e2, 7/2);
+    PBDOT_GR = -(192 * Math.PI / 5)
+      * Math.pow(TSUN * (M_total / MSUN), 5/3)
+      * Math.pow(Pb_s / (2 * Math.PI), -5/3)
+      * fe_pb
+      * (m1 / MSUN) * (m2 / MSUN) / Math.pow(M_total / MSUN, 2);
+  }
+  const PBDOT_ratio = (PBDOT_GR != null && provided("PBDOT") && Math.abs(PBDOT_GR) > 1e-30)
+    ? model.PBDOT / PBDOT_GR : null;
+
+  // Characteristic age: τ_c = P / (2 Ṗ) [spin-down age]
+  let tau_c_yr = null;
+  if (provided("F0") && provided("F1") && model.F0 > 0 && model.F1 < 0) {
+    const P = 1 / model.F0;          // spin period (s)
+    const Pdot = -model.F1 / (model.F0 * model.F0); // period derivative
+    tau_c_yr = (P / (2 * Pdot)) / YEAR;
+  }
+
+  // Surface magnetic field: B = 3.2e19 √(P Ṗ) Gauss
+  let B_surface = null;
+  if (provided("F0") && provided("F1") && model.F0 > 0 && model.F1 < 0) {
+    const P = 1 / model.F0;
+    const Pdot = -model.F1 / (model.F0 * model.F0);
+    B_surface = 3.2e19 * Math.sqrt(P * Pdot); // Gauss
+  }
+
+  // Spin-down luminosity: Ė = -4π²I Ṗ/P³  (I ≈ 10^45 g cm² = 10^38 kg m²)
+  let E_dot = null;
+  if (provided("F0") && provided("F1") && model.F0 > 0 && model.F1 < 0) {
+    const I = 1e38;   // kg m²
+    E_dot = 4 * Math.PI * Math.PI * I * (-model.F1) * Math.pow(model.F0, 1); // W  (F1 = -Ṗ/P²)
+    // E_dot = 4π² I |Ḟ| / P⁻¹ ... simplify: E_dot = -4π²I F1 (since F1<0 gives +ve result)
+    // Actually: Ė = 4π²I |Ḟ₀| since Ė = -4π²I Ṗ/P³ and F1 = -Ṗ/P² → Ṗ = -F1/F0² → Ė = 4π²I|F1|F0
+  }
+
+  // GW frequency and LISA band
+  const f_gw_Hz = 2 / Pb_s;
+  const f_gw_mHz = f_gw_Hz * 1e3;
+  const f_LISA_min = 1e-4;
+  const Pb_LISA_s = 2 / f_LISA_min;
+  let T_LISA_yr = null;
+  if (Pb_s > Pb_LISA_s && T_merge_yr != null) {
+    T_LISA_yr = T_merge_yr * (1 - Math.pow(Pb_LISA_s / Pb_s, 8/3));
+  } else if (Pb_s <= Pb_LISA_s) {
+    T_LISA_yr = 0;
+  }
+  const inLISA = f_gw_Hz >= f_LISA_min && f_gw_Hz <= 0.1;
+  const inLIGO = f_gw_Hz >= 10;
+
+  return {
+    // Masses
+    m1_msun: m1 / MSUN,
+    m2_msun: m2 / MSUN,
+    M_total_msun: M_total / MSUN,
+    M_from_omdot_msun: M_from_omdot,
+    f_mass_msun: f_mass / MSUN,
+    Mc_msun: Mc_kg / MSUN,
+    q_ratio,
+    // Orbit geometry
+    aRel_km: aRel_m != null ? aRel_m / 1e3 : null,
+    aKepler_km: aKepler_m / 1e3,
+    rPeri_km: rPeri_m != null ? rPeri_m / 1e3 : null,
+    rApo_km: rApo_m != null ? rApo_m / 1e3 : null,
+    // Velocities
+    vPeri_kms: vPeri != null ? vPeri / 1e3 : null,
+    vApo_kms: vApo != null ? vApo / 1e3 : null,
+    // Energy & angular momentum
+    E_orb_J: E_orb,
+    L_orb: L_orb,
+    // GW
+    T_merge_yr,
+    L_gw_W: L_gw,
+    PBDOT_GR,
+    PBDOT_ratio,
+    f_gw_Hz,
+    f_gw_mHz,
+    T_LISA_yr,
+    inLISA,
+    inLIGO,
+    // Pulsar spin
+    tau_c_yr,
+    B_surface_G: B_surface,
+    E_dot_W: E_dot,
+    spin_period_ms: model.F0 > 0 ? 1e3 / model.F0 : null,
+    // Flags for missing inputs
+    missing_inc: !provided("INC_deg") || model.INC_deg <= 0,
+    missing_m2: !provided("M2") || model.M2 <= 0,
+    missing_omdot: !provided("OMDOT_deg_yr") || Math.abs(model.OMDOT_deg_yr) < 1e-10,
+    missing_pbdot: !provided("PBDOT") || Math.abs(model.PBDOT) < 1e-20,
+    missing_f1: !provided("F1") || model.F1 >= 0,
+  };
+}
+
 function orbitalPhaseAt(tDays, model) {
   const pb = Math.max(model.PB_days, 1e-6);
   return ((((tDays - model.T0_days) / pb) % 1) + 1) % 1;
@@ -1545,80 +1719,19 @@ function LongBaselinePlot({
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          padding: "0 4px",
-        }}
-      >
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <SegmentedToggle
-            compact
-            accent="#93c5fd"
-            value={xMode}
-            onChange={onXModeChange}
-            options={[
-              { value: "epoch", label: "x: epoch" },
-              { value: "phase", label: "x: phase" },
-            ]}
-          />
-          <SegmentedToggle
-            compact
-            accent="#f4f4f5"
-            value={yMode}
-            onChange={onYModeChange}
-            options={[
-              { value: "residual", label: "residual" },
-              { value: "dm", label: "DM" },
-              { value: "shapiro", label: "Shapiro" },
-              { value: "secular", label: "Secular" },
-              { value: "total", label: "total" },
-            ]}
-          />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 4px", flexWrap: "nowrap", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <SegmentedToggle compact accent="#93c5fd" value={xMode} onChange={onXModeChange} options={[{ value: "epoch", label: "x: epoch" }, { value: "phase", label: "x: phase" }]} />
+          <SegmentedToggle compact accent="#f4f4f5" value={yMode} onChange={onYModeChange} options={[{ value: "residual", label: "residual" }, { value: "dm", label: "DM" }, { value: "shapiro", label: "Shapiro" }, { value: "secular", label: "Secular" }, { value: "total", label: "total" }]} />
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <SegmentedToggle
-            compact
-            accent="#a78bfa"
-            value={compareMode}
-            onChange={onCompareModeChange}
-            options={[
-              { value: "single", label: "1 freq" },
-              { value: "dual", label: "2 freq" },
-            ]}
-          />
-          <SegmentedToggle
-            compact
-            accent="#4dbf96"
-            value={overlayMode}
-            onChange={onOverlayModeChange}
-            options={[
-              { value: "none", label: "overlay off" },
-              { value: "reference", label: "reference" },
-              { value: "selected", label: "selected" },
-            ]}
-          />
-          <SegmentedToggle
-            compact
-            accent="#f59e0b"
-            value={zoomPreset}
-            onChange={onZoomPresetChange}
-            options={[
-              { value: "auto", label: "zoom auto" },
-              { value: "tight", label: "tight" },
-              { value: "dm", label: "DM" },
-              { value: "shapiro", label: "Shapiro" },
-              { value: "secular", label: "Secular" },
-            ]}
-          />
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <SegmentedToggle compact accent="#a78bfa" value={compareMode} onChange={onCompareModeChange} options={[{ value: "single", label: "1 freq" }, { value: "dual", label: "2 freq" }]} />
+          <SegmentedToggle compact accent="#4dbf96" value={overlayMode} onChange={onOverlayModeChange} options={[{ value: "none", label: "overlay off" }, { value: "reference", label: "reference" }, { value: "selected", label: "selected" }]} />
+          <SegmentedToggle compact accent="#f59e0b" value={zoomPreset} onChange={onZoomPresetChange} options={[{ value: "auto", label: "zoom auto" }, { value: "tight", label: "tight" }]} />
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 14, minHeight: 0, flex: 1 }}>
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: 12 }}>
+        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", padding: 12, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 6px 8px" }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Pre-fit</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 11, color: "#71717a" }}>
@@ -1627,7 +1740,7 @@ function LongBaselinePlot({
               <span>{DELAY_COLORS[yMode]?.label ?? "Residual"}</span>
             </div>
           </div>
-          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", height: "100%", display: "block" }}>
+          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block" }}>
             <line x1={padL} x2={padL + innerW} y1={preZeroY} y2={preZeroY} stroke="rgba(180,180,200,0.16)" strokeWidth="1" />
             {ticks.map((tick) => (
               <line key={tick} x1={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} x2={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} y1={padT} y2={padT + innerH} stroke="rgba(180,180,200,0.05)" strokeWidth="1" />
@@ -1696,7 +1809,7 @@ function LongBaselinePlot({
           </svg>
         </div>
 
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: 12 }}>
+        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", padding: 12, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 6px 8px" }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Post-fit</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
@@ -1709,7 +1822,7 @@ function LongBaselinePlot({
               ))}
             </div>
           </div>
-          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", height: "100%", display: "block" }}>
+          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block" }}>
             <line x1={padL} x2={padL + innerW} y1={postZeroY} y2={postZeroY} stroke="rgba(180,180,200,0.16)" strokeWidth="1" />
             {ticks.map((tick) => (
               <line key={tick} x1={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} x2={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} y1={padT} y2={padT + innerH} stroke="rgba(180,180,200,0.05)" strokeWidth="1" />
@@ -1786,6 +1899,552 @@ function LongBaselinePlot({
         <span>sigma_TOA {noiseLevel} us</span>
       </div>
     </div>
+  );
+}
+
+const GW_CODE = `// ── Per-frame constants ──────────────────────────────────────────
+const separation = |companion - pulsar|          // pixels
+const binaryAngle = atan2(cy-py, cx-px)
+const separationBoost = clamp(separation/260, 0.7, 1.35)  // far-field amplitude
+
+const radialK       = 0.026                      // spatial wave-number
+const gwAngularRate = 2 × orbitalAngRate × DAY   // quadrupole freq = 2× orbital
+
+const eccentricBurst = (aRel / r)^1.18           // amplified near periastron
+const anisotropy     = 0.12 + e×0.38 + (burst-1)×0.14
+const phaseSkew      = 0.22 + e×0.95
+const burstGain      = 0.88 + (burst-1)×0.62
+
+// ── displace(x, y) — displacement of each grid point ────────────
+// 1. Near-field: each body pulls nearby points toward itself
+for each [bodyX, bodyY, amp, sigma]:
+    dist = |body - point|
+    f    = amp × exp(-dist / sigma)
+    tdx += (bodyX - x) × f
+    tdy += (bodyY - y) × f
+
+// 2. Far-field outgoing GW wave from barycenter
+dist = |point - barycenter|
+ux = (x-bx)/dist,  uy = (y-by)/dist   // radial unit vector
+tx = -uy,          ty =  ux            // tangential unit vector
+
+aligned = cos(angle - binaryAngle)     // proj onto binary axis
+across  = sin(angle - binaryAngle)     // proj perpendicular
+
+rise = 1 - exp(-dist² / 160²)          // suppress at origin
+fade = exp(-dist / 760)                 // decay with distance
+
+// Anisotropic propagation (GW beams along binary axis)
+anisotropicMetric = dist × (1 - anisotropy×aligned² + 0.42×anisotropy×across²)
+retard = anisotropicMetric × radialK
+
+// Rotating quadrupole source angle
+sourceAngle = binaryAngle - 0.5×retard×(1 + 0.55×e×cos(f))
+
+// Outgoing sinusoidal crest
+crest = sin(
+    radialK × anisotropicMetric
+  - gwAngularRate × elapsed
+  + phaseSkew × e × sin(f - 0.6×retard)
+)
+
+// Quadrupole polarisation projected onto direction
+plusMode  = cos(2 × (angle - sourceAngle))   // + polarisation
+crossMode = sin(2 × (angle - sourceAngle))   // × polarisation
+
+gwAmp = 20.0 × separationBoost × burstGain × rise × fade
+
+radialWave     = gwAmp × plusMode  × crest
+tangentialWave = gwAmp × (0.28 + 0.18×e) × crossMode × crest
+
+tdx += radialWave×ux + tangentialWave×tx
+tdy += radialWave×uy + tangentialWave×ty`;
+
+function HelpDialog({ onClose }: { onClose: () => void }) {
+  const [showGWCode, setShowGWCode] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.60)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 12 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(680px, 100%)", maxHeight: "80vh", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.96)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Binary Pulsar Teaching Lab</div>
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Interactive guide to timing physics</div>
+          </div>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div style={{ overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 22 }}>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 8 }}>Overview</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "#a1a1aa" }}>
+              Simulate a binary pulsar system in real time. Adjust orbital and timing parameters, observe how relativistic delay terms shape the timing residuals, and explore how astronomers use pulsar timing to measure fundamental physics. Load a real <span style={{ color: "#d4d4d8", fontFamily: "monospace" }}>.par</span> file via the <span style={{ color: "#d4d4d8" }}>Controls</span> panel to work with published pulsar parameters.
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Views</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { label: "Orbit", color: "#7aa2f7", desc: "Watch the pulsar and companion evolve in real time around their common centre of mass. Toggle gravitational wave ripples, the rotating beam, velocity vectors, orbit guides, and body labels from the Controls panel. Use the time-scale slider to speed up or slow down the simulation, and drag the manual-phase slider to jump to any orbital phase. Export the animation as a high-resolution video with the Export orbit button." },
+                { label: "Timing residuals", color: "#4dbf96", desc: "Shows the cumulative timing signature over one full orbit. Each coloured curve is a separate delay term — Römer (light travel time), Einstein (gravitational redshift + Doppler), Shapiro (curved spacetime near companion), Secular (long-term drift), and DM (dispersion from free electrons). Toggle or fit individual terms to understand their contribution. Adjust the TOA interval, noise level, and observing frequency to simulate realistic observations." },
+                { label: "Epoch residuals", color: "#c084b8", desc: "Spans a longer baseline (1 orbit · 1 day · 30 days · 1 year) and shows pre-fit and post-fit residuals across many orbits. Inject parameter offsets to shift individual binary or timing parameters away from the true values and watch how characteristic residual signatures appear — exactly how timing astronomers detect errors or new effects. Toggle fitted terms to subtract modelled contributions and isolate what remains." },
+              ].map(({ label, color, desc }) => (
+                <div key={label} style={{ display: "flex", gap: 12, padding: "11px 13px", borderRadius: 10, border: "1px solid rgba(180,180,200,0.07)", background: "rgba(255,255,255,0.02)" }}>
+                  <div style={{ width: 3, borderRadius: 99, background: color, flexShrink: 0, alignSelf: "stretch" }} />
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "#e4e4e7", marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Parameters</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {[
+                ["PB", "d", "Orbital period — sets how long one full orbit takes."],
+                ["ECC", "", "Eccentricity — 0 is a perfect circle, values near 1 are highly elliptical."],
+                ["OM", "deg", "Longitude of periastron — rotates the orbit orientation. Precession (OMDOT) advances this over time."],
+                ["A1", "lt-s", "Projected semi-major axis of the pulsar orbit in light-seconds — directly sets the Römer delay amplitude."],
+                ["T0", "d", "Reference epoch — time of periastron passage relative to the simulation start."],
+                ["M2", "M☉", "Companion mass — governs the Shapiro delay amplitude and orbital dynamics."],
+                ["INC", "deg", "Orbital inclination — 90° is edge-on. Values near 90° greatly enhance the Shapiro delay."],
+                ["DM", "pc cm⁻³", "Dispersion measure — column density of free electrons. Causes a frequency-dependent, chromatic delay."],
+                ["GAMMA", "s", "Einstein delay amplitude — gravitational redshift plus time dilation, varying around the orbit."],
+                ["OMDOT", "deg/yr", "Periastron advance rate — a relativistic effect directly measurable in tight double neutron star systems."],
+                ["PBDOT", "", "Orbital period derivative — negative values indicate energy loss to gravitational wave emission."],
+              ].map(([key, unit, desc]) => (
+                <div key={key} style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, alignItems: "baseline" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7", fontFamily: "monospace" }}>{key}</span>
+                    {unit && <span style={{ fontSize: 10, color: "#52525b" }}>{unit}</span>}
+                  </div>
+                  <div style={{ fontSize: 11.5, lineHeight: 1.6, color: "#a1a1aa" }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Delay terms</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                ["Römer", "#7aa2f7", "Light-travel-time delay from the pulsar moving around the barycentre. Usually the dominant orbital term — its amplitude is set directly by A1."],
+                ["Einstein", "#f7b267", "Combined gravitational redshift and second-order Doppler delay. Largest at periastron, varies smoothly around the orbit."],
+                ["Shapiro", "#4dbf96", "Extra delay as pulses pass through curved spacetime near the companion. Strongest near superior conjunction; its shape constrains M2 and INC."],
+                ["Secular", "#c084b8", "Slow long-term drift that accumulates across many orbits rather than varying within a single one."],
+                ["DM", "#60a5fa", "Chromatic dispersive delay from free electrons. Scales as 1/f² — comparing two observing frequencies isolates this term uniquely."],
+              ].map(([name, color, desc]) => (
+                <div key={name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7" }}>{name} — </span>
+                    <span style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Gravitational wave visualisation</div>
+            <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa", marginBottom: 10 }}>
+              The ripple grid in the Orbit view is a phenomenological visualisation — each grid point is displaced by a <code style={{ color: "#d4d4d8", fontSize: 11 }}>displace(x, y)</code> function combining a near-field gravity-well distortion and an outgoing GW wave. The table below lists which features are physically motivated and which are tuned for appearance.{" "}
+              <button onClick={() => setShowGWCode(v => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7aa2f7", fontSize: 11.5, padding: 0, textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 3 }}>
+                {showGWCode ? "Hide source" : "View source"}
+              </button>
+            </div>
+            {showGWCode && (
+              <pre style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(180,180,200,0.09)", borderRadius: 10, padding: "14px 16px", fontSize: 10.5, lineHeight: 1.7, color: "#a1a1aa", overflowX: "auto", whiteSpace: "pre", fontFamily: "'DM Mono','JetBrains Mono',monospace", marginBottom: 12 }}>
+                <code>{GW_CODE}</code>
+              </pre>
+            )}
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(180,180,200,0.12)" }}>
+                    <th style={{ textAlign: "left", padding: "5px 10px 5px 0", color: "#71717a", fontWeight: 600 }}>Feature</th>
+                    <th style={{ textAlign: "left", padding: "5px 10px", color: "#71717a", fontWeight: 600 }}>Physical basis</th>
+                    <th style={{ textAlign: "left", padding: "5px 0 5px 10px", color: "#71717a", fontWeight: 600 }}>Approximation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["GW frequency = 2 × orbital", "Correct — quadrupole radiates at twice the orbital frequency", "✓"],
+                    ["+/× polarisation modes", "Correct quadrupole polarisation tensor structure", "✓"],
+                    ["Periastron burst", "Correct — Peters enhancement near periastron in eccentric orbits", "Simplified power law"],
+                    ["Beaming along binary axis", "Correct — GW beam pattern stronger along separation axis", "Tuned by hand"],
+                    ["Amplitude ∝ 1/distance", "Correct — GW strain falls off as 1/r", "Clamped & scaled"],
+                    ["Near-field well distortion", "Artistic — not a real GW effect", "Visual only"],
+                    ["Companion amplitude ∝ M2", "Correct — heavier companion → stronger source", "Near-field only"],
+                    ["Absolute amplitude", "Not physical — pure visual scaling", "Not physical"],
+                  ].map(([feature, basis, approx], i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid rgba(180,180,200,0.05)" }}>
+                      <td style={{ padding: "6px 10px 6px 0", color: "#d4d4d8", verticalAlign: "top" }}>{feature}</td>
+                      <td style={{ padding: "6px 10px", color: "#a1a1aa", verticalAlign: "top" }}>{basis}</td>
+                      <td style={{ padding: "6px 0 6px 10px", color: approx === "✓" ? "#4dbf96" : "#71717a", verticalAlign: "top" }}>{approx}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Tips</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                "Load a real pulsar via the preset dropdown, or import a published .par file using Load .par in the Controls panel.",
+                "In Epoch residuals, inject a small offset to one parameter and identify which delay term's signature it mimics — this is how timing astronomers diagnose systematic errors.",
+                "Set INC close to 90° and watch the Shapiro delay spike near conjunction. The sharpness of that spike constrains both M2 and the system geometry.",
+                "Raise OMDOT to see periastron advance. Because real rates are tiny (B1913+16 precesses ~4.2°/yr), use the ω̇ viz × slider in Sampling to exaggerate the advance for visualisation only — the timing residuals always use the true OMDOT value. Enable History trail in Display to watch the precessing rosette build up.",
+                "A negative PBDOT means the orbit is shrinking due to gravitational-wave energy loss. B1913+16 provided the first indirect evidence for gravitational waves.",
+                "Use dual-frequency mode in Epoch residuals to isolate the DM term: it shifts with 1/f² while all other delays are achromatic.",
+              ].map((tip, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ fontSize: 10.5, color: "#3f3f46", fontWeight: 700, marginTop: 1, flexShrink: 0, minWidth: 14, textAlign: "right" }}>{i + 1}</div>
+                  <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{tip}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── Pulsar catalog ─────────────────────────────────────────────────────────
+const PULSAR_CATALOG = [
+  { name: "J1756-2251", PB_days: 0.319634,  ECC: 0.18057,    OMDOT_deg_yr: 2.5824,   PBDOT: -2.103e-13,  F0: 35.135,  F1: -1.26e-15,  M2: 1.23,   INC_deg: 68,   notes: "Double neutron star, GR lab" },
+  { name: "B1913+16",   PB_days: 0.322997,  ECC: 0.61713,    OMDOT_deg_yr: 4.2266,   PBDOT: -2.4211e-12, F0: 16.940,  F1: -2.422e-15, M2: 1.389,  INC_deg: 47.2, notes: "Hulse-Taylor, Nobel Prize 1993" },
+  { name: "J0737-3039A",PB_days: 0.102252,  ECC: 0.08778,    OMDOT_deg_yr: 16.8995,  PBDOT: -1.25e-12,   F0: 44.054,  F1: -3.4e-15,   M2: 1.2489, INC_deg: 88.7, notes: "Double pulsar, 6 post-Keplerian tests" },
+  { name: "B1534+12",   PB_days: 0.420737,  ECC: 0.27368,    OMDOT_deg_yr: 1.7559,   PBDOT: -1.366e-13,  F0: 26.382,  F1: -2.78e-16,  M2: 1.346,  INC_deg: 77.7, notes: "Double neutron star" },
+  { name: "J0453+1559", PB_days: 4.07234,   ECC: 0.11251,    OMDOT_deg_yr: 0.0175,   PBDOT: -1.0e-14,    F0: 21.844,  F1: -1.12e-16,  M2: 1.174,  INC_deg: 67,   notes: "NS + massive WD system" },
+  { name: "J1906+0746", PB_days: 0.165993,  ECC: 0.08530,    OMDOT_deg_yr: 7.5841,   PBDOT: -5.45e-13,   F0: 7.8534,  F1: -1.0e-14,   M2: 1.322,  INC_deg: 43,   notes: "Young DNS, high spin-down" },
+  { name: "J1614-2230", PB_days: 8.6866,    ECC: 0.0000013,  OMDOT_deg_yr: 0.0,      PBDOT: -6.0e-17,    F0: 317.37,  F1: -9.7e-16,   M2: 0.500,  INC_deg: 89.2, notes: "High-mass WD, Shapiro delay" },
+  { name: "J0437-4715", PB_days: 5.7410,    ECC: 0.000019,   OMDOT_deg_yr: 0.0,      PBDOT: -3.73e-16,   F0: 173.69,  F1: -1.73e-16,  M2: 0.254,  INC_deg: 42.8, notes: "Nearest MSP, timing array" },
+  { name: "J1713+0747", PB_days: 67.825,    ECC: 0.000075,   OMDOT_deg_yr: 0.0,      PBDOT: 5.0e-18,     F0: 218.81,  F1: -4.08e-16,  M2: 0.286,  INC_deg: 71.5, notes: "Best PTA noise floor pulsar" },
+  { name: "J0621+1002", PB_days: 8.3187,    ECC: 0.00245,    OMDOT_deg_yr: 0.0116,   PBDOT: -1.0e-15,    F0: 34.657,  F1: -1.5e-16,   M2: 0.97,   INC_deg: 73,   notes: "MSP + WD, moderate mass" },
+  { name: "J2317+1439", PB_days: 2.4593,    ECC: 0.0,        OMDOT_deg_yr: 0.0,      PBDOT: 1.0e-21,     F0: 290.25,  F1: -1.4e-16,   M2: 0.22,   INC_deg: 60,   notes: "Recycled MSP, low-mass WD" },
+  { name: "J0030+0451", PB_days: null,       ECC: null,       OMDOT_deg_yr: null,     PBDOT: null,        F0: 205.53,  F1: -4.0e-16,   M2: null,   INC_deg: null,  notes: "Isolated MSP, NICER mass+radius" },
+  { name: "B0833-45",   PB_days: null,       ECC: null,       OMDOT_deg_yr: null,     PBDOT: null,        F0: 11.195,  F1: -1.56e-11,  M2: null,   INC_deg: null,  notes: "Vela pulsar, young SNR" },
+  { name: "B0531+21",   PB_days: null,       ECC: null,       OMDOT_deg_yr: null,     PBDOT: null,        F0: 29.946,  F1: -3.73e-10,  M2: null,   INC_deg: null,  notes: "Crab pulsar, youngest known" },
+  { name: "B1257+12",   PB_days: null,       ECC: null,       OMDOT_deg_yr: null,     PBDOT: null,        F0: 160.97,  F1: -8.63e-17,  M2: null,   INC_deg: null,  notes: "First pulsar planets discovered" },
+];
+
+// ── PPdotDiagram modal ──────────────────────────────────────────────────────
+function PPdotDiagram({ onClose, currentF0, currentF1 }) {
+  const W = 620, H = 440;
+  const ML = 60, MR = 50, MT = 40, MB = 50;
+  const PW = W - ML - MR, PH = H - MT - MB;
+  const xMin = -3, xMax = 1;
+  const yMin = -22, yMax = -10;
+  const xToSvg = (logP) => ML + (logP - xMin) / (xMax - xMin) * PW;
+  const yToSvg = (logPdot) => MT + (yMax - logPdot) / (yMax - yMin) * PH;
+
+  const bFields = [1e8, 1e10, 1e12, 1e14];
+  const bColors = ["rgba(122,162,247,0.15)", "rgba(122,162,247,0.22)", "rgba(122,162,247,0.30)", "rgba(122,162,247,0.38)"];
+  const bLabels = ["10⁸ G", "10¹⁰ G", "10¹² G", "10¹⁴ G"];
+  const bLines = bFields.map((B, bi) => {
+    const pts = [];
+    for (let logP = xMin; logP <= xMax + 0.05; logP += 0.05) {
+      const logPdot = 2 * Math.log10(B / 3.2e19) - logP;
+      if (logPdot >= yMin && logPdot <= yMax) pts.push([xToSvg(logP), yToSvg(logPdot)]);
+    }
+    const labelPt = pts[Math.floor(pts.length * 0.6)];
+    return { d: pts.length > 1 ? `M ${pts.map(p => p.join(",")).join(" L ")}` : null, color: bColors[bi], label: bLabels[bi], labelPt };
+  });
+
+  const ages = [1e3, 1e6, 1e9];
+  const ageLabels = ["1 kyr", "1 Myr", "1 Gyr"];
+  const ageLines = ages.map((tau_yr, ai) => {
+    const tau_s = tau_yr * YEAR;
+    const pts = [];
+    for (let logP = xMin; logP <= xMax + 0.05; logP += 0.05) {
+      const logPdot = logP - Math.log10(2 * tau_s);
+      if (logPdot >= yMin && logPdot <= yMax) pts.push([xToSvg(logP), yToSvg(logPdot)]);
+    }
+    const labelPt = pts[Math.floor(pts.length * 0.4)];
+    return { d: pts.length > 1 ? `M ${pts.map(p => p.join(",")).join(" L ")}` : null, label: ageLabels[ai], labelPt };
+  });
+
+  const deathConst = Math.log10(2 * 0.17e12 / (3.2e19 * 3.2e19));
+  const deathPts = [];
+  for (let logP = xMin; logP <= xMax + 0.05; logP += 0.05) {
+    const logPdot = 3 * logP + deathConst;
+    if (logPdot >= yMin && logPdot <= yMax) deathPts.push([xToSvg(logP), yToSvg(logPdot)]);
+  }
+
+  const refPulsars = PULSAR_CATALOG.filter(p => p.F0 > 0 && p.F1 != null && p.F1 < 0).map(p => {
+    const P = 1 / p.F0;
+    const Pdot = -p.F1 / (p.F0 * p.F0);
+    return { name: p.name, notes: p.notes, x: xToSvg(Math.log10(P)), y: yToSvg(Math.log10(Pdot)) };
+  });
+
+  let currentDot = null;
+  if (currentF0 > 0 && currentF1 < 0) {
+    const P = 1 / currentF0;
+    const Pdot = -currentF1 / (currentF0 * currentF0);
+    currentDot = { x: xToSvg(Math.log10(P)), y: yToSvg(Math.log10(Pdot)) };
+  }
+
+  const xTicks = [-3, -2, -1, 0, 1];
+  const xTickLabels = ["1 ms", "10 ms", "0.1 s", "1 s", "10 s"];
+  const yTicks = [-22, -20, -18, -16, -14, -12, -10];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
+      onClick={onClose}>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(720px, 100%)", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.97)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>P–Ṗ Diagram</div>
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Spin period vs period derivative · dashed blue = const B · dashed green = const τ_c · orange = death line</div>
+          </div>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style={{ padding: "16px 22px 20px", overflowX: "auto" }}>
+          <svg width={W} height={H} style={{ display: "block", fontFamily: "inherit" }}>
+            <rect x={ML} y={MT} width={PW} height={PH} fill="rgba(255,255,255,0.02)" stroke="rgba(180,180,200,0.08)" />
+            {xTicks.map((t, ti) => (
+              <g key={t}>
+                <line x1={xToSvg(t)} y1={MT} x2={xToSvg(t)} y2={MT + PH} stroke="rgba(180,180,200,0.07)" />
+                <text x={xToSvg(t)} y={MT + PH + 16} textAnchor="middle" fill="#71717a" fontSize={9}>{xTickLabels[ti]}</text>
+              </g>
+            ))}
+            {yTicks.map(t => (
+              <g key={t}>
+                <line x1={ML} y1={yToSvg(t)} x2={ML + PW} y2={yToSvg(t)} stroke="rgba(180,180,200,0.07)" />
+                <text x={ML - 6} y={yToSvg(t) + 4} textAnchor="end" fill="#71717a" fontSize={9}>10^{t}</text>
+              </g>
+            ))}
+            {bLines.map(({ d, color, label, labelPt }) => d && (
+              <g key={label}>
+                <path d={d} fill="none" stroke={color} strokeWidth={1} strokeDasharray="5 3" />
+                {labelPt && <text x={labelPt[0] + 3} y={labelPt[1] - 3} fill={color} fontSize={8}>{label}</text>}
+              </g>
+            ))}
+            {ageLines.map(({ d, label, labelPt }) => d && (
+              <g key={label}>
+                <path d={d} fill="none" stroke="rgba(77,191,150,0.3)" strokeWidth={1} strokeDasharray="3 4" />
+                {labelPt && <text x={labelPt[0] + 3} y={labelPt[1] - 3} fill="rgba(77,191,150,0.5)" fontSize={8}>{label}</text>}
+              </g>
+            ))}
+            {deathPts.length > 1 && (
+              <path d={`M ${deathPts.map(p => p.join(",")).join(" L ")}`} fill="none" stroke="rgba(251,146,60,0.6)" strokeWidth={1.5} />
+            )}
+            {deathPts.length > 1 && (() => {
+              const mid = deathPts[Math.floor(deathPts.length / 2)];
+              return <text x={mid[0] + 4} y={mid[1] - 4} fill="rgba(251,146,60,0.6)" fontSize={8}>death line</text>;
+            })()}
+            {refPulsars.map(p => {
+              if (p.x < ML || p.x > ML + PW || p.y < MT || p.y > MT + PH) return null;
+              return (
+                <g key={p.name}>
+                  <circle cx={p.x} cy={p.y} r={3.5} fill="rgba(180,180,200,0.3)" stroke="rgba(180,180,200,0.5)" strokeWidth={0.8} />
+                  <title>{p.name}: {p.notes}</title>
+                </g>
+              );
+            })}
+            {currentDot && currentDot.x >= ML && currentDot.x <= ML + PW && currentDot.y >= MT && currentDot.y <= MT + PH && (
+              <g>
+                <circle cx={currentDot.x} cy={currentDot.y} r={7} fill="rgba(122,162,247,0.15)" stroke="#7aa2f7" strokeWidth={1.5} />
+                <circle cx={currentDot.x} cy={currentDot.y} r={3} fill="#7aa2f7" />
+                <text x={currentDot.x + 10} y={currentDot.y + 4} fill="#7aa2f7" fontSize={9}>current</text>
+              </g>
+            )}
+            <text x={ML + PW / 2} y={H - 8} textAnchor="middle" fill="#a1a1aa" fontSize={11}>Spin period P</text>
+            <text x={14} y={MT + PH / 2} textAnchor="middle" fill="#a1a1aa" fontSize={11} transform={`rotate(-90, 14, ${MT + PH / 2})`}>Period derivative Ṗ</text>
+          </svg>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── MassMassDiagram modal ───────────────────────────────────────────────────
+function MassMassDiagram({ onClose, currentModel }) {
+  const W = 520, H = 460;
+  const ML = 60, MR = 30, MT = 40, MB = 50;
+  const PW = W - ML - MR, PH = H - MT - MB;
+  const m2Min = 0.5, m2Max = 3.0;
+  const m1Min = 0.5, m1Max = 3.0;
+  const xToSvg = (m2) => ML + (m2 - m2Min) / (m2Max - m2Min) * PW;
+  const yToSvg = (m1) => MT + (m1Max - m1) / (m1Max - m1Min) * PH;
+
+  const Pb_s = currentModel.PB_days * DAY;
+  const a1_m = currentModel.A1_lt_s * C;
+  const f_mass = (4 * Math.PI * Math.PI / G) * Math.pow(a1_m, 3) / (Pb_s * Pb_s);
+  const sinI = Math.sin(currentModel.INC_deg * Math.PI / 180);
+
+  const massFuncPts = [];
+  for (let m2v = m2Min; m2v <= m2Max + 0.01; m2v += 0.01) {
+    const rhs = Math.pow(m2v * MSUN * sinI, 3) / f_mass;
+    const M_total_kg = Math.sqrt(rhs);
+    const m1v = (M_total_kg - m2v * MSUN) / MSUN;
+    if (m1v >= m1Min && m1v <= m1Max) massFuncPts.push([xToSvg(m2v), yToSvg(m1v)]);
+  }
+
+  let omdotLine = null;
+  if (Math.abs(currentModel.OMDOT_deg_yr) > 1e-10) {
+    const omdot_rads = (currentModel.OMDOT_deg_yr * Math.PI / 180) / YEAR;
+    const ecc = currentModel.ECC;
+    const inner = (omdot_rads * (1 - ecc * ecc) / 3) * Math.pow(Pb_s / (2 * Math.PI), 5/3);
+    if (inner > 0) {
+      const M_omdot = Math.pow(inner, 3/2) / TSUN;
+      const pts = [];
+      for (let m2v = m2Min; m2v <= m2Max + 0.01; m2v += 0.01) {
+        const m1v = M_omdot - m2v;
+        if (m1v >= m1Min && m1v <= m1Max) pts.push([xToSvg(m2v), yToSvg(m1v)]);
+      }
+      if (pts.length > 1) omdotLine = { d: `M ${pts.map(p => p.join(",")).join(" L ")}`, M_omdot };
+    }
+  }
+
+  const m2_sol = currentModel.M2;
+  const m1_sol = currentModel.pulsarMass || DEFAULT_MODEL_VALUES.pulsarMass;
+  const ticks = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
+      onClick={onClose}>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(580px, 100%)", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.97)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Mass–Mass Diagram</div>
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Blue = mass function constraint (i = {currentModel.INC_deg?.toFixed(1)}°) · Green dashed = OMDOT total mass · Dot = current values</div>
+          </div>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style={{ padding: "16px 22px 20px", overflowX: "auto" }}>
+          <svg width={W} height={H} style={{ display: "block", fontFamily: "inherit" }}>
+            <rect x={ML} y={MT} width={PW} height={PH} fill="rgba(255,255,255,0.02)" stroke="rgba(180,180,200,0.08)" />
+            {ticks.map(t => (
+              <g key={t}>
+                <line x1={xToSvg(t)} y1={MT} x2={xToSvg(t)} y2={MT + PH} stroke="rgba(180,180,200,0.07)" />
+                <text x={xToSvg(t)} y={MT + PH + 16} textAnchor="middle" fill="#71717a" fontSize={10}>{t}</text>
+                <line x1={ML} y1={yToSvg(t)} x2={ML + PW} y2={yToSvg(t)} stroke="rgba(180,180,200,0.07)" />
+                <text x={ML - 6} y={yToSvg(t) + 4} textAnchor="end" fill="#71717a" fontSize={10}>{t}</text>
+              </g>
+            ))}
+            {massFuncPts.length > 1 && (
+              <path d={`M ${massFuncPts.map(p => p.join(",")).join(" L ")}`} fill="none" stroke="#7aa2f7" strokeWidth={2} />
+            )}
+            {omdotLine && (
+              <path d={omdotLine.d} fill="none" stroke="#4dbf96" strokeWidth={1.5} strokeDasharray="6 3" />
+            )}
+            {m2_sol > m2Min && m2_sol < m2Max && m1_sol > m1Min && m1_sol < m1Max && (
+              <g>
+                <circle cx={xToSvg(m2_sol)} cy={yToSvg(m1_sol)} r={6} fill="rgba(122,162,247,0.2)" stroke="#7aa2f7" strokeWidth={1.5} />
+                <circle cx={xToSvg(m2_sol)} cy={yToSvg(m1_sol)} r={2.5} fill="#7aa2f7" />
+              </g>
+            )}
+            <text x={ML + PW / 2} y={H - 8} textAnchor="middle" fill="#a1a1aa" fontSize={11}>Companion mass m₂ (M☉)</text>
+            <text x={14} y={MT + PH / 2} textAnchor="middle" fill="#a1a1aa" fontSize={11} transform={`rotate(-90, 14, ${MT + PH / 2})`}>Pulsar mass m₁ (M☉)</text>
+          </svg>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── CatalogBrowser modal ────────────────────────────────────────────────────
+function CatalogBrowser({ onClose, onLoad }) {
+  const fmt3 = (v) => v != null ? v.toPrecision(4) : "—";
+  const fmtSci = (v) => v != null ? v.toExponential(2) : "—";
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
+      onClick={onClose}>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(820px, 100%)", maxHeight: "80vh", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.97)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Pulsar Catalog</div>
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Click a binary pulsar row to load its parameters</div>
+          </div>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "12px 22px 20px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(180,180,200,0.1)" }}>
+                {["Name", "PB (d)", "ECC", "OMDOT", "PBDOT", "F0 (Hz)", "F1", "Notes"].map(h => (
+                  <th key={h} style={{ padding: "6px 8px", textAlign: "left", color: "#71717a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PULSAR_CATALOG.map((p, i) => {
+                const canLoad = p.PB_days != null;
+                const modelValues = {
+                  ...DEFAULT_MODEL_VALUES,
+                  name: p.name,
+                  ...(p.PB_days != null ? { PB_days: p.PB_days } : {}),
+                  ...(p.ECC != null ? { ECC: p.ECC } : {}),
+                  ...(p.OMDOT_deg_yr != null ? { OMDOT_deg_yr: p.OMDOT_deg_yr } : {}),
+                  ...(p.PBDOT != null ? { PBDOT: p.PBDOT } : {}),
+                  ...(p.F0 != null ? { F0: p.F0 } : {}),
+                  ...(p.F1 != null ? { F1: p.F1 } : {}),
+                  ...(p.M2 != null ? { M2: p.M2 } : {}),
+                  ...(p.INC_deg != null ? { INC_deg: p.INC_deg } : {}),
+                };
+                return (
+                  <tr key={p.name}
+                    onClick={canLoad ? () => { onLoad(modelValues); onClose(); } : undefined}
+                    style={{ borderBottom: "1px solid rgba(180,180,200,0.05)", background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent", cursor: canLoad ? "pointer" : "default", opacity: canLoad ? 1 : 0.45 }}
+                    className={canLoad ? "transition-colors duration-100 hover:bg-white/5" : ""}>
+                    <td style={{ padding: "7px 8px", color: "#f4f4f5", fontFamily: "monospace", fontWeight: 600 }}>{p.name}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.PB_days)}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.ECC)}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.OMDOT_deg_yr)}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmtSci(p.PBDOT)}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.F0)}</td>
+                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmtSci(p.F1)}</td>
+                    <td style={{ padding: "7px 8px", color: "#71717a", maxWidth: 160 }}>{p.notes}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 12, fontSize: 10, color: "#3f3f46", lineHeight: 1.6 }}>
+            Isolated pulsars (no PB) are shown for reference but cannot be loaded as binary models. Parameters are approximate published values.
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1884,6 +2543,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [constraintToast, setConstraintToast] = useState("");
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showDerivedPanel, setShowDerivedPanel] = useState(false);
   const [exportDurationSec, setExportDurationSec] = useState(8);
   const [isExportingOrbit, setIsExportingOrbit] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -1892,6 +2552,9 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [isExportStopHovered, setIsExportStopHovered] = useState(false);
   const [beamAngle, setBeamAngle] = useState(0);
   const [companionBeamAngle, setCompanionBeamAngle] = useState(0);
+  const [showPPdotDiagram, setShowPPdotDiagram] = useState(false);
+  const [showMassMassDiagram, setShowMassMassDiagram] = useState(false);
+  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -2996,165 +3659,208 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       </AnimatePresence>
 
       <AnimatePresence>
-        {showHelpDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 40,
-              background: "rgba(6,6,10,0.60)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 24,
-              backdropFilter: "blur(10px)",
-            }}
-            onClick={() => setShowHelpDialog(false)}
-          >
+        {showHelpDialog && <HelpDialog onClose={() => setShowHelpDialog(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDerivedPanel && (() => {
+          const d = computeDerived(currentModel);
+          const fmtVal = (v: number | null, decimals: number) => v != null ? v.toFixed(decimals) : null;
+          const fmtSci = (v: number | null, sig = 3) => v != null ? v.toExponential(sig) : null;
+          const fmtBig = (v: number | null) => {
+            if (v == null) return null;
+            const abs = Math.abs(v);
+            if (abs >= 1e9) return `${(v / 1e9).toFixed(3)} × 10⁹`;
+            if (abs >= 1e6) return `${(v / 1e6).toFixed(3)} × 10⁶`;
+            if (abs >= 1e3) return `${(v / 1e3).toFixed(3)} × 10³`;
+            return v.toFixed(3);
+          };
+
+          type DRow = { label: string; value: string | null; unit: string; note?: string; missing?: string; color?: string; tooltip?: string };
+          const sections: { title: string; color: string; rows: DRow[] }[] = [
+            {
+              title: "Masses",
+              color: "#7aa2f7",
+              rows: [
+                { label: "Pulsar mass", value: fmtVal(d.m1_msun, 4), unit: "M☉" },
+                { label: "Companion mass", value: fmtVal(d.m2_msun, 4), unit: "M☉", missing: d.missing_m2 ? "M2 not provided" : undefined },
+                { label: "Total mass", value: fmtVal(d.M_total_msun, 4), unit: "M☉" },
+                { label: "Total mass (from OMDOT)", value: d.M_from_omdot_msun != null ? fmtVal(d.M_from_omdot_msun, 4) : null, unit: "M☉", missing: d.missing_omdot ? "OMDOT not provided" : undefined, note: "Post-Keplerian; independent mass estimate" },
+                { label: "Mass function", value: fmtVal(d.f_mass_msun, 6), unit: "M☉", note: "f(m) = (4π²/G)(a₁sinI)³/Pb²" },
+                { label: "Chirp mass", value: fmtVal(d.Mc_msun, 4), unit: "M☉", note: "ℳ = (m₁m₂)³/⁵/(m₁+m₂)¹/⁵", tooltip: "Sets the GW inspiral rate — LIGO measures this directly." },
+                { label: "Mass ratio", value: d.q_ratio != null ? fmtVal(d.q_ratio, 3) : null, unit: "", note: "q = m₁/m₂", tooltip: "q = 1 for equal-mass systems." },
+              ],
+            },
+            {
+              title: "Orbital geometry",
+              color: "#4dbf96",
+              rows: [
+                { label: "Semi-major axis (a_rel)", value: d.aRel_km != null ? fmtBig(d.aRel_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+                { label: "Semi-major axis (Kepler)", value: fmtBig(d.aKepler_km), unit: "km", note: "From Kepler's 3rd law with input masses" },
+                { label: "Periastron separation", value: d.rPeri_km != null ? fmtBig(d.rPeri_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+                { label: "Apastron separation", value: d.rApo_km != null ? fmtBig(d.rApo_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+              ],
+            },
+            {
+              title: "Orbital velocities",
+              color: "#c084b8",
+              rows: [
+                { label: "Velocity at periastron", value: d.vPeri_kms != null ? fmtVal(d.vPeri_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+                { label: "Velocity at apastron", value: d.vApo_kms != null ? fmtVal(d.vApo_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+              ],
+            },
+            {
+              title: "Orbital energy",
+              color: "#f7b267",
+              rows: [
+                { label: "Orbital energy", value: d.E_orb_J != null ? fmtSci(d.E_orb_J, 3) : null, unit: "J", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined },
+                { label: "Orbital angular momentum", value: d.L_orb != null ? fmtSci(d.L_orb, 3) : null, unit: "kg m² s⁻¹", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined },
+              ],
+            },
+            {
+              title: "Gravitational waves",
+              color: "#60a5fa",
+              rows: [
+                { label: "Merger timescale", value: d.T_merge_yr != null ? fmtSci(d.T_merge_yr, 3) : null, unit: "yr", missing: d.missing_pbdot && (d.missing_inc || d.missing_m2) ? "PBDOT and (INC or M2) needed" : undefined, note: "Peters 1964" },
+                { label: "GW luminosity (avg)", value: d.L_gw_W != null ? fmtSci(d.L_gw_W, 3) : null, unit: "W", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters & Mathews 1963, orbit-averaged" },
+                { label: "GW frequency", value: d.f_gw_mHz != null ? d.f_gw_mHz.toFixed(4) : null, unit: "mHz", note: `f_gw = 2/Pb`, tooltip: "Gravitational wave frequency is twice the orbital frequency." },
+                { label: "Detector band", value: d.inLIGO ? "LIGO (>10 Hz)" : d.inLISA ? "LISA (0.1–100 mHz)" : "Sub-LISA", unit: "", color: d.inLIGO ? "#fb7185" : d.inLISA ? "#4dbf96" : "#71717a" },
+                { label: "Time to LISA band", value: d.T_LISA_yr === 0 ? "Already in LISA" : (d.T_LISA_yr != null ? fmtSci(d.T_LISA_yr, 3) : null), unit: d.T_LISA_yr != null && d.T_LISA_yr !== 0 ? "yr" : "", missing: (d.missing_inc || d.missing_m2) && d.T_LISA_yr == null ? "INC and M2 needed" : undefined, note: "Peters scaling" },
+              ],
+            },
+            {
+              title: "Orbital decay",
+              color: "#60a5fa",
+              rows: [
+                { label: "PBDOT measured", value: !d.missing_pbdot ? fmtSci(currentModel.PBDOT, 3) : null, unit: "", missing: d.missing_pbdot ? "PBDOT not provided" : undefined },
+                { label: "PBDOT (GR prediction)", value: d.PBDOT_GR != null ? fmtSci(d.PBDOT_GR, 3) : null, unit: "", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters 1964" },
+                { label: "PBDOT ratio (meas/GR)", value: d.PBDOT_ratio != null ? d.PBDOT_ratio.toFixed(4) : null, unit: "", missing: d.PBDOT_GR == null || d.missing_pbdot ? "Both PBDOT and masses needed" : undefined, note: "≈ 1.0 confirms GR", color: d.PBDOT_ratio != null && Math.abs(d.PBDOT_ratio - 1) < 0.05 ? "#4dbf96" : undefined, tooltip: "Hulse-Taylor pulsar measures 1.0023 ± 0.0005." },
+              ],
+            },
+            {
+              title: "Pulsar spin",
+              color: "#4dbf96",
+              rows: [
+                { label: "Spin period", value: d.spin_period_ms != null ? fmtVal(d.spin_period_ms, 4) : null, unit: "ms" },
+                { label: "Characteristic age", value: d.tau_c_yr != null ? fmtSci(d.tau_c_yr, 3) : null, unit: "yr", missing: d.missing_f1 ? "F1 (spin-down rate) not provided or ≥ 0" : undefined, note: "τ_c = P / 2Ṗ" },
+                { label: "Surface magnetic field", value: d.B_surface_G != null ? fmtSci(d.B_surface_G, 3) : null, unit: "G", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "B = 3.2×10¹⁹ √(PṖ) G" },
+                { label: "Spin-down luminosity", value: d.E_dot_W != null ? fmtSci(d.E_dot_W, 3) : null, unit: "W", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "Ė = 4π²I|Ḟ₀| (I = 10³⁸ kg m²)" },
+              ],
+            },
+          ];
+
+          return (
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "min(680px, 100%)",
-                maxHeight: "80vh",
-                borderRadius: 18,
-                border: "1px solid rgba(180,180,200,0.12)",
-                background: "rgba(12,12,16,0.96)",
-                boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
+              onClick={() => setShowDerivedPanel(false)}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Binary Pulsar Teaching Lab</div>
-                  <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Interactive guide to timing physics</div>
-                </div>
-                <button
-                  onClick={() => setShowHelpDialog(false)}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }}
-                  className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-
-              <div style={{ overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 22 }}>
-
-                <div>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 8 }}>Overview</div>
-                  <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "#a1a1aa" }}>
-                    Simulate a binary pulsar system in real time. Adjust orbital and timing parameters, observe how relativistic delay terms shape the timing residuals, and explore how astronomers use pulsar timing to measure fundamental physics. Load a real <span style={{ color: "#d4d4d8", fontFamily: "monospace" }}>.par</span> file via the <span style={{ color: "#d4d4d8" }}>Controls</span> panel to work with published pulsar parameters.
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{ width: "min(640px, 100%)", maxHeight: "82vh", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.97)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}
+              >
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Derived quantities</div>
+                    <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>{currentModel.name || loadedModel.displayName}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button
+                      title="Copy all values to clipboard"
+                      onClick={() => {
+                        const lines = sections.flatMap(({ title, rows }) => [
+                          `=== ${title} ===`,
+                          ...rows.map(({ label, value, unit }) => `${label}: ${value ?? "—"}${unit ? " " + unit : ""}`),
+                          "",
+                        ]);
+                        navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
+                      }}
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }}
+                      className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2h-2"/></svg>
+                    </button>
+                    <button onClick={() => setShowDerivedPanel(false)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Views</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {[
-                      {
-                        label: "Orbit",
-                        color: "#7aa2f7",
-                        desc: "Watch the pulsar and companion evolve in real time around their common centre of mass. Toggle gravitational wave ripples, the rotating beam, velocity vectors, orbit guides, and body labels from the Controls panel. Use the time-scale slider to speed up or slow down the simulation, and drag the manual-phase slider to jump to any orbital phase. Export the animation as a high-resolution video with the Export orbit button.",
-                      },
-                      {
-                        label: "Timing residuals",
-                        color: "#4dbf96",
-                        desc: "Shows the cumulative timing signature over one full orbit. Each coloured curve is a separate delay term — Römer (light travel time), Einstein (gravitational redshift + Doppler), Shapiro (curved spacetime near companion), Secular (long-term drift), and DM (dispersion from free electrons). Toggle or fit individual terms to understand their contribution. Adjust the TOA interval, noise level, and observing frequency to simulate realistic observations.",
-                      },
-                      {
-                        label: "Epoch residuals",
-                        color: "#c084b8",
-                        desc: "Spans a longer baseline (1 orbit · 1 day · 30 days · 1 year) and shows pre-fit and post-fit residuals across many orbits. Inject parameter offsets to shift individual binary or timing parameters away from the true values and watch how characteristic residual signatures appear — exactly how timing astronomers detect errors or new effects. Toggle fitted terms to subtract modelled contributions and isolate what remains.",
-                      },
-                    ].map(({ label, color, desc }) => (
-                      <div key={label} style={{ display: "flex", gap: 12, padding: "11px 13px", borderRadius: 10, border: "1px solid rgba(180,180,200,0.07)", background: "rgba(255,255,255,0.02)" }}>
-                        <div style={{ width: 3, borderRadius: 99, background: color, flexShrink: 0, alignSelf: "stretch" }} />
-                        <div>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#e4e4e7", marginBottom: 4 }}>{label}</div>
-                          <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</div>
-                        </div>
+                {/* Body */}
+                <div style={{ overflowY: "auto", padding: "16px 22px", display: "flex", flexDirection: "column", gap: 20 }}>
+                  {sections.map(({ title, color, rows }) => (
+                    <div key={title}>
+                      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color, marginBottom: 8, opacity: 0.7 }}>{title}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, border: "1px solid rgba(180,180,200,0.07)", overflow: "hidden" }}>
+                        {rows.map(({ label, value, unit, note, missing, color, tooltip }, i) => (
+                          <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "baseline", padding: "8px 12px", background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent", borderTop: i > 0 ? "1px solid rgba(180,180,200,0.05)" : "none" }}>
+                            <div>
+                              <span title={tooltip} style={{ fontSize: 12, color: "#d4d4d8", cursor: tooltip ? "help" : undefined }}>{label}</span>
+                              {note && <span style={{ fontSize: 10, color: "#52525b", marginLeft: 6 }}>{note}</span>}
+                              {missing && <div style={{ fontSize: 10, color: "#fb923c", marginTop: 2 }}>Missing: {missing}</div>}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 5, textAlign: "right" }}>
+                              {missing && value == null ? (
+                                <span style={{ fontSize: 11, color: "#52525b", fontFamily: "monospace" }}>—</span>
+                              ) : (
+                                <>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: color ?? "#f4f4f5", fontFamily: "monospace" }}>{value ?? "—"}</span>
+                                  <span style={{ fontSize: 10, color: "#71717a" }}>{unit}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 10, color: "#3f3f46", lineHeight: 1.6, paddingBottom: 4 }}>
+                    Computed from current parameter values. Assumes moment of inertia I = 10³⁸ kg m² for spin-down quantities. Orbital geometry requires INC and M2.
                   </div>
                 </div>
-
-                <div>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Parameters</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    {[
-                      ["PB", "d", "Orbital period — sets how long one full orbit takes."],
-                      ["ECC", "", "Eccentricity — 0 is a perfect circle, values near 1 are highly elliptical."],
-                      ["OM", "deg", "Longitude of periastron — rotates the orbit orientation. Precession (OMDOT) advances this over time."],
-                      ["A1", "lt-s", "Projected semi-major axis of the pulsar orbit in light-seconds — directly sets the Römer delay amplitude."],
-                      ["T0", "d", "Reference epoch — time of periastron passage relative to the simulation start."],
-                      ["M2", "M☉", "Companion mass — governs the Shapiro delay amplitude and orbital dynamics."],
-                      ["INC", "deg", "Orbital inclination — 90° is edge-on. Values near 90° greatly enhance the Shapiro delay."],
-                      ["DM", "pc cm⁻³", "Dispersion measure — column density of free electrons. Causes a frequency-dependent, chromatic delay."],
-                      ["GAMMA", "s", "Einstein delay amplitude — gravitational redshift plus time dilation, varying around the orbit."],
-                      ["OMDOT", "deg/yr", "Periastron advance rate — a relativistic effect directly measurable in tight double neutron star systems."],
-                      ["PBDOT", "", "Orbital period derivative — negative values indicate energy loss to gravitational wave emission."],
-                    ].map(([key, unit, desc]) => (
-                      <div key={key} style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, alignItems: "baseline" }}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7", fontFamily: "monospace" }}>{key}</span>
-                          {unit && <span style={{ fontSize: 10, color: "#52525b" }}>{unit}</span>}
-                        </div>
-                        <div style={{ fontSize: 11.5, lineHeight: 1.6, color: "#a1a1aa" }}>{desc}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Delay terms</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {[
-                      ["Römer", "#7aa2f7", "Light-travel-time delay from the pulsar moving around the barycentre. Usually the dominant orbital term — its amplitude is set directly by A1."],
-                      ["Einstein", "#f7b267", "Combined gravitational redshift and second-order Doppler delay. Largest at periastron, varies smoothly around the orbit."],
-                      ["Shapiro", "#4dbf96", "Extra delay as pulses pass through curved spacetime near the companion. Strongest near superior conjunction; its shape constrains M2 and INC."],
-                      ["Secular", "#c084b8", "Slow long-term drift that accumulates across many orbits rather than varying within a single one."],
-                      ["DM", "#60a5fa", "Chromatic dispersive delay from free electrons. Scales as 1/f² — comparing two observing frequencies isolates this term uniquely."],
-                    ].map(([name, color, desc]) => (
-                      <div key={name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, marginTop: 3, flexShrink: 0 }} />
-                        <div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e4e4e7" }}>{name} — </span>
-                          <span style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Tips</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {[
-                      "Load a real pulsar via the preset dropdown, or import a published .par file using Load .par in the Controls panel.",
-                      "In Epoch residuals, inject a small offset to one parameter and identify which delay term's signature it mimics — this is how timing astronomers diagnose systematic errors.",
-                      "Set INC close to 90° and watch the Shapiro delay spike near conjunction. The sharpness of that spike constrains both M2 and the system geometry.",
-                      "Raise OMDOT to see periastron advance. Because real rates are tiny (B1913+16 precesses ~4.2°/yr), use the ω̇ viz × slider in Sampling to exaggerate the advance for visualisation only — the timing residuals always use the true OMDOT value. Enable History trail in Display to watch the precessing rosette build up.",
-                      "A negative PBDOT means the orbit is shrinking due to gravitational-wave energy loss. B1913+16 provided the first indirect evidence for gravitational waves.",
-                      "Use dual-frequency mode in Epoch residuals to isolate the DM term: it shifts with 1/f² while all other delays are achromatic.",
-                    ].map((tip, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                        <div style={{ fontSize: 10.5, color: "#3f3f46", fontWeight: 700, marginTop: 1, flexShrink: 0, minWidth: 14, textAlign: "right" }}>{i + 1}</div>
-                        <div style={{ fontSize: 11.5, lineHeight: 1.65, color: "#a1a1aa" }}>{tip}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPPdotDiagram && (
+          <PPdotDiagram onClose={() => setShowPPdotDiagram(false)} currentF0={currentModel.F0} currentF1={currentModel.F1} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMassMassDiagram && (
+          <MassMassDiagram onClose={() => setShowMassMassDiagram(false)} currentModel={currentModel} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCatalogBrowser && (
+          <CatalogBrowser
+            onClose={() => setShowCatalogBrowser(false)}
+            onLoad={(modelValues) => {
+              const envelope = normalizeModelEnvelope({
+                id: `catalog-${modelValues.name}`,
+                source: "catalog",
+                displayName: `PSR ${modelValues.name}`,
+                values: modelValues,
+                providedFields: Object.keys(modelValues).filter(k => modelValues[k] != null),
+                unknownKeys: [],
+              });
+              setLoadedModel(envelope);
+              setCurrentModel(envelope.values);
+              setActivePresetId(null);
+              setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
+              setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
+            }}
+          />
         )}
       </AnimatePresence>
 
@@ -3776,6 +4482,10 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     </ControlRow>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <IconBtn onClick={() => fileInputRef.current?.click()}>Load .par</IconBtn>
+                      <IconBtn onClick={() => setShowDerivedPanel(true)}>Derived values</IconBtn>
+                      <IconBtn onClick={() => setShowPPdotDiagram(true)}>P–Ṗ diagram</IconBtn>
+                      <IconBtn onClick={() => setShowMassMassDiagram(true)}>Mass–mass</IconBtn>
+                      <IconBtn onClick={() => setShowCatalogBrowser(true)}>Catalog</IconBtn>
                       <IconBtn onClick={() => {
                         setCurrentModel(loadedModel.values);
                         setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
@@ -3949,9 +4659,21 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                                   {fmt(currentModel[param.key], offsetScale.decimals)} {param.unit}
                                 </span>
                               </div>
-                              <span style={{ fontSize: 11, color: "#f4f4f5", fontFamily: "monospace" }}>
-                                {fmt(epochParamOffsets[param.key], offsetScale.decimals)} {param.unit}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <input
+                                  type="number"
+                                  defaultValue={fmt(epochParamOffsets[param.key], offsetScale.decimals)}
+                                  key={epochParamOffsets[param.key]}
+                                  step={offsetScale.step}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v)) setEpochParamOffsets((prev) => ({ ...prev, [param.key]: clamp(v, offsetScale.min, offsetScale.max) }));
+                                  }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                  style={{ width: 80, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(180,180,200,0.15)", borderRadius: 6, color: "#f4f4f5", fontSize: 11, fontFamily: "monospace", padding: "2px 6px", textAlign: "right" }}
+                                />
+                                <span style={{ fontSize: 10, color: "#71717a" }}>{param.unit}</span>
+                              </div>
                             </div>
                             <div style={{ marginTop: -2 }}>
                               <Slider
@@ -3977,11 +4699,28 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                         );
                         })}
                         <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#71717a" }}>Delay term offsets</div>
-                        {["romer", "einstein", "shapiro", "secular", "dm"].map((key) => (
+                        {["romer", "einstein", "shapiro", "secular", "dm"].map((key) => {
+                          const termMin = key === "romer" ? -8 : -40;
+                          const termMax = key === "romer" ? 8 : 40;
+                          return (
                           <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 18 }}>
                               <span style={{ fontSize: 13, color: "#d4d4d8" }}>{DELAY_COLORS[key].label}</span>
-                              <span style={{ fontSize: 11, color: "#f4f4f5", fontFamily: "monospace" }}>{fmt(epochOffsets[key], 2)} %</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <input
+                                  type="number"
+                                  defaultValue={fmt(epochOffsets[key], 2)}
+                                  key={epochOffsets[key]}
+                                  step={0.01}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v)) setEpochOffsets((prev) => ({ ...prev, [key]: clamp(v, termMin, termMax) }));
+                                  }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                  style={{ width: 64, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(180,180,200,0.15)", borderRadius: 6, color: "#f4f4f5", fontSize: 11, fontFamily: "monospace", padding: "2px 6px", textAlign: "right" }}
+                                />
+                                <span style={{ fontSize: 10, color: "#71717a" }}>%</span>
+                              </div>
                             </div>
                             <div style={{ marginTop: -2 }}>
                               <Slider
@@ -4003,7 +4742,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                               </button>
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                       <ControlRow label="Fit terms" value="">
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

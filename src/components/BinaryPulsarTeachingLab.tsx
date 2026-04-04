@@ -1004,7 +1004,8 @@ function SegmentedToggle({ options, value, onChange, accent = "#f4f4f5", compact
         border: "1px solid rgba(180,180,200,0.1)",
         background: "rgba(255,255,255,0.04)",
         backdropFilter: "blur(12px)",
-        flexWrap: "wrap",
+        flexWrap: "nowrap",
+        flexShrink: 0,
       }}
     >
       {options.map((option) => {
@@ -1435,23 +1436,28 @@ function SubPlot({
   );
 }
 
-function ResidualPlot({ theoryCurve, toas, activeDelays, fittedDelays, highlightDelay, noiseLevel, currentPhase }) {
+function ResidualPlot({ theoryCurve, toas, activeDelays, fittedDelays, highlightDelay, noiseLevel, currentPhase, forcedVisibleKeys, compact = false }) {
   const hasFitting = Object.values(fittedDelays).some(Boolean);
   const ordered = ["romer", "einstein", "shapiro", "secular", "dm", "total"];
-  let visible = ordered.filter((key) => activeDelays[key]);
-  if (hasFitting) {
+  let visible = forcedVisibleKeys?.length
+    ? forcedVisibleKeys
+    : ordered.filter((key) => activeDelays[key]);
+  if (!forcedVisibleKeys?.length && hasFitting) {
     visible = visible.filter((key) => key !== "total");
     visible.push("residual");
   }
 
   const SVG_W = 960;
-  const PAD_L = 88;
-  const PAD_R = 20;
-  const PAD_T = 26;
-  const PAD_B = 46;
-  const ROW_GAP = 14;
+  const PAD_L = compact ? 72 : 88;
+  const PAD_R = compact ? 16 : 20;
+  const PAD_T = compact ? 18 : 26;
+  const PAD_B = compact ? 34 : 46;
+  const ROW_GAP = compact ? 10 : 14;
   const plotW = SVG_W - PAD_L - PAD_R;
-  const ROW_H = visible.length > 0 ? clamp(Math.floor(720 / visible.length), 110, 190) : 120;
+  const rowCeiling = compact ? 540 : 720;
+  const rowMin = compact ? 88 : 110;
+  const rowMax = compact ? 140 : 190;
+  const ROW_H = visible.length > 0 ? clamp(Math.floor(rowCeiling / visible.length), rowMin, rowMax) : 120;
   const SVG_H = PAD_T + ROW_H * visible.length + ROW_GAP * Math.max(visible.length - 1, 0) + PAD_B;
   const xTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
   const xP = (v) => PAD_L + v * plotW;
@@ -1492,10 +1498,66 @@ function ResidualPlot({ theoryCurve, toas, activeDelays, fittedDelays, highlight
       <text x={SVG_W / 2} y={SVG_H - 4} textAnchor="middle" fill="rgba(161,161,170,0.5)" fontSize="12">
         Orbital phase
       </text>
-      <text x={SVG_W - PAD_R} y={14} textAnchor="end" fill="rgba(160,160,180,0.35)" fontSize="11">
+      <text x={SVG_W - PAD_R} y={compact ? 12 : 14} textAnchor="end" fill="rgba(160,160,180,0.35)" fontSize={compact ? "10" : "11"}>
         {toas.length} TOAs
       </text>
     </svg>
+  );
+}
+
+function MobileTimingTermsPanel({ currentDelays, activeDelays, fittedDelays, highlightDelay, onHighlightChange }) {
+  const keys = ["romer", "einstein", "shapiro", "secular", "dm"].filter((key) => activeDelays[key]);
+  const amplitudes = keys.map((key) => ({ key, value: Math.abs(currentDelays?.[key] ?? 0) }));
+  const maxAmp = Math.max(...amplitudes.map((item) => item.value), Math.abs(currentDelays?.total ?? 0), 1e-6);
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", paddingRight: 2 }}>
+      {keys.map((key) => {
+        const meta = DELAY_COLORS[key];
+        const rawValue = currentDelays?.[key] ?? 0;
+        const pct = (Math.abs(rawValue) / maxAmp) * 100;
+        const active = highlightDelay === key;
+        return (
+          <button
+            key={key}
+            onClick={() => onHighlightChange(active ? null : key)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              width: "100%",
+              textAlign: "left",
+              borderRadius: 16,
+              border: `1px solid ${active ? `${meta.stroke}55` : "rgba(180,180,200,0.09)"}`,
+              background: active ? `${meta.stroke}10` : "rgba(255,255,255,0.03)",
+              padding: "12px 12px 10px",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: meta.stroke, boxShadow: `0 0 10px ${meta.stroke}` }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4f5" }}>{meta.label}</div>
+                  <div style={{ fontSize: 10.5, color: "#71717a" }}>{meta.symbol} {fittedDelays[key] ? "fit applied" : "live contribution"}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: meta.stroke }}>{fmt(rawValue, Math.abs(rawValue) < 1 ? 3 : 2)} ms</div>
+            </div>
+            <div style={{ position: "relative", height: 6, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: meta.stroke }} />
+            </div>
+          </button>
+        );
+      })}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(180,180,200,0.09)", background: "rgba(255,255,255,0.03)" }}>
+        <div>
+          <div style={{ fontSize: 12, color: "#a1a1aa" }}>Net visible delay</div>
+          <div style={{ fontSize: 10.5, color: "#71717a" }}>Current orbital phase sum</div>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>{fmt(currentDelays?.total ?? 0, 2)} ms</div>
+      </div>
+    </div>
   );
 }
 
@@ -1662,13 +1724,14 @@ function LongBaselinePlot({
   fittedDelays,
   noiseLevel,
   epochOffsetCount,
+  singleStage,
 }) {
   const plotW = 960;
-  const plotH = 280;
-  const padL = 72;
-  const padR = 24;
-  const padT = 24;
-  const padB = 42;
+  const plotH = 260;
+  const padL = 54;
+  const padR = 10;
+  const padT = 18;
+  const padB = 38;
   const innerW = plotW - padL - padR;
   const innerH = plotH - padT - padB;
   const points = currentSamples.points;
@@ -1716,31 +1779,24 @@ function LongBaselinePlot({
   const showSelected = overlayMode === "selected";
   const hasFittedTerms = Object.values(fittedDelays || {}).some(Boolean);
   const residualNoiseLimited = yMode === "residual" && epochOffsetCount === 0;
+  const showConfigurator = !singleStage;
+  const showPrePanel = !singleStage || singleStage === "pre";
+  const showPostPanel = !singleStage || singleStage === "post";
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 4px", flexWrap: "nowrap", overflowX: "auto" }}>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+      {showConfigurator && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px", flexWrap: "nowrap", overflowX: "auto", flexShrink: 0, scrollbarWidth: "none" }}>
           <SegmentedToggle compact accent="#93c5fd" value={xMode} onChange={onXModeChange} options={[{ value: "epoch", label: "x: epoch" }, { value: "phase", label: "x: phase" }]} />
           <SegmentedToggle compact accent="#f4f4f5" value={yMode} onChange={onYModeChange} options={[{ value: "residual", label: "residual" }, { value: "dm", label: "DM" }, { value: "shapiro", label: "Shapiro" }, { value: "secular", label: "Secular" }, { value: "total", label: "total" }]} />
-        </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <SegmentedToggle compact accent="#a78bfa" value={compareMode} onChange={onCompareModeChange} options={[{ value: "single", label: "1 freq" }, { value: "dual", label: "2 freq" }]} />
           <SegmentedToggle compact accent="#4dbf96" value={overlayMode} onChange={onOverlayModeChange} options={[{ value: "none", label: "overlay off" }, { value: "reference", label: "reference" }, { value: "selected", label: "selected" }]} />
           <SegmentedToggle compact accent="#f59e0b" value={zoomPreset} onChange={onZoomPresetChange} options={[{ value: "auto", label: "zoom auto" }, { value: "tight", label: "tight" }]} />
         </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 14, minHeight: 0, flex: 1 }}>
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", padding: 12, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 6px 8px" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Pre-fit</div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 11, color: "#71717a" }}>
-              {residualNoiseLimited && <span>models match</span>}
-              <span>{compareMode === "dual" ? `${primaryFreq}/${secondFreqMHz} MHz` : `${primaryFreq} MHz`}</span>
-              <span>{DELAY_COLORS[yMode]?.label ?? "Residual"}</span>
-            </div>
-          </div>
-          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block" }}>
+      )}
+      <div style={{ display: "grid", gridTemplateRows: singleStage ? "1fr" : "1fr 1fr", gap: 10, minHeight: 0, flex: 1 }}>
+        {showPrePanel && <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block", minHeight: 120 }}>
             <line x1={padL} x2={padL + innerW} y1={preZeroY} y2={preZeroY} stroke="rgba(180,180,200,0.16)" strokeWidth="1" />
             {ticks.map((tick) => (
               <line key={tick} x1={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} x2={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} y1={padT} y2={padT + innerH} stroke="rgba(180,180,200,0.05)" strokeWidth="1" />
@@ -1807,22 +1863,10 @@ function LongBaselinePlot({
               </g>
             )}
           </svg>
-        </div>
+        </div>}
 
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", padding: 12, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 6px 8px" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Post-fit</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
-              {!hasFittedTerms && <span style={{ color: "#71717a" }}>no fit terms selected</span>}
-              {hasFittedTerms && residualNoiseLimited && <span style={{ color: "#71717a" }}>no model mismatch to remove</span>}
-              {["dm", "shapiro", "secular", "romer", "einstein"].map((key) => (
-                <span key={key} style={{ color: fittedDelays[key] ? DELAY_COLORS[key].stroke : "#71717a" }}>
-                  {DELAY_COLORS[key].label}
-                </span>
-              ))}
-            </div>
-          </div>
-          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block" }}>
+        {showPostPanel && <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <svg viewBox={`0 0 ${plotW} ${plotH}`} style={{ width: "100%", display: "block", minHeight: 120 }}>
             <line x1={padL} x2={padL + innerW} y1={postZeroY} y2={postZeroY} stroke="rgba(180,180,200,0.16)" strokeWidth="1" />
             {ticks.map((tick) => (
               <line key={tick} x1={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} x2={padL + ((tick - xMin) / Math.max(xMax - xMin, 1e-6)) * innerW} y1={padT} y2={padT + innerH} stroke="rgba(180,180,200,0.05)" strokeWidth="1" />
@@ -1889,15 +1933,9 @@ function LongBaselinePlot({
               </g>
             )}
           </svg>
-        </div>
+        </div>}
       </div>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "0 4px", fontSize: 11, color: "#71717a" }}>
-        <span>{compareMode === "dual" ? `${primaryFreq}/${secondFreqMHz} MHz` : `${primaryFreq} MHz`}</span>
-        <span>x: {xMode === "phase" ? "orbital phase" : "epoch"}</span>
-        <span>y: {DELAY_COLORS[yMode]?.label ?? yMode}</span>
-        <span>sigma_TOA {noiseLevel} us</span>
-      </div>
     </div>
   );
 }
@@ -2111,7 +2149,7 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 10 }}>Tips</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[
-                "Load a real pulsar via the preset dropdown, or import a published .par file using Load .par in the Controls panel.",
+                "Load a real pulsar by clicking any row in the catalogue, or import a published .par file using Load .par in the Controls panel.",
                 "In Epoch residuals, inject a small offset to one parameter and identify which delay term's signature it mimics — this is how timing astronomers diagnose systematic errors.",
                 "Set INC close to 90° and watch the Shapiro delay spike near conjunction. The sharpness of that spike constrains both M2 and the system geometry.",
                 "Raise OMDOT to see periastron advance. Because real rates are tiny (B1913+16 precesses ~4.2°/yr), use the ω̇ viz × slider in Sampling to exaggerate the advance for visualisation only — the timing residuals always use the true OMDOT value. Enable History trail in Display to watch the precessing rosette build up.",
@@ -2377,77 +2415,6 @@ function MassMassDiagram({ onClose, currentModel }) {
   );
 }
 
-// ── CatalogBrowser modal ────────────────────────────────────────────────────
-function CatalogBrowser({ onClose, onLoad }) {
-  const fmt3 = (v) => v != null ? v.toPrecision(4) : "—";
-  const fmtSci = (v) => v != null ? v.toExponential(2) : "—";
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
-      onClick={onClose}>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{ width: "min(820px, 100%)", maxHeight: "80vh", borderRadius: 18, border: "1px solid rgba(180,180,200,0.12)", background: "rgba(12,12,16,0.97)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid rgba(180,180,200,0.08)", flexShrink: 0 }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>Pulsar Catalog</div>
-            <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>Click a binary pulsar row to load its parameters</div>
-          </div>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-        <div style={{ overflowY: "auto", padding: "12px 22px 20px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid rgba(180,180,200,0.1)" }}>
-                {["Name", "PB (d)", "ECC", "OMDOT", "PBDOT", "F0 (Hz)", "F1", "Notes"].map(h => (
-                  <th key={h} style={{ padding: "6px 8px", textAlign: "left", color: "#71717a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PULSAR_CATALOG.map((p, i) => {
-                const canLoad = p.PB_days != null;
-                const modelValues = {
-                  ...DEFAULT_MODEL_VALUES,
-                  name: p.name,
-                  ...(p.PB_days != null ? { PB_days: p.PB_days } : {}),
-                  ...(p.ECC != null ? { ECC: p.ECC } : {}),
-                  ...(p.OMDOT_deg_yr != null ? { OMDOT_deg_yr: p.OMDOT_deg_yr } : {}),
-                  ...(p.PBDOT != null ? { PBDOT: p.PBDOT } : {}),
-                  ...(p.F0 != null ? { F0: p.F0 } : {}),
-                  ...(p.F1 != null ? { F1: p.F1 } : {}),
-                  ...(p.M2 != null ? { M2: p.M2 } : {}),
-                  ...(p.INC_deg != null ? { INC_deg: p.INC_deg } : {}),
-                };
-                return (
-                  <tr key={p.name}
-                    onClick={canLoad ? () => { onLoad(modelValues); onClose(); } : undefined}
-                    style={{ borderBottom: "1px solid rgba(180,180,200,0.05)", background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent", cursor: canLoad ? "pointer" : "default", opacity: canLoad ? 1 : 0.45 }}
-                    className={canLoad ? "transition-colors duration-100 hover:bg-white/5" : ""}>
-                    <td style={{ padding: "7px 8px", color: "#f4f4f5", fontFamily: "monospace", fontWeight: 600 }}>{p.name}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.PB_days)}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.ECC)}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.OMDOT_deg_yr)}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmtSci(p.PBDOT)}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmt3(p.F0)}</td>
-                    <td style={{ padding: "7px 8px", color: "#d4d4d8", fontFamily: "monospace" }}>{fmtSci(p.F1)}</td>
-                    <td style={{ padding: "7px 8px", color: "#71717a", maxWidth: 160 }}>{p.notes}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div style={{ marginTop: 12, fontSize: 10, color: "#3f3f46", lineHeight: 1.6 }}>
-            Isolated pulsars (no PB) are shown for reference but cannot be loaded as binary models. Parameters are approximate published values.
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage?: boolean }) {
   const navigate = useNavigate();
   usePageMeta(
@@ -2554,7 +2521,13 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const [companionBeamAngle, setCompanionBeamAngle] = useState(0);
   const [showPPdotDiagram, setShowPPdotDiagram] = useState(false);
   const [showMassMassDiagram, setShowMassMassDiagram] = useState(false);
-  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(true);
+  const [mobileTimingView, setMobileTimingView] = useState("residuals");
+  const [mobileEpochView, setMobileEpochView] = useState("pre");
+
+  const [derivedCopied, setDerivedCopied] = useState(false);
+  const [derivedTooltip, setDerivedTooltip] = useState<{ label: string; lines: string[]; x: number; y: number } | null>(null);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -2582,6 +2555,11 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const timingLeftPad = menuOpen && !isCompact ? panelWidth + 32 : 16;
   const workspaceTopInset = headerHeight + 10;
   const sidePanelTopInset = headerHeight + 6;
+  const mobileSheetPeekHeight = 88;
+  const mobileSheetHeight = 62;
+  const mobileTopPanelOpen = isMobile && sheetOpen;
+  const mobileOrbitPanelOpen = mobileTopPanelOpen && activeTab === "orbit";
+  const mobileOrbitInset = 12;
   const orbitSceneOffset = menuOpen && !isCompact ? 112 : 0;
   const renderedAbsoluteElapsed = exportAbsoluteElapsed ?? absoluteElapsed;
   const renderedBeamAngle =
@@ -2598,6 +2576,10 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   useEffect(() => {
     if (isCompact) setMenuOpen(false);
   }, [isCompact]);
+
+  useEffect(() => {
+    if (isMobile && !sheetOpen) setSheetOpen(true);
+  }, [isMobile, sheetOpen]);
 
   useEffect(() => {
     elapsedRef.current = elapsed;
@@ -2627,6 +2609,23 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const modelDeltaCount = useMemo(() => countModelDiffs(currentModel, loadedModel.values), [currentModel, loadedModel]);
   const epochOffsetCount = useMemo(() => countOffsetDiffs(epochOffsets), [epochOffsets]);
   const epochParamOffsetCount = useMemo(() => countOffsetDiffs(epochParamOffsets), [epochParamOffsets]);
+  const mobileTimingPlotTabs = useMemo(() => {
+    const ordered = ["romer", "einstein", "shapiro", "secular", "dm", "total"];
+    const baseTabs = ordered.filter((key) => activeDelays[key]).map((key) => ({
+      value: key,
+      label: DELAY_COLORS[key].label,
+    }));
+    const hasFit = Object.values(fittedDelays).some(Boolean);
+    return hasFit
+      ? [{ value: "residual", label: DELAY_COLORS.residual.label }, ...baseTabs.filter((tab) => tab.value !== "total"), { value: "pulses", label: "Pulses" }]
+      : [...baseTabs, { value: "pulses", label: "Pulses" }];
+  }, [activeDelays, fittedDelays]);
+
+  useEffect(() => {
+    if (!mobileTimingPlotTabs.some((tab) => tab.value === mobileTimingView)) {
+      setMobileTimingView(mobileTimingPlotTabs[0]?.value ?? "pulses");
+    }
+  }, [mobileTimingPlotTabs, mobileTimingView]);
 
   const dynamics = useMemo(() => {
     const Pb = currentModel.PB_days * DAY;
@@ -2786,6 +2785,8 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
   const W = 1600;
   const H = 950;
   const CENTER = { x: W * 0.5, y: H * 0.52 };
+  const mobileOrbitViewBox = `${-70} ${-30} ${W + 140} ${H + 60}`;
+  const orbitViewBox = mobileOrbitPanelOpen ? mobileOrbitViewBox : `0 0 ${W} ${H}`;
   const ORBIT_TARGET_RADIUS = 355;
   const ORBIT_CONSTRAINT_RADIUS = 420;
   // Use worst-case extent over all ω angles (semi-major axis × largest mass fraction)
@@ -2988,13 +2989,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     elapsedRef.current = normalized.values.T0_days;
     absoluteElapsedRef.current = normalized.values.T0_days;
     if (setAsPreset) setActivePresetId(normalized.id);
-  };
-
-  const handlePresetChange = (presetId) => {
-    const preset = MODEL_PRESETS.find((entry) => entry.id === presetId);
-    if (!preset) return;
-    loadEnvelope(preset, true);
-    setImportNotice("");
   };
 
   const handleDuplicateModel = () => {
@@ -3360,8 +3354,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
     }
   };
 
-  const presetSelectValue = activePresetId || (loadedModel.source === "uploaded_par" ? loadedModel.id : initialModel.id);
-
   return (
     <div
       ref={rootRef}
@@ -3369,7 +3361,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       style={{
         fontFamily: "'DM Mono','JetBrains Mono',monospace",
         background: "radial-gradient(circle at top left, rgba(122,162,247,0.12), transparent 26%), radial-gradient(circle at top right, rgba(77,191,150,0.08), transparent 24%), #0e0e12",
-        height: fullPage ? "100svh" : isMobile ? 1220 : 980,
+        height: fullPage ? "100svh" : isMobile ? "100svh" : 980,
       }}
     >
       {showGrid && activeTab !== "longBaseline" && (
@@ -3385,7 +3377,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
 
       <input ref={fileInputRef} type="file" accept=".par,.txt" onChange={handleParFile} style={{ display: "none" }} />
 
-      <div ref={headerRef} className="absolute left-0 right-0 top-0 z-30 px-3 py-3 sm:px-4">
+      <div ref={headerRef} className={`absolute left-0 right-0 top-0 z-30 px-3 py-3 sm:px-4${isMobile ? " hidden" : ""}`}>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[rgba(12,12,16,0.72)] px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-4">
           <div className="flex flex-wrap items-center gap-2">
             {fullPage && (
@@ -3487,9 +3479,27 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                 </IconBtn>
               </div>
             )}
-            <IconBtn onClick={() => setIsPlaying((prev) => !prev)} active={isPlaying} light disabled={activeTab === "longBaseline"}>
+            <button
+              onClick={() => setIsPlaying((prev) => !prev)}
+              disabled={activeTab === "longBaseline"}
+              className="transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                height: 40, padding: "0 16px", borderRadius: 8, cursor: "pointer",
+                border: isPlaying ? "1px solid rgba(122,162,247,0.45)" : "1px solid rgba(122,162,247,0.55)",
+                background: isPlaying ? "rgba(122,162,247,0.13)" : "linear-gradient(135deg, rgba(122,162,247,0.18) 0%, rgba(122,162,247,0.09) 100%)",
+                backdropFilter: "blur(12px)",
+                boxShadow: isPlaying ? "none" : "0 0 0 1px rgba(122,162,247,0.08), 0 4px 18px rgba(122,162,247,0.1)",
+                color: "#93b4f8", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+              }}
+            >
+              {isPlaying ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#93b4f8"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#93b4f8"><polygon points="5,3 19,12 5,21"/></svg>
+              )}
               {isPlaying ? "Pause" : "Play"}
-            </IconBtn>
+            </button>
             <IconBtn
               onClick={() => {
                 setElapsed(currentModel.T0_days);
@@ -3504,11 +3514,6 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               Reset phase
             </IconBtn>
             <IconBtn onClick={() => setToas([])}>Clear TOAs</IconBtn>
-            <IconBtn onClick={() => {
-              setCurrentModel({ ...loadedModel.values });
-              setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
-              setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
-            }}>Reset model</IconBtn>
             <IconBtn onClick={() => setShowHelpDialog(true)}>Help</IconBtn>
           </div>
         </div>
@@ -3676,75 +3681,102 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
             return v.toFixed(3);
           };
 
-          type DRow = { label: string; value: string | null; unit: string; note?: string; missing?: string; color?: string; tooltip?: string };
+          type DRow = { label: string; value: string | null; unit: string; note?: string; missing?: string; color?: string; tooltip?: string[] };
           const sections: { title: string; color: string; rows: DRow[] }[] = [
             {
               title: "Masses",
               color: "#7aa2f7",
               rows: [
-                { label: "Pulsar mass", value: fmtVal(d.m1_msun, 4), unit: "M☉" },
-                { label: "Companion mass", value: fmtVal(d.m2_msun, 4), unit: "M☉", missing: d.missing_m2 ? "M2 not provided" : undefined },
-                { label: "Total mass", value: fmtVal(d.M_total_msun, 4), unit: "M☉" },
-                { label: "Total mass (from OMDOT)", value: d.M_from_omdot_msun != null ? fmtVal(d.M_from_omdot_msun, 4) : null, unit: "M☉", missing: d.missing_omdot ? "OMDOT not provided" : undefined, note: "Post-Keplerian; independent mass estimate" },
-                { label: "Mass function", value: fmtVal(d.f_mass_msun, 6), unit: "M☉", note: "f(m) = (4π²/G)(a₁sinI)³/Pb²" },
-                { label: "Chirp mass", value: fmtVal(d.Mc_msun, 4), unit: "M☉", note: "ℳ = (m₁m₂)³/⁵/(m₁+m₂)¹/⁵", tooltip: "Sets the GW inspiral rate — LIGO measures this directly." },
-                { label: "Mass ratio", value: d.q_ratio != null ? fmtVal(d.q_ratio, 3) : null, unit: "", note: "q = m₁/m₂", tooltip: "q = 1 for equal-mass systems." },
+                { label: "Pulsar mass", value: fmtVal(d.m1_msun, 4), unit: "M☉",
+                  tooltip: ["Pulsar mass  m₁", "Set directly via the pulsarMass parameter.", "Typical recycled pulsars: 1.2–1.5 M☉. The heaviest measured is ~2.1 M☉ (J0952-0607)."] },
+                { label: "Companion mass", value: fmtVal(d.m2_msun, 4), unit: "M☉", missing: d.missing_m2 ? "M2 not provided" : undefined,
+                  tooltip: ["Companion mass  m₂", "Set via the M2 parameter in the par file.", "For DNS systems, m₂ ≈ 1.2–1.4 M☉. For MSP+WD systems, m₂ ≈ 0.2–0.5 M☉."] },
+                { label: "Total mass", value: fmtVal(d.M_total_msun, 4), unit: "M☉",
+                  tooltip: ["Total system mass  M = m₁ + m₂", "Sum of pulsar and companion masses.", "Drives the orbital period via Kepler's 3rd law: Pb² ∝ a³/M."] },
+                { label: "Total mass (from OMDOT)", value: d.M_from_omdot_msun != null ? fmtVal(d.M_from_omdot_msun, 4) : null, unit: "M☉", missing: d.missing_omdot ? "OMDOT not provided" : undefined, note: "Post-Keplerian; independent mass estimate",
+                  tooltip: ["Post-Keplerian mass from ω̇", "  M = [ω̇(1−e²)/3 · (Pb/2π)^(5/3)]^(3/2) / T☉", "T☉ = GM☉/c³ = 4.925 μs (geometric unit).", "Independent of inclination — pure GR prediction from the advance of periastron. Matches the dynamical mass if GR is correct."] },
+                { label: "Mass function", value: fmtVal(d.f_mass_msun, 6), unit: "M☉", note: "f(m) = (4π²/G)(a₁sinI)³/Pb²",
+                  tooltip: ["Keplerian mass function  f(m)", "  f = (4π²/G)(a₁ sin i)³ / Pb²  =  (m₂ sin i)³ / (m₁+m₂)²", "Observable directly from Pb and projected semi-major axis A1.", "Sets a strict lower bound on m₂: m₂ ≥ f^(1/3)."] },
+                { label: "Chirp mass", value: fmtVal(d.Mc_msun, 4), unit: "M☉", note: "ℳ = (m₁m₂)³/⁵/(m₁+m₂)¹/⁵",
+                  tooltip: ["Chirp mass  ℳ", "  ℳ = (m₁ m₂)^(3/5) / (m₁+m₂)^(1/5)", "Controls the GW inspiral rate: df/dt ∝ ℳ^(5/3).", "LIGO/Virgo measure ℳ directly from the GW chirp signal — the most precisely determined quantity in a GW detection."] },
+                { label: "Mass ratio", value: d.q_ratio != null ? fmtVal(d.q_ratio, 3) : null, unit: "", note: "q = m₁/m₂",
+                  tooltip: ["Mass ratio  q = m₁/m₂", "  q = 1 → equal masses (symmetric system)", "Combined with the chirp mass, q uniquely determines both individual masses.", "The double pulsar J0737−3039 has q ≈ 1.07, very close to unity."] },
               ],
             },
             {
               title: "Orbital geometry",
               color: "#4dbf96",
               rows: [
-                { label: "Semi-major axis (a_rel)", value: d.aRel_km != null ? fmtBig(d.aRel_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
-                { label: "Semi-major axis (Kepler)", value: fmtBig(d.aKepler_km), unit: "km", note: "From Kepler's 3rd law with input masses" },
-                { label: "Periastron separation", value: d.rPeri_km != null ? fmtBig(d.rPeri_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
-                { label: "Apastron separation", value: d.rApo_km != null ? fmtBig(d.rApo_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+                { label: "Semi-major axis (a_rel)", value: d.aRel_km != null ? fmtBig(d.aRel_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined,
+                  tooltip: ["Relative semi-major axis  a_rel", "  a_rel = a_pulsar × (M/m₂)  where  a_pulsar = A1/sin(i)", "The true orbital separation axis of the two-body system.", "Requires inclination (INC) to deproject the observed A1 = a_pulsar sin i."] },
+                { label: "Semi-major axis (Kepler)", value: fmtBig(d.aKepler_km), unit: "km", note: "From Kepler's 3rd law with input masses",
+                  tooltip: ["Keplerian semi-major axis", "  a_K = [G(m₁+m₂) Pb² / 4π²]^(1/3)", "Computed purely from the orbital period and total mass — independent of INC.", "Comparing a_K with a_rel is a consistency check on your inclination."] },
+                { label: "Periastron separation", value: d.rPeri_km != null ? fmtBig(d.rPeri_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined,
+                  tooltip: ["Periastron separation  r_peri", "  r_peri = a_rel × (1 − e)", "Closest approach of the two bodies. Small r_peri → strong GR effects, large Shapiro delay, fast periastron advance."] },
+                { label: "Apastron separation", value: d.rApo_km != null ? fmtBig(d.rApo_km) : null, unit: "km", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined,
+                  tooltip: ["Apastron separation  r_apo", "  r_apo = a_rel × (1 + e)", "Farthest separation. High eccentricity → large ratio r_apo/r_peri, causing significant orbital-phase-dependent timing delays."] },
               ],
             },
             {
               title: "Orbital velocities",
               color: "#c084b8",
               rows: [
-                { label: "Velocity at periastron", value: d.vPeri_kms != null ? fmtVal(d.vPeri_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
-                { label: "Velocity at apastron", value: d.vApo_kms != null ? fmtVal(d.vApo_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined },
+                { label: "Velocity at periastron", value: d.vPeri_kms != null ? fmtVal(d.vPeri_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined,
+                  tooltip: ["Periastron velocity  v_peri", "  v² = G·M·(2/r_peri − 1/a_rel)  (vis-viva)", "Maximum orbital speed — attained at closest approach.", "B1913+16 peaks at ~450 km/s at periastron, producing the large Einstein delay variation."] },
+                { label: "Velocity at apastron", value: d.vApo_kms != null ? fmtVal(d.vApo_kms, 1) : null, unit: "km/s", missing: d.missing_inc ? "INC needed" : d.missing_m2 ? "M2 needed" : undefined,
+                  tooltip: ["Apastron velocity  v_apo", "  v² = G·M·(2/r_apo − 1/a_rel)  (vis-viva)", "Minimum orbital speed — attained at farthest separation.", "The ratio v_peri/v_apo = (1+e)/(1−e) depends only on eccentricity."] },
               ],
             },
             {
               title: "Orbital energy",
               color: "#f7b267",
               rows: [
-                { label: "Orbital energy", value: d.E_orb_J != null ? fmtSci(d.E_orb_J, 3) : null, unit: "J", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined },
-                { label: "Orbital angular momentum", value: d.L_orb != null ? fmtSci(d.L_orb, 3) : null, unit: "kg m² s⁻¹", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined },
+                { label: "Orbital energy", value: d.E_orb_J != null ? fmtSci(d.E_orb_J, 3) : null, unit: "J", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined,
+                  tooltip: ["Orbital binding energy  E_orb", "  E_orb = −G m₁ m₂ / (2 a_rel)", "Always negative (bound system). As GW emission removes energy, |E_orb| grows and the orbit shrinks.", "The GW luminosity equals −dE_orb/dt."] },
+                { label: "Orbital angular momentum", value: d.L_orb != null ? fmtSci(d.L_orb, 3) : null, unit: "kg m² s⁻¹", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined,
+                  tooltip: ["Orbital angular momentum  L_orb", "  L = μ √[G M a_rel (1−e²)]", "μ = m₁m₂/(m₁+m₂) is the reduced mass.", "GW emission also carries away angular momentum, circularising the orbit over time: e → 0 as the system merges."] },
               ],
             },
             {
               title: "Gravitational waves",
               color: "#60a5fa",
               rows: [
-                { label: "Merger timescale", value: d.T_merge_yr != null ? fmtSci(d.T_merge_yr, 3) : null, unit: "yr", missing: d.missing_pbdot && (d.missing_inc || d.missing_m2) ? "PBDOT and (INC or M2) needed" : undefined, note: "Peters 1964" },
-                { label: "GW luminosity (avg)", value: d.L_gw_W != null ? fmtSci(d.L_gw_W, 3) : null, unit: "W", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters & Mathews 1963, orbit-averaged" },
-                { label: "GW frequency", value: d.f_gw_mHz != null ? d.f_gw_mHz.toFixed(4) : null, unit: "mHz", note: `f_gw = 2/Pb`, tooltip: "Gravitational wave frequency is twice the orbital frequency." },
-                { label: "Detector band", value: d.inLIGO ? "LIGO (>10 Hz)" : d.inLISA ? "LISA (0.1–100 mHz)" : "Sub-LISA", unit: "", color: d.inLIGO ? "#fb7185" : d.inLISA ? "#4dbf96" : "#71717a" },
-                { label: "Time to LISA band", value: d.T_LISA_yr === 0 ? "Already in LISA" : (d.T_LISA_yr != null ? fmtSci(d.T_LISA_yr, 3) : null), unit: d.T_LISA_yr != null && d.T_LISA_yr !== 0 ? "yr" : "", missing: (d.missing_inc || d.missing_m2) && d.T_LISA_yr == null ? "INC and M2 needed" : undefined, note: "Peters scaling" },
+                { label: "Merger timescale", value: d.T_merge_yr != null ? fmtSci(d.T_merge_yr, 3) : null, unit: "yr", missing: d.missing_pbdot && (d.missing_inc || d.missing_m2) ? "PBDOT and (INC or M2) needed" : undefined, note: "Peters 1964",
+                  tooltip: ["GW merger timescale  T_merge", "  T ≈ a⁴ f(e) / (4β)   where  β = (64/5) G³m₁m₂M/c⁵", "  f(e) = (1−e²)^(7/2) / [1 + (73/24)e² + (37/96)e⁴]", "Eccentricity dramatically shortens merger: f(0)=1 but f(0.617) ≈ 1/11.9 for B1913+16, giving T ≈ 300 Myr."] },
+                { label: "GW luminosity (avg)", value: d.L_gw_W != null ? fmtSci(d.L_gw_W, 3) : null, unit: "W", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters & Mathews 1963, orbit-averaged",
+                  tooltip: ["Orbit-averaged GW luminosity  L_gw", "  L = (32/5) G⁴m₁²m₂²M / [c⁵ a⁵] × f(e)", "  f(e) = [1+(73/24)e²+(37/96)e⁴] / (1−e²)^(7/2)", "This power comes at the expense of orbital energy, shrinking the orbit. B1913+16 radiates ~7×10²⁴ W."] },
+                { label: "GW frequency", value: d.f_gw_mHz != null ? d.f_gw_mHz.toFixed(4) : null, unit: "mHz", note: "f_gw = 2/Pb",
+                  tooltip: ["Gravitational wave frequency  f_gw", "  f_gw = 2 × f_orbital = 2 / Pb", "GWs are emitted at twice the orbital frequency (quadrupole radiation).", "LISA is sensitive to ~0.1–100 mHz. LIGO to >10 Hz. Most known DNS systems are in the sub-LISA band today."] },
+                { label: "Detector band", value: d.inLIGO ? "LIGO (>10 Hz)" : d.inLISA ? "LISA (0.1–100 mHz)" : "Sub-LISA", unit: "", color: d.inLIGO ? "#fb7185" : d.inLISA ? "#4dbf96" : "#71717a",
+                  tooltip: ["GW detector band", "LISA: 0.1–100 mHz  (space interferometer, launch ~2035)", "LIGO/Virgo/KAGRA: >10 Hz  (ground, detects final inspiral/merger)", "Most known binary pulsars are currently in the sub-LISA band and will enter LISA sensitivity only after billions of years of inspiral."] },
+                { label: "Time to LISA band", value: d.T_LISA_yr === 0 ? "Already in LISA" : (d.T_LISA_yr != null ? fmtSci(d.T_LISA_yr, 3) : null), unit: d.T_LISA_yr != null && d.T_LISA_yr !== 0 ? "yr" : "", missing: (d.missing_inc || d.missing_m2) && d.T_LISA_yr == null ? "INC and M2 needed" : undefined, note: "Peters scaling",
+                  tooltip: ["Time until the system enters the LISA band", "  T_LISA ≈ T_merge × [1 − (Pb_LISA/Pb)^(8/3)]", "Uses the Peters scaling a(t) ∝ (T_merge−t)^(1/4), so T ∝ a⁴ ∝ Pb^(8/3).", "Pb_LISA corresponds to f_gw = 0.1 mHz (Pb ≈ 20,000 s ≈ 5.6 hr)."] },
               ],
             },
             {
               title: "Orbital decay",
               color: "#60a5fa",
               rows: [
-                { label: "PBDOT measured", value: !d.missing_pbdot ? fmtSci(currentModel.PBDOT, 3) : null, unit: "", missing: d.missing_pbdot ? "PBDOT not provided" : undefined },
-                { label: "PBDOT (GR prediction)", value: d.PBDOT_GR != null ? fmtSci(d.PBDOT_GR, 3) : null, unit: "", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters 1964" },
-                { label: "PBDOT ratio (meas/GR)", value: d.PBDOT_ratio != null ? d.PBDOT_ratio.toFixed(4) : null, unit: "", missing: d.PBDOT_GR == null || d.missing_pbdot ? "Both PBDOT and masses needed" : undefined, note: "≈ 1.0 confirms GR", color: d.PBDOT_ratio != null && Math.abs(d.PBDOT_ratio - 1) < 0.05 ? "#4dbf96" : undefined, tooltip: "Hulse-Taylor pulsar measures 1.0023 ± 0.0005." },
+                { label: "PBDOT measured", value: !d.missing_pbdot ? fmtSci(currentModel.PBDOT, 3) : null, unit: "", missing: d.missing_pbdot ? "PBDOT not provided" : undefined,
+                  tooltip: ["Measured orbital period derivative  Ṗb", "The observed rate of change of the orbital period, in s/s (dimensionless).", "For GW-driven decay, Ṗb < 0. A positive value can indicate a Galactic acceleration contribution.", "B1913+16: Ṗb = −2.4211×10⁻¹² (shrinking by ~3.5 m/orbit)."] },
+                { label: "PBDOT (GR prediction)", value: d.PBDOT_GR != null ? fmtSci(d.PBDOT_GR, 3) : null, unit: "", missing: d.missing_inc || d.missing_m2 ? "INC and M2 needed" : undefined, note: "Peters 1964",
+                  tooltip: ["GR-predicted orbital period derivative", "  Ṗb^GR = −(192π/5)(T☉M)^(5/3)(Pb/2π)^(−5/3) f(e) m₁m₂/M²", "  f(e) = [1+(73/24)e²+(37/96)e⁴] / (1−e²)^(7/2)", "This is a pure GR prediction requiring only masses and orbital elements."] },
+                { label: "PBDOT ratio (meas/GR)", value: d.PBDOT_ratio != null ? d.PBDOT_ratio.toFixed(4) : null, unit: "", missing: d.PBDOT_GR == null || d.missing_pbdot ? "Both PBDOT and masses needed" : undefined, note: "≈ 1.0 confirms GR", color: d.PBDOT_ratio != null && Math.abs(d.PBDOT_ratio - 1) < 0.05 ? "#4dbf96" : undefined,
+                  tooltip: ["Orbital decay test of GR  Ṗb^obs / Ṗb^GR", "  Ratio = 1.000 → perfect agreement with General Relativity", "The Hulse-Taylor pulsar (B1913+16) gave 1.0023 ± 0.0005 — the first indirect evidence for gravitational waves (Nobel Prize 1993).", "A ratio ≠ 1 could indicate additional energy loss, alternative gravity, or a Galactic acceleration correction not yet applied."] },
               ],
             },
             {
               title: "Pulsar spin",
               color: "#4dbf96",
               rows: [
-                { label: "Spin period", value: d.spin_period_ms != null ? fmtVal(d.spin_period_ms, 4) : null, unit: "ms" },
-                { label: "Characteristic age", value: d.tau_c_yr != null ? fmtSci(d.tau_c_yr, 3) : null, unit: "yr", missing: d.missing_f1 ? "F1 (spin-down rate) not provided or ≥ 0" : undefined, note: "τ_c = P / 2Ṗ" },
-                { label: "Surface magnetic field", value: d.B_surface_G != null ? fmtSci(d.B_surface_G, 3) : null, unit: "G", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "B = 3.2×10¹⁹ √(PṖ) G" },
-                { label: "Spin-down luminosity", value: d.E_dot_W != null ? fmtSci(d.E_dot_W, 3) : null, unit: "W", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "Ė = 4π²I|Ḟ₀| (I = 10³⁸ kg m²)" },
+                { label: "Spin period", value: d.spin_period_ms != null ? fmtVal(d.spin_period_ms, 4) : null, unit: "ms",
+                  tooltip: ["Spin period  P = 1/F0", "Inverse of the rotation frequency F0.", "Millisecond pulsars (P < 30 ms) have been 'recycled' — spun up by accreting mass from a companion. They are the most stable natural clocks known."] },
+                { label: "Characteristic age", value: d.tau_c_yr != null ? fmtSci(d.tau_c_yr, 3) : null, unit: "yr", missing: d.missing_f1 ? "F1 (spin-down rate) not provided or ≥ 0" : undefined, note: "τ_c = P / 2Ṗ",
+                  tooltip: ["Characteristic spin-down age  τ_c", "  τ_c = P / (2Ṗ)  =  −F0 / (2F1)", "Assumes the pulsar was born spinning much faster than today (P₀ ≪ P).", "For young pulsars τ_c ≈ true age. For recycled MSPs it greatly overestimates the age since they were spun up."] },
+                { label: "Surface magnetic field", value: d.B_surface_G != null ? fmtSci(d.B_surface_G, 3) : null, unit: "G", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "B = 3.2×10¹⁹ √(PṖ) G",
+                  tooltip: ["Surface dipole magnetic field  B", "  B = 3.2×10¹⁹ √(PṖ) Gauss", "Assumes magnetic dipole braking is the sole spin-down mechanism.", "Young pulsars: B ~ 10¹²–10¹³ G. Recycled MSPs: B ~ 10⁸–10⁹ G (field decayed during accretion phase)."] },
+                { label: "Spin-down luminosity", value: d.E_dot_W != null ? fmtSci(d.E_dot_W, 3) : null, unit: "W", missing: d.missing_f1 ? "F1 not provided or ≥ 0" : undefined, note: "Ė = 4π²I|Ḟ₀| (I = 10³⁸ kg m²)",
+                  tooltip: ["Spin-down luminosity  Ė", "  Ė = −4π²I Ṗ/P³  =  4π²I |F1| F0", "I ≈ 10³⁸ kg m² is the neutron star moment of inertia.", "Powers the pulsar wind nebula and any observable emission. The Crab pulsar emits Ė ≈ 5×10³¹ W — 100,000× the Sun's luminosity."] },
               ],
             },
           ];
@@ -3757,6 +3789,16 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               style={{ position: "absolute", inset: 0, zIndex: 40, background: "rgba(6,6,10,0.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, backdropFilter: "blur(10px)" }}
               onClick={() => setShowDerivedPanel(false)}
             >
+              {derivedTooltip && (
+                <div style={{ position: "fixed", left: Math.min(derivedTooltip.x + 14, window.innerWidth - 320), top: Math.max(8, derivedTooltip.y - 12), background: "rgba(14,14,18,0.98)", border: "1px solid rgba(180,180,200,0.15)", borderRadius: 10, padding: "10px 14px", zIndex: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.6)", pointerEvents: "none", width: 300 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f4f4f5", marginBottom: 6 }}>{derivedTooltip.lines[0]}</div>
+                  {derivedTooltip.lines.slice(1).map((line, li) => (
+                    <div key={li} style={{ fontSize: 11, color: line.startsWith("  ") ? "#7aa2f7" : "#a1a1aa", fontFamily: line.startsWith("  ") ? "monospace" : "inherit", marginTop: li === 0 ? 0 : 4, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+                      {line.trimStart()}
+                    </div>
+                  ))}
+                </div>
+              )}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -3780,10 +3822,19 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                           "",
                         ]);
                         navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
+                        setDerivedCopied(true);
+                        setTimeout(() => setDerivedCopied(false), 2000);
                       }}
-                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }}
-                      className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2h-2"/></svg>
+                      style={{ background: derivedCopied ? "rgba(77,191,150,0.15)" : "rgba(255,255,255,0.06)", border: `1px solid ${derivedCopied ? "rgba(77,191,150,0.4)" : "rgba(180,180,200,0.1)"}`, borderRadius: 8, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: derivedCopied ? "#4dbf96" : "#71717a", cursor: "pointer", padding: derivedCopied ? "0 10px" : undefined, width: derivedCopied ? undefined : 30, gap: 5, transition: "all 0.2s ease", whiteSpace: "nowrap" }}
+                      className="hover:brightness-110">
+                      {derivedCopied ? (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          <span style={{ fontSize: 10, fontWeight: 600 }}>Copied</span>
+                        </>
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2h-2"/></svg>
+                      )}
                     </button>
                     <button onClick={() => setShowDerivedPanel(false)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(180,180,200,0.1)", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#71717a", cursor: "pointer" }} className="transition-all duration-150 hover:brightness-110 hover:text-zinc-200">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
@@ -3800,7 +3851,14 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                         {rows.map(({ label, value, unit, note, missing, color, tooltip }, i) => (
                           <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "baseline", padding: "8px 12px", background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent", borderTop: i > 0 ? "1px solid rgba(180,180,200,0.05)" : "none" }}>
                             <div>
-                              <span title={tooltip} style={{ fontSize: 12, color: "#d4d4d8", cursor: tooltip ? "help" : undefined }}>{label}</span>
+                              <span
+                                style={{ fontSize: 12, color: "#d4d4d8", cursor: tooltip ? "help" : undefined, borderBottom: tooltip ? "1px dotted rgba(180,180,200,0.35)" : undefined }}
+                                onMouseEnter={(e) => tooltip && setDerivedTooltip({ label, lines: tooltip, x: e.clientX, y: e.clientY })}
+                                onMouseMove={(e) => tooltip && derivedTooltip?.label === label && setDerivedTooltip({ label, lines: tooltip, x: e.clientX, y: e.clientY })}
+                                onMouseLeave={() => setDerivedTooltip(null)}
+                              >
+                                {label}
+                              </span>
                               {note && <span style={{ fontSize: 10, color: "#52525b", marginLeft: 6 }}>{note}</span>}
                               {missing && <div style={{ fontSize: 10, color: "#fb923c", marginTop: 2 }}>Missing: {missing}</div>}
                             </div>
@@ -3841,34 +3899,38 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showCatalogBrowser && (
-          <CatalogBrowser
-            onClose={() => setShowCatalogBrowser(false)}
-            onLoad={(modelValues) => {
-              const envelope = normalizeModelEnvelope({
-                id: `catalog-${modelValues.name}`,
-                source: "catalog",
-                displayName: `PSR ${modelValues.name}`,
-                values: modelValues,
-                providedFields: Object.keys(modelValues).filter(k => modelValues[k] != null),
-                unknownKeys: [],
-              });
-              setLoadedModel(envelope);
-              setCurrentModel(envelope.values);
-              setActivePresetId(null);
-              setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
-              setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       <div className="absolute inset-0 z-10">
         <AnimatePresence mode="wait">
           {activeTab === "orbit" ? (
-            <motion.div key="orbit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-              <svg ref={orbitSvgRef} viewBox={`0 0 ${W} ${H}`} className="h-full w-full">
+            <motion.div
+              key="orbit"
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: 1,
+                top: mobileOrbitPanelOpen ? mobileOrbitInset : 0,
+                left: mobileOrbitPanelOpen ? mobileOrbitInset : 0,
+                right: mobileOrbitPanelOpen ? mobileOrbitInset : 0,
+                bottom: mobileOrbitPanelOpen ? `calc(${mobileSheetHeight}% + ${mobileOrbitInset}px)` : 0,
+                borderRadius: mobileOrbitPanelOpen ? 24 : 0,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 36 }}
+              style={{
+                position: "absolute",
+                overflow: "hidden",
+                background: mobileOrbitPanelOpen ? "linear-gradient(180deg, rgba(18,20,28,0.98) 0%, rgba(9,10,15,0.94) 100%)" : "transparent",
+                border: mobileOrbitPanelOpen ? "1px solid rgba(180,180,200,0.1)" : "none",
+                boxShadow: mobileOrbitPanelOpen ? "0 18px 56px rgba(0,0,0,0.42)" : "none",
+              }}
+            >
+              <svg
+                ref={orbitSvgRef}
+                viewBox={orbitViewBox}
+                className="h-full w-full"
+                preserveAspectRatio="xMidYMid slice"
+                style={{ display: "block", padding: mobileOrbitPanelOpen ? 2 : 0 }}
+              >
                 <defs>
                   <radialGradient id="glowW" cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
@@ -3898,7 +3960,10 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                   </linearGradient>
                 </defs>
 
-                <motion.g animate={{ x: renderOrbitSceneOffset }} transition={isExportingOrbit ? { duration: 0 } : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }}>
+                <motion.g
+                  animate={{ x: renderOrbitSceneOffset }}
+                  transition={isExportingOrbit ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 36 }}
+                >
                 {showGW &&
                   (() => {
                     const lineSpacing = isExportingOrbit ? 36 : 30;
@@ -4342,27 +4407,25 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ paddingLeft: timingLeftPad, paddingRight: 16, paddingTop: workspaceTopInset, paddingBottom: 38 }}
+              className="absolute flex items-center justify-center"
+              style={{
+                left: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                right: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                top: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                bottom: mobileTopPanelOpen ? `calc(${mobileSheetHeight}% + ${mobileOrbitInset}px)` : 0,
+                paddingLeft: mobileTopPanelOpen ? 10 : timingLeftPad,
+                paddingRight: mobileTopPanelOpen ? 10 : 16,
+                paddingTop: mobileTopPanelOpen ? 10 : workspaceTopInset,
+                paddingBottom: mobileTopPanelOpen ? 10 : 38,
+                borderRadius: mobileTopPanelOpen ? 24 : 0,
+                border: mobileTopPanelOpen ? "1px solid rgba(180,180,200,0.1)" : "none",
+                background: mobileTopPanelOpen ? "linear-gradient(180deg, rgba(18,20,28,0.98) 0%, rgba(9,10,15,0.94) 100%)" : "transparent",
+                boxShadow: mobileTopPanelOpen ? "0 18px 56px rgba(0,0,0,0.42)" : "none",
+                overflow: "hidden",
+              }}
             >
-              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 12, borderBottom: "1px solid rgba(180,180,200,0.08)" }}>
-                  <div>
-                    <span style={{ fontSize: 17, fontWeight: 700, color: "#f4f4f5" }}>Timing residuals</span>
-                    <span style={{ fontSize: 11.5, color: "#71717a", marginLeft: 12 }}>
-                      {loadedModel.displayName} · {fmt(currentModel.INC_deg, 1)} deg · {freqMHz} MHz
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {modelDeltaCount > 0 && (
-                      <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(180,180,200,0.12)", color: "#d4d4d8", fontSize: 10 }}>
-                        {modelDeltaCount} parameter mismatch{modelDeltaCount > 1 ? "es" : ""}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ flexShrink: 0, height: 130, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0" }}>
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0", minHeight: 0 }}>
                   <PulseTrain
                     toas={timingToas}
                     fittedDelays={fittedDelays}
@@ -4372,9 +4435,17 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     orbitalPeriodDays={currentModel.PB_days}
                   />
                 </div>
-
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 20, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "12px 10px 8px", minHeight: 0 }}>
-                  <ResidualPlot theoryCurve={theoryCurve} toas={timingToas} activeDelays={activeDelays} fittedDelays={fittedDelays} highlightDelay={highlightDelay} noiseLevel={noiseLevel} currentPhase={scene.phase} />
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0", minHeight: 0 }}>
+                  <ResidualPlot
+                    theoryCurve={theoryCurve}
+                    toas={timingToas}
+                    activeDelays={activeDelays}
+                    fittedDelays={fittedDelays}
+                    highlightDelay={highlightDelay}
+                    noiseLevel={noiseLevel}
+                    currentPhase={scene.phase}
+                    forcedVisibleKeys={mobileTimingView !== "pulses" ? [mobileTimingView] : undefined}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -4384,18 +4455,24 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ paddingLeft: menuOpen && !isCompact ? panelWidth + 32 : 16, paddingRight: 16, paddingTop: workspaceTopInset, paddingBottom: 40 }}
+              className="absolute flex items-center justify-center"
+              style={{
+                left: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                right: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                top: mobileTopPanelOpen ? mobileOrbitInset : 0,
+                bottom: mobileTopPanelOpen ? `calc(${mobileSheetHeight}% + ${mobileOrbitInset}px)` : 0,
+                paddingLeft: mobileTopPanelOpen ? 10 : menuOpen && !isCompact ? panelWidth + 32 : 16,
+                paddingRight: mobileTopPanelOpen ? 10 : 16,
+                paddingTop: mobileTopPanelOpen ? 10 : workspaceTopInset,
+                paddingBottom: mobileTopPanelOpen ? 10 : 40,
+                borderRadius: mobileTopPanelOpen ? 24 : 0,
+                border: mobileTopPanelOpen ? "1px solid rgba(180,180,200,0.1)" : "none",
+                background: mobileTopPanelOpen ? "linear-gradient(180deg, rgba(18,20,28,0.98) 0%, rgba(9,10,15,0.94) 100%)" : "transparent",
+                boxShadow: mobileTopPanelOpen ? "0 18px 56px rgba(0,0,0,0.42)" : "none",
+                overflow: "hidden",
+              }}
             >
-              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 14, paddingBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 12, borderBottom: "1px solid rgba(180,180,200,0.08)" }}>
-                  <div>
-                    <span style={{ fontSize: 17, fontWeight: 700, color: "#f4f4f5" }}>Epoch residuals</span>
-                    <span style={{ fontSize: 11.5, color: "#71717a", marginLeft: 12 }}>
-                      {loadedModel.displayName} · {LONG_BASELINE_WINDOWS[longBaselineWindow]?.label ?? longBaselineWindow}
-                    </span>
-                  </div>
-                </div>
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0, padding: mobileTopPanelOpen ? "0 2px" : 0 }}>
                 <LongBaselinePlot
                   currentSamples={longBaselineCurrent}
                   referenceSamples={longBaselineReference}
@@ -4422,7 +4499,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
       </div>
 
       <AnimatePresence>
-        {menuOpen && (
+        {menuOpen && !isMobile && (
           <motion.aside
             initial={{ x: -400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -4462,74 +4539,131 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                 }}
               >
                 <section>
-                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Session</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <ControlRow label="Preset" value={loadedModel.source === "uploaded_par" ? loadedModel.displayName : activePresetId || loadedModel.source}>
-                      <select
-                        value={presetSelectValue}
-                        onChange={(e) => handlePresetChange(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 outline-none"
-                      >
-                        {loadedModel.source === "uploaded_par" && (
-                          <option value={loadedModel.id}>{loadedModel.displayName}</option>
-                        )}
-                        {MODEL_PRESETS.map((preset) => (
-                          <option key={preset.id} value={preset.id}>
-                            {preset.displayName}
-                          </option>
-                        ))}
-                      </select>
-                    </ControlRow>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <IconBtn onClick={() => fileInputRef.current?.click()}>Load .par</IconBtn>
-                      <IconBtn onClick={() => setShowDerivedPanel(true)}>Derived values</IconBtn>
-                      <IconBtn onClick={() => setShowPPdotDiagram(true)}>P–Ṗ diagram</IconBtn>
-                      <IconBtn onClick={() => setShowMassMassDiagram(true)}>Mass–mass</IconBtn>
-                      <IconBtn onClick={() => setShowCatalogBrowser(true)}>Catalog</IconBtn>
-                      <IconBtn onClick={() => {
-                        setCurrentModel(loadedModel.values);
-                        setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
-                        setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
-                      }}>Reset to model</IconBtn>
-                      <IconBtn onClick={handleDuplicateModel}>Duplicate model</IconBtn>
+                  <button
+                    onClick={() => setCatalogOpen(o => !o)}
+                    className="transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", cursor: "pointer", textAlign: "left",
+                      padding: "11px 14px", borderRadius: 10,
+                      border: catalogOpen ? "1px solid rgba(122,162,247,0.45)" : "1px solid rgba(122,162,247,0.55)",
+                      background: catalogOpen ? "rgba(122,162,247,0.13)" : "linear-gradient(135deg, rgba(122,162,247,0.18) 0%, rgba(122,162,247,0.09) 100%)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: catalogOpen ? "none" : "0 0 0 1px rgba(122,162,247,0.08), 0 4px 18px rgba(122,162,247,0.1)",
+                      marginBottom: catalogOpen ? 10 : 0,
+                      gap: 10,
+                    }}
+                  >
+                    {/* book/list icon */}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.85 }}>
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#93b4f8", letterSpacing: "0.01em" }}>Pulsar Catalogue</div>
+                      <div style={{ fontSize: 10, color: catalogOpen ? "rgba(122,162,247,0.55)" : "#6272a0", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {catalogOpen ? "Select a system below to load" : `${loadedModel.displayName} · browse all binary systems`}
+                      </div>
                     </div>
-                    <div style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(180,180,200,0.09)", background: "rgba(255,255,255,0.03)" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#d4d4d8" }}>{loadedModel.displayName}</span>
-                        <span style={{ color: "#71717a" }}>{loadedModel.source}</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" strokeWidth={2.5} style={{ transition: "transform 0.2s", transform: catalogOpen ? "rotate(0deg)" : "rotate(-90deg)", flexShrink: 0, opacity: 0.7 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {catalogOpen && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ borderRadius: 10, border: "1px solid rgba(180,180,200,0.1)", overflow: "hidden" }}>
+                      <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: "#52525b", padding: "6px 10px", borderBottom: "1px solid rgba(180,180,200,0.07)", background: "rgba(0,0,0,0.2)" }}>
+                        Binary systems — click to load
                       </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                        {[
-                          ["orbit", loadedSupport.orbitReady, loadedSupport.orbitMissing],
-                          ["timing", loadedSupport.timingReady, loadedSupport.timingMissing],
-                          ["epoch", loadedSupport.epochReady, loadedSupport.epochMissing],
-                        ].map(([label, ready, missing]) => (
-                          <div key={label} style={{ padding: "4px 8px", borderRadius: 999, border: `1px solid ${ready ? "rgba(77,191,150,0.28)" : "rgba(251,146,60,0.28)"}`, color: ready ? "#4dbf96" : "#fb923c", fontSize: 10 }}>
-                            {ready ? label : `${label}: ${missing.length}`}
-                          </div>
-                        ))}
-                      </div>
-                      {importNotice && <div style={{ marginTop: 8, fontSize: 10, color: "#71717a" }}>{importNotice}</div>}
-                      {loadedModel.unknownKeys.length > 0 && <div style={{ marginTop: 6, fontSize: 10, color: "#71717a" }}>Unknown keys: {loadedModel.unknownKeys.slice(0, 6).join(", ")}</div>}
+                      {PULSAR_CATALOG.filter(p => p.PB_days != null).map((p, i, arr) => {
+                        const isLoaded = loadedModel.displayName === `PSR ${p.name}`;
+                        const modelValues = {
+                          ...DEFAULT_MODEL_VALUES,
+                          name: p.name,
+                          ...(p.PB_days != null ? { PB_days: p.PB_days } : {}),
+                          ...(p.ECC != null ? { ECC: p.ECC } : {}),
+                          ...(p.OMDOT_deg_yr != null ? { OMDOT_deg_yr: p.OMDOT_deg_yr } : {}),
+                          ...(p.PBDOT != null ? { PBDOT: p.PBDOT } : {}),
+                          ...(p.F0 != null ? { F0: p.F0 } : {}),
+                          ...(p.F1 != null ? { F1: p.F1 } : {}),
+                          ...(p.M2 != null ? { M2: p.M2 } : {}),
+                          ...(p.INC_deg != null ? { INC_deg: p.INC_deg } : {}),
+                          ...(p.companionIsPulsar != null ? { companionIsPulsar: p.companionIsPulsar } : {}),
+                          ...(p.companionF0 != null ? { companionF0: p.companionF0 } : {}),
+                        };
+                        return (
+                          <button
+                            key={p.name}
+                            onClick={() => {
+                              const envelope = normalizeModelEnvelope({
+                                id: `catalog-${p.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+                                source: "catalog",
+                                displayName: `PSR ${p.name}`,
+                                values: modelValues,
+                                providedFields: Object.keys(modelValues).filter(k => modelValues[k] != null),
+                                unknownKeys: [],
+                              });
+                              setLoadedModel(envelope);
+                              setCurrentModel(envelope.values);
+                              setActivePresetId(null);
+                              setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
+                              setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
+                              setImportNotice("");
+                            }}
+                            style={{
+                              display: "flex",
+                              alignItems: "baseline",
+                              justifyContent: "space-between",
+                              width: "100%",
+                              padding: "7px 10px",
+                              background: isLoaded ? "rgba(122,162,247,0.12)" : i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent",
+                              border: "none",
+                              borderBottom: i < arr.length - 1 ? "1px solid rgba(180,180,200,0.05)" : "none",
+                              borderLeft: isLoaded ? "2px solid rgba(122,162,247,0.7)" : "2px solid transparent",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              gap: 8,
+                            }}
+                            className="transition-colors duration-100 hover:bg-white/[0.04]"
+                          >
+                            <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: isLoaded ? "#7aa2f7" : "#f4f4f5", whiteSpace: "nowrap" }}>{p.name}</span>
+                            <span style={{ fontSize: 10, color: "#52525b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>{p.notes}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                  )}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    <IconBtn onClick={() => fileInputRef.current?.click()}>Load .par</IconBtn>
+                    <IconBtn onClick={() => setShowDerivedPanel(true)}>Derived values</IconBtn>
+                    <IconBtn onClick={() => setShowPPdotDiagram(true)}>P–Ṗ diagram</IconBtn>
+                    <IconBtn onClick={() => setShowMassMassDiagram(true)}>Mass–mass</IconBtn>
+                    <IconBtn onClick={handleDuplicateModel}>Duplicate model</IconBtn>
+                  </div>
+                  {(importNotice || loadedModel.unknownKeys.length > 0) && (
+                    <div style={{ marginTop: 8, fontSize: 10, color: "#71717a" }}>
+                      {importNotice}
+                      {loadedModel.unknownKeys.length > 0 && <div>Unknown keys: {loadedModel.unknownKeys.slice(0, 6).join(", ")}</div>}
+                    </div>
+                  )}
                 </section>
 
                 {activeTab !== "longBaseline" && (
                   <section>
-                    <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Parameters</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(180,180,200,0.12)", color: "#d4d4d8", fontSize: 10, visibility: modelDeltaCount > 0 ? "visible" : "hidden" }}>
-                          {Math.max(modelDeltaCount, 1)} changed
-                        </div>
-                      </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <IconBtn onClick={() => {
                           setCurrentModel({ ...loadedModel.values });
                           setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
                           setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
-                        }}>Revert model</IconBtn>
+                        }}>
+                          Revert model
+                          {modelDeltaCount > 0 && (
+                            <span style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 999, background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.35)", color: "#c9a84c", fontSize: 9, fontWeight: 700 }}>
+                              {modelDeltaCount}
+                            </span>
+                          )}
+                        </IconBtn>
                       </div>
                       <ParameterEditor
                         model={currentModel}
@@ -4593,7 +4727,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
 
                 <section>
                   <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>
-                    {activeTab === "longBaseline" ? "Frequency / fit" : "Timing"}
+                    {activeTab === "longBaseline" ? "Offsets / fit" : "Timing"}
                   </div>
                   {activeTab === "longBaseline" ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -4829,6 +4963,457 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
           </motion.aside>
         )}
       </AnimatePresence>
+
+      {/* ── Mobile bottom sheet ───────────────────────────────────────── */}
+      {isMobile && (
+        <motion.div
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.18}
+          onDragEnd={(_, info) => {
+            if (info.velocity.y < -300 || info.offset.y < -60) setSheetOpen(true);
+            if (info.velocity.y > 300 || info.offset.y > 60) setSheetOpen(false);
+          }}
+          animate={{ y: sheetOpen ? 0 : `calc(100% - ${mobileSheetPeekHeight}px)` }}
+          transition={{ type: "spring", stiffness: 320, damping: 36 }}
+          style={{
+            position: "absolute", left: 0, right: 0, bottom: 0,
+            height: `${mobileSheetHeight}%`,
+            zIndex: 30,
+            borderRadius: "20px 20px 0 0",
+            border: "1px solid rgba(180,180,200,0.12)",
+            borderBottom: "none",
+            background: "rgba(12,12,16,0.96)",
+            backdropFilter: "blur(28px)",
+            boxShadow: "0 -12px 48px rgba(0,0,0,0.5)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {/* Drag handle + peek bar */}
+          <div
+            onClick={() => setSheetOpen(o => !o)}
+            style={{ flexShrink: 0, cursor: "pointer", padding: "10px 16px 12px", borderBottom: sheetOpen ? "1px solid rgba(180,180,200,0.08)" : "none" }}
+          >
+            {/* Handle pill */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(180,180,200,0.2)", margin: "0 auto 12px" }} />
+            {/* Peek row: play + tabs + pulsar name */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsPlaying(p => !p); }}
+                disabled={activeTab === "longBaseline"}
+                className="transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-45"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  height: 38, padding: "0 14px", borderRadius: 8, cursor: "pointer", flexShrink: 0,
+                  border: isPlaying ? "1px solid rgba(122,162,247,0.45)" : "1px solid rgba(122,162,247,0.55)",
+                  background: isPlaying ? "rgba(122,162,247,0.13)" : "linear-gradient(135deg, rgba(122,162,247,0.18) 0%, rgba(122,162,247,0.09) 100%)",
+                  backdropFilter: "blur(12px)",
+                  boxShadow: isPlaying ? "none" : "0 0 0 1px rgba(122,162,247,0.08), 0 4px 18px rgba(122,162,247,0.1)",
+                  color: "#93b4f8", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                }}
+              >
+                {isPlaying
+                  ? <svg width="10" height="10" viewBox="0 0 24 24" fill="#93b4f8"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
+                  : <svg width="10" height="10" viewBox="0 0 24 24" fill="#93b4f8"><polygon points="5,3 19,12 5,21"/></svg>
+                }
+                {isPlaying ? "Pause" : "Play"}
+              </button>
+
+              <div style={{ display: "flex", height: 38, overflow: "hidden", borderRadius: 8, border: "1px solid rgba(180,180,200,0.1)", background: "rgba(255,255,255,0.04)", flex: 1 }}>
+                {[["orbit","Orbit"],["timing","Timing"],["longBaseline","Epoch"]].map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={(e) => { e.stopPropagation(); setActiveTab(key); }}
+                    style={{ flex: 1, height: "100%", fontSize: 11, background: activeTab === key ? "rgba(255,255,255,0.1)" : "transparent", color: activeTab === key ? "#e8e8f0" : "#71717a", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#7aa2f7", boxShadow: "0 0 6px #7aa2f7", flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: "#a1a1aa", whiteSpace: "nowrap", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{loadedModel.displayName}</span>
+              </div>
+            </div>
+            {activeTab === "timing" && (
+              <div style={{ marginTop: 10 }}>
+                <SegmentedToggle
+                  compact
+                  accent="#93c5fd"
+                  value={mobileTimingView}
+                  onChange={(v) => { setMobileTimingView(v); }}
+                  options={mobileTimingPlotTabs}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable controls — same content as the desktop side panel */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 20, scrollbarWidth: "thin", scrollbarColor: "rgba(180,180,200,0.18) transparent" }}>
+            <section>
+              <button
+                onClick={() => setCatalogOpen(o => !o)}
+                className="transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  width: "100%", cursor: "pointer", textAlign: "left",
+                  padding: "11px 14px", borderRadius: 10,
+                  border: catalogOpen ? "1px solid rgba(122,162,247,0.45)" : "1px solid rgba(122,162,247,0.55)",
+                  background: catalogOpen ? "rgba(122,162,247,0.13)" : "linear-gradient(135deg, rgba(122,162,247,0.18) 0%, rgba(122,162,247,0.09) 100%)",
+                  backdropFilter: "blur(12px)",
+                  boxShadow: catalogOpen ? "none" : "0 0 0 1px rgba(122,162,247,0.08), 0 4px 18px rgba(122,162,247,0.1)",
+                  marginBottom: catalogOpen ? 10 : 0, gap: 10,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.85 }}>
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#93b4f8" }}>Pulsar Catalogue</div>
+                  <div style={{ fontSize: 10, color: catalogOpen ? "rgba(122,162,247,0.55)" : "#6272a0", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {catalogOpen ? "Select a system below to load" : `${loadedModel.displayName} · browse all binary systems`}
+                  </div>
+                </div>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" strokeWidth={2.5} style={{ transition: "transform 0.2s", transform: catalogOpen ? "rotate(0deg)" : "rotate(-90deg)", flexShrink: 0, opacity: 0.7 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {catalogOpen && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ borderRadius: 10, border: "1px solid rgba(180,180,200,0.1)", overflow: "hidden" }}>
+                    <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: "#52525b", padding: "6px 10px", borderBottom: "1px solid rgba(180,180,200,0.07)", background: "rgba(0,0,0,0.2)" }}>
+                      Binary systems — click to load
+                    </div>
+                    {PULSAR_CATALOG.filter(p => p.PB_days != null).map((p, i, arr) => {
+                      const isLoaded = loadedModel.displayName === `PSR ${p.name}`;
+                      const modelValues = {
+                        ...DEFAULT_MODEL_VALUES, name: p.name,
+                        ...(p.PB_days != null ? { PB_days: p.PB_days } : {}),
+                        ...(p.ECC != null ? { ECC: p.ECC } : {}),
+                        ...(p.OMDOT_deg_yr != null ? { OMDOT_deg_yr: p.OMDOT_deg_yr } : {}),
+                        ...(p.PBDOT != null ? { PBDOT: p.PBDOT } : {}),
+                        ...(p.F0 != null ? { F0: p.F0 } : {}),
+                        ...(p.F1 != null ? { F1: p.F1 } : {}),
+                        ...(p.M2 != null ? { M2: p.M2 } : {}),
+                        ...(p.INC_deg != null ? { INC_deg: p.INC_deg } : {}),
+                      };
+                      return (
+                        <button key={p.name}
+                          onClick={() => {
+                            const envelope = normalizeModelEnvelope({ id: `catalog-${p.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`, source: "catalog", displayName: `PSR ${p.name}`, values: modelValues, providedFields: Object.keys(modelValues).filter(k => modelValues[k] != null), unknownKeys: [] });
+                            setLoadedModel(envelope); setCurrentModel(envelope.values); setActivePresetId(null);
+                            setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
+                            setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
+                            setImportNotice(""); setCatalogOpen(false);
+                          }}
+                          style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", width: "100%", padding: "8px 10px", background: isLoaded ? "rgba(122,162,247,0.12)" : i % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent", border: "none", borderBottom: i < arr.length - 1 ? "1px solid rgba(180,180,200,0.05)" : "none", borderLeft: isLoaded ? "2px solid rgba(122,162,247,0.7)" : "2px solid transparent", cursor: "pointer", textAlign: "left", gap: 8 }}
+                          className="transition-colors duration-100 hover:bg-white/[0.04]"
+                        >
+                          <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: isLoaded ? "#7aa2f7" : "#f4f4f5", whiteSpace: "nowrap" }}>{p.name}</span>
+                          <span style={{ fontSize: 10, color: "#52525b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>{p.notes}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <IconBtn onClick={() => fileInputRef.current?.click()}>Load .par</IconBtn>
+                <IconBtn onClick={() => setShowDerivedPanel(true)}>Derived values</IconBtn>
+                <IconBtn onClick={() => setShowPPdotDiagram(true)}>P–Ṗ diagram</IconBtn>
+                <IconBtn onClick={() => setShowMassMassDiagram(true)}>Mass–mass</IconBtn>
+                <IconBtn onClick={handleDuplicateModel}>Duplicate model</IconBtn>
+              </div>
+            </section>
+
+            {activeTab !== "longBaseline" && (
+              <section>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <IconBtn onClick={() => {
+                      setCurrentModel({ ...loadedModel.values });
+                      setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
+                      setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
+                    }}>
+                      Revert model
+                      {modelDeltaCount > 0 && (
+                        <span style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 999, background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.35)", color: "#c9a84c", fontSize: 9, fontWeight: 700 }}>
+                          {modelDeltaCount}
+                        </span>
+                      )}
+                    </IconBtn>
+                  </div>
+                  <ParameterEditor
+                    model={currentModel}
+                    compareModel={loadedModel.values}
+                    originalModel={loadedModel.values}
+                    onChange={handleModelParamChange}
+                    activeTab={activeTab}
+                    support={currentSupport}
+                  />
+                </div>
+              </section>
+            )}
+
+            <section>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>
+                {activeTab === "longBaseline" ? "Epoch workspace" : "Sampling"}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {activeTab === "longBaseline" ? (
+                  <ControlRow label="Time window" value={LONG_BASELINE_WINDOWS[longBaselineWindow].label}>
+                    <PillGroup options={Object.entries(LONG_BASELINE_WINDOWS).map(([value, meta]) => ({ value, label: meta.label }))} value={longBaselineWindow} onChange={setLongBaselineWindow} />
+                  </ControlRow>
+                ) : (
+                  <>
+                    <ControlRow label="Time scale" value={`${timeScale}x`}>
+                      <Slider value={timeScale} min={10} max={3000} step={10} onChange={setTimeScale} />
+                    </ControlRow>
+                    <ControlRow label="Trail length" value={`${Math.round(trailLen * 100)}%`}>
+                      <Slider value={trailLen} min={0.05} max={1} step={0.05} onChange={setTrailLen} />
+                    </ControlRow>
+                    <ControlRow label="ω̇ viz ×" value={omDotVizMult === 1 ? "1 (real)" : omDotVizMult.toLocaleString()}>
+                      <Slider value={omDotVizMult} min={1} max={50000} step={1} onChange={changeOmDotVizMult} logScale color="#f7b267" />
+                    </ControlRow>
+                    <ControlRow label="Manual phase" value={`${fmt(orbitalPhaseAt(elapsed, currentModel) * 360, 1)} deg`}>
+                      <Slider value={orbitalPhaseAt(elapsed, currentModel)} min={0} max={1} step={0.002} onChange={(v) => {
+                        setIsPlaying(false);
+                        const nextTime = currentModel.T0_days + v * currentModel.PB_days;
+                        setElapsed(nextTime); setAbsoluteElapsed(nextTime);
+                        elapsedRef.current = nextTime; absoluteElapsedRef.current = nextTime;
+                        lastDisplayUpdateRef.current = 0;
+                      }} />
+                    </ControlRow>
+                  </>
+                )}
+              </div>
+            </section>
+
+            <section>
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>
+                  {activeTab === "longBaseline" ? "Offsets / fit" : "Timing"}
+                </div>
+              {activeTab === "longBaseline" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <section>
+                    <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Frequencies</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <ControlRow label="Primary freq" value={`${freqMHz} MHz`}>
+                        <Slider value={freqMHz} min={300} max={3000} step={50} onChange={setFreqMHz} color="#9580d4" />
+                      </ControlRow>
+                      {frequencyCompareMode === "dual" && (
+                        <ControlRow label="Second freq" value={`${secondFreqMHz} MHz`}>
+                          <Slider value={secondFreqMHz} min={300} max={3000} step={50} onChange={setSecondFreqMHz} color="#7aa2f7" />
+                        </ControlRow>
+                      )}
+                      <ControlRow label="DM variation" value={`${fmt(dmVarAmp, 2)} pc cm^-3`}>
+                        <Slider value={dmVarAmp} min={0} max={5} step={0.05} onChange={setDmVarAmp} color="#fb923c" />
+                      </ControlRow>
+                    </div>
+                  </section>
+                  <div style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(180,180,200,0.09)", background: "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a" }}>Injected offsets</div>
+                      <button
+                        onClick={() => {
+                          setEpochOffsets({ romer: 0, einstein: 0, shapiro: 0, secular: 0, dm: 0 });
+                          setEpochParamOffsets(zeroOffsetMap(EPOCH_OFFSET_PARAM_KEYS));
+                        }}
+                        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-zinc-300 transition-all duration-150 hover:-translate-y-px hover:bg-white/10 hover:text-zinc-100 active:translate-y-0 active:scale-[0.98]"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", minHeight: 28 }}>
+                      <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(180,180,200,0.12)", color: "#d4d4d8", fontSize: 10, visibility: epochParamOffsetCount > 0 ? "visible" : "hidden" }}>
+                        {Math.max(epochParamOffsetCount, 1)} parameter offset{epochParamOffsetCount === 1 ? "" : "s"}
+                      </div>
+                      <div style={{ padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(180,180,200,0.12)", color: "#d4d4d8", fontSize: 10, visibility: epochOffsetCount > 0 ? "visible" : "hidden" }}>
+                        {Math.max(epochOffsetCount, 1)} term offset{epochOffsetCount === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#71717a" }}>Parameter offsets</div>
+                    {EPOCH_OFFSET_PARAMS.map((param) => {
+                      const offsetScale = getEpochOffsetScale(param, currentModel[param.key]);
+                      return (
+                        <div key={param.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 18 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 13, color: "#d4d4d8" }}>{param.label}</span>
+                              <span style={{ fontSize: 10, color: "#71717a", fontFamily: "monospace" }}>
+                                {fmt(currentModel[param.key], offsetScale.decimals)} {param.unit}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                type="number"
+                                defaultValue={fmt(epochParamOffsets[param.key], offsetScale.decimals)}
+                                key={epochParamOffsets[param.key]}
+                                step={offsetScale.step}
+                                onBlur={(e) => {
+                                  const v = parseFloat(e.target.value);
+                                  if (!isNaN(v)) setEpochParamOffsets((prev) => ({ ...prev, [param.key]: clamp(v, offsetScale.min, offsetScale.max) }));
+                                }}
+                                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                style={{ width: 80, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(180,180,200,0.15)", borderRadius: 6, color: "#f4f4f5", fontSize: 11, fontFamily: "monospace", padding: "2px 6px", textAlign: "right" }}
+                              />
+                              <span style={{ fontSize: 10, color: "#71717a" }}>{param.unit}</span>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: -2 }}>
+                            <Slider
+                              value={epochParamOffsets[param.key]}
+                              min={offsetScale.min}
+                              max={offsetScale.max}
+                              step={offsetScale.step}
+                              onChange={(next) => setEpochParamOffsets((prev) => ({ ...prev, [param.key]: next }))}
+                              color={param.group === "binary" ? "#7aa2f7" : "#c084b8"}
+                              logScale
+                            />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-end", minHeight: 18 }}>
+                            <button
+                              onClick={() => setEpochParamOffsets((prev) => ({ ...prev, [param.key]: 0 }))}
+                              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-zinc-300 transition-all duration-150 hover:-translate-y-px hover:bg-white/10 hover:text-zinc-100 active:translate-y-0 active:scale-[0.98]"
+                              style={{ visibility: Math.abs(epochParamOffsets[param.key]) > 1e-12 ? "visible" : "hidden" }}
+                            >
+                              Revert
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#71717a" }}>Delay term offsets</div>
+                    {["romer", "einstein", "shapiro", "secular", "dm"].map((key) => {
+                      const termMin = key === "romer" ? -8 : -40;
+                      const termMax = key === "romer" ? 8 : 40;
+                      return (
+                        <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 18 }}>
+                            <span style={{ fontSize: 13, color: "#d4d4d8" }}>{DELAY_COLORS[key].label}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                type="number"
+                                defaultValue={fmt(epochOffsets[key], 2)}
+                                key={epochOffsets[key]}
+                                step={0.01}
+                                onBlur={(e) => {
+                                  const v = parseFloat(e.target.value);
+                                  if (!isNaN(v)) setEpochOffsets((prev) => ({ ...prev, [key]: clamp(v, termMin, termMax) }));
+                                }}
+                                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                style={{ width: 64, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(180,180,200,0.15)", borderRadius: 6, color: "#f4f4f5", fontSize: 11, fontFamily: "monospace", padding: "2px 6px", textAlign: "right" }}
+                              />
+                              <span style={{ fontSize: 10, color: "#71717a" }}>%</span>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: -2 }}>
+                            <Slider
+                              value={epochOffsets[key]}
+                              min={termMin}
+                              max={termMax}
+                              step={0.01}
+                              onChange={(next) => setEpochOffsets((prev) => ({ ...prev, [key]: next }))}
+                              color={DELAY_COLORS[key].stroke}
+                            />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-end", minHeight: 18 }}>
+                            <button
+                              onClick={() => setEpochOffsets((prev) => ({ ...prev, [key]: 0 }))}
+                              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-zinc-300 transition-all duration-150 hover:-translate-y-px hover:bg-white/10 hover:text-zinc-100 active:translate-y-0 active:scale-[0.98]"
+                              style={{ visibility: Math.abs(epochOffsets[key]) > 1e-9 ? "visible" : "hidden" }}
+                            >
+                              Revert
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <ControlRow label="Fit terms" value="">
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {["romer", "einstein", "shapiro", "secular", "dm"].map((key) => (
+                        <button
+                          key={key}
+                          onClick={() => setFittedDelays((prev) => ({ ...prev, [key]: !prev[key] }))}
+                          style={{
+                            padding: "6px 10px", borderRadius: 999,
+                            border: `1px solid ${fittedDelays[key] ? `${DELAY_COLORS[key].stroke}66` : "rgba(180,180,200,0.1)"}`,
+                            background: fittedDelays[key] ? `${DELAY_COLORS[key].stroke}1c` : "rgba(255,255,255,0.03)",
+                            color: fittedDelays[key] ? DELAY_COLORS[key].stroke : "#71717a",
+                            fontSize: 11, cursor: "pointer",
+                          }}
+                        >
+                          {DELAY_COLORS[key].label}
+                        </button>
+                      ))}
+                    </div>
+                  </ControlRow>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <DelayPanel
+                    activeDelays={activeDelays}
+                    setActiveDelays={setActiveDelays}
+                    fittedDelays={fittedDelays}
+                    setFittedDelays={setFittedDelays}
+                    highlightDelay={highlightDelay}
+                    setHighlightDelay={setHighlightDelay}
+                    currentDelays={currentDelays}
+                    noiseLevel={noiseLevel}
+                    setNoiseLevel={setNoiseLevel}
+                    toaInterval={toaInterval}
+                    setToaInterval={setToaInterval}
+                    freqMHz={freqMHz}
+                    setFreqMHz={setFreqMHz}
+                    activeTab={activeTab}
+                  />
+                </div>
+              )}
+            </section>
+
+            {activeTab !== "longBaseline" && (
+              <>
+                <section>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Beam</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <ControlRow label="Opening angle" value={`${fmt(beamWidth, 0)} deg`}>
+                      <Slider value={beamWidth} min={3} max={45} step={1} onChange={setBeamWidth} />
+                    </ControlRow>
+                    <ControlRow label="Opacity" value={`${Math.round(beamOpacity * 100)}%`}>
+                      <Slider value={beamOpacity} min={0.1} max={1} step={0.05} onChange={setBeamOpacity} />
+                    </ControlRow>
+                  </div>
+                </section>
+                <section>
+                  <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.18em", color: "#71717a", marginBottom: 12 }}>Display</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {[
+                      ["Rotating beam", showBeam, setShowBeam],
+                      ["Orbit guides", showOrbits, setShowOrbits],
+                      ["Body labels", showLabels, setShowLabels],
+                      ["GW ripples", showGW, setShowGW],
+                      ["Velocity vector", showVelVec, setShowVelVec],
+                      ["Background grid", showGrid, setShowGrid],
+                      ["Periastron line", showOmegaLine, setShowOmegaLine],
+                      ["Coord axes", showCoordAxes, setShowCoordAxes],
+                      ["History trail", showHistoryTrail, (v) => { if (v) { historyTrailRef.current = []; setHistoryTrail([]); trailStartAbsoluteRef.current = absoluteElapsedRef.current; } setShowHistoryTrail(v); }],
+                    ].map(([label, state, setter]) => (
+                      <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(180,180,200,0.09)", padding: "8px 12px" }}>
+                        <span style={{ fontSize: 13, color: "#d4d4d8" }}>{label}</span>
+                        <SwitchToggle checked={state} onChange={setter} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

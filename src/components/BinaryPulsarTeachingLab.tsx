@@ -4425,7 +4425,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
               }}
             >
               <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0", minHeight: 0 }}>
+                <div style={{ ...(isMobile ? { flex: 1 } : { flexShrink: 0, height: 200 }), background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0" }}>
                   <PulseTrain
                     toas={timingToas}
                     fittedDelays={fittedDelays}
@@ -4435,7 +4435,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     orbitalPeriodDays={currentModel.PB_days}
                   />
                 </div>
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: "4px 8px 0", minHeight: 0 }}>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: isMobile ? 16 : 20, border: "1px solid rgba(180,180,200,0.09)", overflow: "hidden", padding: isMobile ? "4px 8px 0" : "12px 10px 8px", minHeight: 0 }}>
                   <ResidualPlot
                     theoryCurve={theoryCurve}
                     toas={timingToas}
@@ -4444,7 +4444,7 @@ export default function BinaryPulsarTeachingLab({ fullPage = false }: { fullPage
                     highlightDelay={highlightDelay}
                     noiseLevel={noiseLevel}
                     currentPhase={scene.phase}
-                    forcedVisibleKeys={mobileTimingView !== "pulses" ? [mobileTimingView] : undefined}
+                    forcedVisibleKeys={isMobile && mobileTimingView !== "pulses" ? [mobileTimingView] : undefined}
                   />
                 </div>
               </div>

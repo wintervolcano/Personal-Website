@@ -317,14 +317,6 @@
       transition: opacity .18s ease, transform .18s ease;
     }
 
-    .hud-sep {
-      width: 1px;
-      align-self: stretch;
-      min-height: 22px;
-      background: rgba(255, 255, 255, .14);
-      margin: 0 2px;
-    }
-
     .sliderWrap {
       display: flex;
       align-items: center;
@@ -1201,70 +1193,35 @@
         <button class="xbtn" id="drawer-close" title="Close">✕</button>
       </header>
       <div class="body">
-        <div class="sectTitle">Pulsar display</div>
-        <div class="mini">How pulsars look. Quick toggles also live on the bottom bar.</div>
-        <div class="row" style="margin-top:10px">
-          <div class="field">
-            <label>All-sky field pulsars</label>
-            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);font-size:.85rem;">
-              <input id="all-pulsars-toggle" type="checkbox"
-                style="width:auto;margin-top:0;padding:0;border:0;background:transparent;flex:0 0 auto;" />
-              <span>Show ~4000 Milky Way pulsars</span>
-            </div>
-            <small id="all-pulsars-summary">The wider pulsar population from the ATNF catalogue. Distances are model-derived (not cluster pulsars).</small>
-          </div>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <div class="field">
-            <label>Colour pulsars by</label>
-            <select id="p-color">
-              <option value="period">Spin period</option>
-              <option value="dm">Dispersion measure (DM)</option>
-              <option value="binary" selected>Binary vs isolated</option>
-              <option value="none">Single colour</option>
-            </select>
-            <small>Applies to cluster &amp; field pulsars.</small>
-          </div>
-          <div class="field">
-            <label>Spin speed</label>
-            <input id="p-spin" type="range" min="0.0005" max="0.6" step="0.0005" value="0.35" />
-            <small>Visual only. Each pulsar still spins relative to its real period.</small>
-          </div>
-        </div>
-
-        <div class="sep"></div>
-
         <div class="sectTitle">Filters</div>
-        <div class="mini">Trim which globular clusters are shown.</div>
-        <div class="row" style="margin-top:10px">
+        <div class="row">
           <div class="field">
-            <label>Max distance from Sun (kpc)</label>
+            <label>R⊙ max (kpc)</label>
             <input id="f-rsun" type="number" min="1" step="1" value="200" />
             <small>Hide distant clusters to declutter.</small>
           </div>
           <div class="field">
-            <label>Min pulsars</label>
+            <label>Pulsars ≥</label>
             <input id="f-psrmin" type="number" min="0" step="1" value="0" />
-            <small>Only clusters hosting at least this many pulsars.</small>
+            <small>Only show clusters with at least N pulsars.</small>
           </div>
         </div>
         <div class="row">
           <div class="field">
-            <label>Min mass (M☉)</label>
+            <label>Mass ≥ (Msun)</label>
             <input id="f-mass" type="number" min="0" step="10000" value="0" />
-            <small>Uses the Baumgardt mass where available.</small>
+            <small>Uses Baumgardt mass if present.</small>
           </div>
           <div class="field">
-            <label>Name contains</label>
+            <label>Text contains</label>
             <input id="f-text" placeholder="e.g. NGC, Terzan, Tuc, M 5" />
-            <small>Matches cluster id / name.</small>
+            <small>Applied to id/name fields.</small>
           </div>
         </div>
 
         <div class="sep"></div>
 
         <div class="sectTitle">Sky Observer</div>
-        <div class="mini">Your location &amp; time, to read a target's sky position (Alt/Az, LST, hour angle).</div>
         <div class="row">
           <div class="field">
             <label>Latitude (deg)</label>
@@ -1312,35 +1269,61 @@
 
         <div class="sep"></div>
 
-        <div class="sectTitle">Reference overlays</div>
-        <div class="mini">Reference planes and the Sun→target line. Also on the bottom bar.</div>
-        <div class="pillbar" style="margin-top:8px">
+        <div class="sectTitle">Overlays</div>
+        <div class="pillbar">
           <div class="pill" id="t-gal">Galactic plane</div>
           <div class="pill" id="t-eq">Equatorial plane</div>
           <div class="pill" id="t-ecliptic">Ecliptic plane</div>
           <div class="pill" id="t-sunline">Sun line</div>
-          <div class="pill" id="t-horizon">Your horizon</div>
         </div>
-        <div class="mini" style="margin-top:6px">“Your horizon” draws your local sky at the Sun for the location/time above — objects above the disk are up in your sky.</div>
+
+        <div class="sep"></div>
+
+        <div class="sectTitle">Pulsars</div>
+        <div class="row">
+          <div class="field">
+            <label>Color by</label>
+            <select id="p-color">
+              <option value="period">Spin period</option>
+              <option value="dm">DM</option>
+              <option value="binary" selected>Binary flag</option>
+              <option value="none">None</option>
+            </select>
+            <small>Only affects pulsars shown near the selected cluster.</small>
+          </div>
+          <div class="field">
+            <label>Spin scale</label>
+            <input id="p-spin" type="range" min="0.0005" max="0.6" step="0.0005" value="0.35" />
+            <small>Scales pulsar animation (visual).</small>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="field">
+            <label>All-sky pulsars</label>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);font-size:.85rem;">
+              <input id="all-pulsars-toggle" type="checkbox"
+                style="width:auto;margin-top:0;padding:0;border:0;background:transparent;flex:0 0 auto;" />
+              <span>Show all-sky field pulsars</span>
+            </div>
+            <small id="all-pulsars-summary">~4000 field pulsars (ATNF psrcat). Distances are model-derived; this is the field population, not cluster pulsars.</small>
+          </div>
+        </div>
 
         <div class="sep"></div>
 
         <div class="sectTitle">Camera</div>
-        <div class="mini">Jump the view to a landmark.</div>
-        <div class="pillbar" style="margin-top:8px">
+        <div class="pillbar">
           <div class="pill" id="cam-home">Home</div>
           <div class="pill" id="cam-gc">Galactic center</div>
           <div class="pill" id="cam-sun">Sun</div>
-          <div class="pill" id="cam-earth">Earth view</div>
           <div class="pill" id="cam-top">Top-down</div>
           <div class="pill" id="cam-edge">Edge-on</div>
         </div>
-        <div class="mini" style="margin-top:6px">“Earth view” stands you at the Sun looking out. Set a location/time in Sky Observer to look toward your local zenith with the horizon shown.</div>
 
         <div class="sep"></div>
 
-        <div class="sectTitle">Compare &amp; export</div>
-        <div class="mini">Add clusters from their info panel, or list names below. Export downloads a CSV (includes NE2025 DM when enabled).</div>
+        <div class="sectTitle">Compare</div>
+        <div class="mini">Add clusters from the right panel. Comma-separated names can also be searched below; export includes NE2025 DM when enabled.</div>
         <div class="row" style="margin-top:10px">
           <div class="field">
             <label>Cluster names</label>
@@ -1386,7 +1369,7 @@
 
         <div class="sep"></div>
 
-        <div class="sectTitle">Data sources</div>
+        <div class="sectTitle">Provenance</div>
         <div class="mini" id="prov">—</div>
       </div>
     </aside>
@@ -1395,66 +1378,52 @@
     <div id="info-modal" class="glass" aria-hidden="true">
       <div class="body">
         <button class="close" id="info-close">✕</button>
-        <h3>Globular Clusters &amp; Pulsars — 3D Explorer</h3>
-        <p>A flythrough of our galaxy showing where <strong>globular clusters</strong> and <strong>pulsars</strong> sit
-          in 3D. The hazy Milky Way around them is a decorative particle cloud — it's only there to give you a sense of
-          orientation. Distances are real and to scale relative to one another.</p>
+        <h3>Globular Clusters & Pulsars 3D Explorer</h3>
+        <p>This interactive visualization shows globular clusters (yellow/gold) and their pulsars (pink) within the
+          Milky Way galaxy. The galaxy is obviously fake particle simulation and it only added for orientation. The
+          distances are scaled but relative.</p>
 
-        <p style="margin-top:14px"><strong>What you're looking at</strong></p>
+        <p><strong>Features:</strong></p>
         <ul>
-          <li><strong>Globular clusters</strong> (warm gold dots) — dense, ancient balls of hundreds of thousands of
-            stars orbiting the galaxy. Click one to see its size, mass, distance and the pulsars it hosts.</li>
-          <li><strong>Pulsars</strong> — rapidly spinning neutron stars that sweep beams of radio light like a
-            lighthouse. The cone on a pulsar is that beam (point at the star, flaring outward).</li>
-          <li><strong>Cluster pulsars</strong> live inside globular clusters and appear when you select a cluster.</li>
-          <li><strong>All-sky (field) pulsars</strong> — the wider Milky Way population from the ATNF catalogue. Turn
-            them on with the <strong>All Pulsars</strong> button. <span style="color:#26ffe6">Cyan = in a binary</span>,
-            <span style="color:#ff3df0">magenta = isolated</span>. Hover or click one to spin up its beam and read its
-            details.</li>
+          <li><strong>Navigation:</strong> Drag to rotate, pinch to zoom, two-finger pan</li>
+          <li><strong>Search:</strong> Type cluster names (NGC 104, Ter 5) or pulsar names in the search bar</li>
+          <li><strong>Selection:</strong> Click on any cluster to pin its information panel</li>
+          <li><strong>Filtering: Filter clusters by pulsars, distance, mass</strong></li>
+          <li><strong>Observer Tools:</strong> Set your location and time to see Alt/Az coordinates</li>
+          <li><strong>Compare:</strong> Add clusters to compare list and export as CSV</li>
+          <li><strong>Overlays:</strong> Toggle galactic, equatorial, ecliptic planes and Sun line</li>
+          <li><strong>Share: Share your exact view to someone else with a link</strong>
+          <li><strong>Export:</strong> Save screenshots or filtered data</li>
         </ul>
 
-        <p style="margin-top:14px"><strong>Getting around</strong></p>
+        <p><strong>Data Sources:</strong></p>
         <ul>
-          <li><strong>Move:</strong> drag to rotate · scroll / pinch to zoom · right-drag (or two-finger) to pan.</li>
-          <li><strong>Search:</strong> type a cluster (<em>NGC 104</em>, <em>Ter 5</em>) or pulsar
-            (<em>J0024-7204</em>) and press Enter to fly there.</li>
-          <li><strong>Select:</strong> click a cluster or pulsar to pin its info panel. <strong>Esc</strong> unpins and
-            returns to your previous view.</li>
-          <li><strong>Bottom bar:</strong> jump the camera, toggle reference planes / the Sun line, show
-            <strong>All Pulsars</strong>, or <strong>Dim Galaxy</strong> to fade the Milky Way so pulsars stand out.</li>
-          <li><strong>ASTRONOMER</strong> (top right): filters, your observing location &amp; time, compare/export, and
-            display options.</li>
+          <li>Globular cluster positions, distances, and properties from Holger Baumgardt's catalog</li>
+          <li>Paulo's Globular Cluster Pulsar catalogue (GCpsr.txt)</li>
+          <li>Cluster images from Holger Baumgardt's image archive</li>
         </ul>
 
-        <p style="margin-top:14px"><strong>For the astronomers</strong></p>
+        <p><strong>Controls:</strong></p>
         <ul>
-          <li><strong>Colour by</strong> spin period, dispersion measure (DM), or binary status (Astronomer → Pulsars).</li>
-          <li><strong>Spin speed</strong> is mapped from each pulsar's real period (ms pulsars spin fast, slow pulsars
-            crawl), modulated by the spin-scale slider.</li>
-          <li><strong>Field-pulsar distances</strong> are model-derived: catalogue <code>DIST_A</code> where available,
-            otherwise computed from DM + (l, b) via the <strong>NE2025</strong> electron-density model — these are
-            estimates, not direct measurements.</li>
-          <li><strong>Sky Observer:</strong> set latitude/longitude/time to read Alt/Az, LST and hour angle for a target.</li>
+          <li><strong>Escape:</strong> Unpin current cluster and return to previous view</li>
+          <li><strong>Enter:</strong> Execute search</li>
+          <li><strong>ASTRONOMER button:</strong> Open advanced tools panel</li>
+          <li><strong>Spin slider:</strong> Adjust pulsar rotation speed visually. Log scaled for better visualization
+          </li>
         </ul>
 
-        <p style="margin-top:14px"><strong>Data sources</strong></p>
-        <ul>
-          <li>Cluster positions, distances &amp; properties — Holger Baumgardt's catalogue (Baumgardt &amp; Vasiliev 2021).</li>
-          <li>Cluster pulsars — Paulo Freire's Globular Cluster Pulsar catalogue (GCpsr).</li>
-          <li>All-sky pulsars — ATNF Pulsar Catalogue (psrcat), refreshed periodically.</li>
-          <li>Cluster thumbnails — Holger Baumgardt's image archive.</li>
-        </ul>
-
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:18px;">
-          Built for astronomical visualization and outreach. Catalogue data is refreshed automatically from the sources above.
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px;">
+          Created for astronomical visualization and research. Data is updated regularly from live sources.
         </p>
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:10px; text-align: center;">
-          Made with ❤️ by Fazal Kareem.
-          <a href="https://github.com/wintervolcano" target="_blank" rel="noopener"
+
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.6); margin-top:20px; text-align: center;">
+          Made with ❤️ Fazal Kareem.
+          <a href="https://github.com/wintervolcano" target="_blank"
             style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent);">
             <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub"
               style="width: 16px; height: 16px; vertical-align: middle; margin-left: 4px;" />
           </a>
+        </p>
         </p>
       </div>
     </div>
@@ -1593,18 +1562,14 @@
 
     <!-- HUD overlay -->
     <div id="hud">
-      <button class="btn" id="btn-reset" title="Return to the default starting view">Reset View</button>
-      <button class="btn" id="btn-sun" title="Fly the camera to the Sun's position">Locate Sun</button>
-      <button class="btn" id="btn-earth" title="Stand at the Sun and look out at the sky (uses your Sky Observer location/time if set)">Earth View</button>
-      <span class="hud-sep" aria-hidden="true"></span>
-      <button class="btn" id="btn-gal" title="Toggle the galactic plane (the flat disk of the Milky Way)">Galactic Plane</button>
-      <button class="btn" id="btn-eq" title="Toggle the celestial equator plane (Earth's equator projected onto the sky)">Equatorial Plane</button>
-      <button class="btn" id="btn-ecliptic" title="Toggle the ecliptic plane (Earth's orbital plane)">Ecliptic Plane</button>
-      <button class="btn" id="btn-lines" title="Toggle a line from the Sun to the selected object">Sun Line</button>
-      <button class="btn" id="btn-horizon" title="Show your local horizon at the Sun for the location/time set in Astronomer → Sky Observer">Horizon</button>
-      <span class="hud-sep" aria-hidden="true"></span>
-      <button class="btn" id="btn-allpsr" title="Show ~4000 Milky Way (field) pulsars from the ATNF catalogue">All Pulsars</button>
-      <button class="btn" id="btn-dimgalaxy" title="Fade the Milky Way glow so pulsars and clusters stand out">Dim Galaxy</button>
+      <button class="btn" id="btn-reset">Reset View</button>
+      <button class="btn" id="btn-sun">Locate Sun</button>
+      <button class="btn" id="btn-gal">Galactic Plane</button>
+      <button class="btn" id="btn-eq">Equatorial Plane</button>
+      <button class="btn" id="btn-ecliptic">Ecliptic Plane</button>
+      <button class="btn" id="btn-lines">Sun Line</button>
+      <button class="btn" id="btn-allpsr">All Pulsars</button>
+      <button class="btn" id="btn-dimgalaxy">Dim Galaxy</button>
     </div>
   </div>
 
@@ -1762,8 +1727,6 @@
       toast.innerHTML = "";
     }
 
-    let firstVisitHintActive = false; // desktop onboarding hint currently showing?
-
     if (isTouchPointer) {
       ui.sub.textContent = "Tap to preview — tap again to pin";
       const uiNote = el("ui-note");
@@ -1772,20 +1735,6 @@
       if (!localStorage.getItem(hintKey)) {
         showToast("Tap to preview • double tap to pin • drag to rotate • pinch to zoom");
         localStorage.setItem(hintKey, "1");
-      }
-    } else {
-      // Desktop first-visit hint: shown once, closable, auto-dismisses.
-      const hintKey = "gc3d_desktop_hint_v1";
-      if (!localStorage.getItem(hintKey)) {
-        firstVisitHintActive = true;
-        showToast(
-          "Drag to rotate · scroll to zoom · click a cluster to explore. Try “All Pulsars” in the bottom bar, or “?” for help.",
-          { closable: true, onClose: () => { firstVisitHintActive = false; } }
-        );
-        localStorage.setItem(hintKey, "1");
-        window.setTimeout(() => {
-          if (firstVisitHintActive) { hideToast(); firstVisitHintActive = false; }
-        }, 11000);
       }
     }
 
@@ -1933,35 +1882,6 @@
     controls.maxDistance = 7500;
     controls.touches.ONE = THREE.TOUCH.ROTATE;
     controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
-
-    // First-person (Earth view) state — declared here so the input handlers below close
-    // over them; the enter/exit logic lives near the camera presets.
-    let earthViewActive = false;
-    let fpYaw = 0, fpPitch = 0;          // radians
-    let fpDragging = false, fpLastX = 0, fpLastY = 0;
-    let sunWasVisible = true;
-
-    // First-person look handlers (active only in Earth view). Defined here so they bind
-    // once; they no-op unless earthViewActive.
-    renderer.domElement.addEventListener("pointerdown", (e) => {
-      if (!earthViewActive) return;
-      fpDragging = true; fpLastX = e.clientX; fpLastY = e.clientY;
-    });
-    window.addEventListener("pointerup", () => { fpDragging = false; });
-    renderer.domElement.addEventListener("pointermove", (e) => {
-      if (!earthViewActive || !fpDragging) return;
-      const dx = e.clientX - fpLastX, dy = e.clientY - fpLastY;
-      fpLastX = e.clientX; fpLastY = e.clientY;
-      const sens = 0.0026 * (camera.fov / 60); // slower when zoomed in
-      fpYaw -= dx * sens;
-      fpPitch = clamp(fpPitch + dy * sens, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
-    });
-    renderer.domElement.addEventListener("wheel", (e) => {
-      if (!earthViewActive) return;
-      e.preventDefault();
-      camera.fov = clamp(camera.fov + (e.deltaY > 0 ? 3 : -3), 18, 85);
-      camera.updateProjectionMatrix();
-    }, { passive: false });
 
     // Lighting.
     scene.add(new THREE.AmbientLight(0xffffff, 0.38));
@@ -2163,93 +2083,6 @@
       ecliptic = eclipticPlane;
       ecliptic.visible = eclipticVisible;
       scene.add(ecliptic);
-    }
-
-    // ---- Observer horizon: a local sky dome at the Sun for a given lat/lon/time ----
-    // The zenith (local "up") in equatorial coords has Dec = latitude, RA = LST. We turn
-    // that into a scene-space vector (equatorial -> galactic -> scene) and orient a disk
-    // perpendicular to it at the Sun. Clusters/pulsars above the disk are above the
-    // observer's horizon at that moment.
-    let horizonGroup = null;
-    let horizonVisible = false;
-
-    function zenithSceneVec(dateUTC, latDeg, lonDeg) {
-      const lst = lstDeg(dateUTC, lonDeg);          // RA of the zenith, degrees
-      const ra = THREE.MathUtils.degToRad(lst);
-      const dec = THREE.MathUtils.degToRad(latDeg); // Dec of the zenith = latitude
-      // Equatorial unit vector.
-      const ex = Math.cos(dec) * Math.cos(ra);
-      const ey = Math.cos(dec) * Math.sin(ra);
-      const ez = Math.sin(dec);
-      // Equatorial -> galactic (same A0G matrix used elsewhere).
-      const gx = A0G[0][0] * ex + A0G[0][1] * ey + A0G[0][2] * ez;
-      const gy = A0G[1][0] * ex + A0G[1][1] * ey + A0G[1][2] * ez;
-      const gz = A0G[2][0] * ex + A0G[2][1] * ey + A0G[2][2] * ez;
-      // Galactic -> scene mapping: (x, z, -y), as in lbToVec3 / the equator.
-      return new THREE.Vector3(gx, gz, -gy).normalize();
-    }
-
-    function buildHorizonGroup() {
-      const group = new THREE.Group();
-      const R = 1000; // horizon radius in scene units
-
-      // A tall, open-ended cylinder centred on the horizon plane. From the Sun (inside it)
-      // this reads as a glowing band ringing the sky at the horizon — visible even when the
-      // camera sits exactly in the plane (a flat disk would be edge-on and invisible there).
-      const band = new THREE.Mesh(
-        new THREE.CylinderGeometry(R, R, 160, 96, 1, true),
-        new THREE.MeshBasicMaterial({
-          color: 0x4fd0ff, transparent: true, opacity: 0.16,
-          side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending,
-        })
-      );
-      group.add(band);
-
-      // Bright ring marking the exact horizon line, in the horizon (XZ) plane.
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(R, 3.0, 10, 160),
-        new THREE.MeshBasicMaterial({
-          color: 0x9be7ff, transparent: true, opacity: 0.95,
-          depthWrite: false, blending: THREE.AdditiveBlending,
-        })
-      );
-      ring.rotation.x = Math.PI / 2;
-      group.add(ring);
-
-      // Faint translucent disk so the "ground" reads when viewed from outside/above.
-      const disk = new THREE.Mesh(
-        new THREE.CircleGeometry(R, 80),
-        new THREE.MeshBasicMaterial({
-          color: 0x2a6f8f, transparent: true, opacity: 0.05,
-          side: THREE.DoubleSide, depthWrite: false,
-        })
-      );
-      disk.rotation.x = -Math.PI / 2; // CircleGeometry (XY) -> lie flat (normal = +Y)
-      group.add(disk);
-
-      // Zenith marker: a short line toward local "up".
-      const zenithGeom = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 360, 0),
-      ]);
-      const zenith = new THREE.Line(zenithGeom, new THREE.LineBasicMaterial({
-        color: 0xffe08a, transparent: true, opacity: 0.55, depthWrite: false,
-      }));
-      group.add(zenith);
-
-      group.visible = horizonVisible;
-      horizonGroup = group;
-      scene.add(group);
-    }
-
-    function updateHorizon() {
-      if (!horizonGroup) buildHorizonGroup();
-      horizonGroup.visible = horizonVisible;
-      if (!horizonVisible) return;
-      const dateUTC = observerTimeUTC();
-      const zenith = zenithSceneVec(dateUTC, Number(observer.lat) || 0, Number(observer.lon) || 0);
-      // Orient the group so its local +Y (disk normal / zenith line) points to the zenith.
-      horizonGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), zenith);
-      horizonGroup.position.copy(sunPos);
     }
 
     // Image URL.
@@ -3597,8 +3430,6 @@
     function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
     function startFlyTo(camPos, targetPos, ms = 900) {
-      // Any scripted camera move leaves first-person Earth view.
-      if (typeof earthViewActive !== "undefined" && earthViewActive) exitEarthView();
       fly = {
         t0: performance.now(),
         ms,
@@ -3624,85 +3455,6 @@
       const cam = tgt.clone().add(new THREE.Vector3(180, 80, 160));
       startFlyTo(cam, tgt, 850);
       syncURLStateDebounced();
-    }
-
-    // ---- Earth/Sun first-person "look around the sky" view ----
-    // True pivot-in-place: the camera is pinned at the Sun and only its orientation
-    // changes (yaw/pitch) on drag — you turn your head, the camera never moves, so you
-    // never pass through the Sun. OrbitControls is disabled while this is active.
-    // (State vars earthViewActive/fpYaw/fpPitch/... are declared up by the controls.)
-    function dirToYawPitch(dir) {
-      const d = dir.clone().normalize();
-      return { yaw: Math.atan2(d.x, d.z), pitch: Math.asin(clamp(d.y, -1, 1)) };
-    }
-
-    function applyFirstPersonOrientation() {
-      const cp = Math.cos(fpPitch), sp = Math.sin(fpPitch);
-      const cy = Math.cos(fpYaw), sy = Math.sin(fpYaw);
-      const dir = new THREE.Vector3(cp * sy, sp, cp * cy);
-      camera.position.copy(sunPos);
-      camera.lookAt(sunPos.clone().add(dir));
-    }
-
-    function enterEarthView() {
-      lastView = snapshotView();
-      fly = null;
-
-      // Earth view always shows your local horizon and looks toward your zenith. Use the
-      // Sky Observer location/time if set, otherwise fall back to the input defaults
-      // (lat 50.7°, lon 7.1°, time = now) so there's always a meaningful horizon.
-      observer.lat = Number(el("o-lat").value || observer.lat || 50.7);
-      observer.lon = Number(el("o-lon").value || observer.lon || 7.1);
-      observer.timeLocal = el("o-time").value || observer.timeLocal || "";
-      observer.enabled = true;
-      const zenith = zenithSceneVec(observerTimeUTC(), observer.lat, observer.lon);
-      setHorizonVisible(true);
-
-      // Look 25° above the LOCAL (tilted) horizon, not the world's. Build a horizontal
-      // bearing perpendicular to the zenith, then raise the look direction 25° toward the
-      // zenith. This keeps the tilted horizon line nicely in the lower part of the frame.
-      let bearing = new THREE.Vector3(0, 1, 0).cross(zenith);
-      if (bearing.lengthSq() < 1e-6) bearing = new THREE.Vector3(1, 0, 0).cross(zenith);
-      bearing.normalize();
-      const elev = THREE.MathUtils.degToRad(25);
-      const lookDir = bearing.multiplyScalar(Math.cos(elev))
-        .add(zenith.clone().multiplyScalar(Math.sin(elev))).normalize();
-
-      const { yaw, pitch } = dirToYawPitch(lookDir);
-      fpYaw = yaw; fpPitch = pitch;
-
-      earthViewActive = true;
-      controls.enabled = false;          // hand camera control to the first-person rig
-      sunWasVisible = sun.visible;
-      sun.visible = false;               // never see the Sun from inside it
-      el("btn-earth").classList.add("active");
-      el("cam-earth").classList.add("active");
-      applyFirstPersonOrientation();
-      syncURLStateDebounced();
-    }
-
-    // Tear down first-person state (restore OrbitControls + the Sun). Does NOT move the
-    // camera, so it's safe to call from startFlyTo without recursing.
-    function exitEarthView() {
-      if (!earthViewActive) return;
-      earthViewActive = false;
-      controls.enabled = true;
-      sun.visible = sunWasVisible;
-      el("btn-earth").classList.remove("active");
-      el("cam-earth").classList.remove("active");
-      controls.target.copy(sunPos);
-    }
-
-    function earthView() {
-      if (earthViewActive) {
-        // Leaving Earth view returns to the "Locate Sun" framing.
-        exitEarthView();
-        const tgt = sun.position.clone();
-        startFlyTo(tgt.clone().add(new THREE.Vector3(220, 120, 180)), tgt, 850);
-        syncURLStateDebounced();
-        return;
-      }
-      enterEarthView();
     }
 
     function focusCluster(c, { pin = true } = {}) {
@@ -4427,23 +4179,6 @@
     el("btn-ecliptic").addEventListener("click", () => { eclipticVisible = !eclipticVisible; applyOverlayVisibility(); });
     el("t-ecliptic").addEventListener("click", () => { eclipticVisible = !eclipticVisible; applyOverlayVisibility(); });
 
-    // Observer horizon toggle (HUD button + drawer pill share this).
-    function setHorizonVisible(on) {
-      horizonVisible = !!on;
-      if (horizonVisible) {
-        // Pull current Sky Observer inputs so it works without clicking "Apply" first.
-        observer.lat = Number(el("o-lat").value || observer.lat || 0);
-        observer.lon = Number(el("o-lon").value || observer.lon || 0);
-        observer.timeLocal = el("o-time").value || observer.timeLocal || "";
-      }
-      el("btn-horizon").classList.toggle("active", horizonVisible);
-      el("t-horizon").classList.toggle("active", horizonVisible);
-      updateHorizon();
-      syncURLStateDebounced();
-    }
-    el("btn-horizon").addEventListener("click", () => setHorizonVisible(!horizonVisible));
-    el("t-horizon").addEventListener("click", () => setHorizonVisible(!horizonVisible));
-
     // Shared all-sky pulsar toggle (HUD button + drawer checkbox stay in sync).
     function setAllSkyEnabled(on) {
       allSkyEnabled = !!on;
@@ -4475,8 +4210,6 @@
     el("cam-home").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 560, 1180), new THREE.Vector3(0, 0, 0), 850); });
     el("cam-gc").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 140, 420), new THREE.Vector3(0, 0, 0), 850); });
     el("cam-sun").addEventListener("click", () => { lastView = snapshotView(); const tgt = sun.position.clone(); startFlyTo(tgt.clone().add(new THREE.Vector3(220, 120, 180)), tgt, 850); });
-    el("cam-earth").addEventListener("click", earthView);
-    el("btn-earth").addEventListener("click", earthView);
     el("cam-top").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 1400, 0.1), new THREE.Vector3(0, 0, 0), 850); });
     el("cam-edge").addEventListener("click", () => { lastView = snapshotView(); startFlyTo(new THREE.Vector3(0, 60, 1400), new THREE.Vector3(0, 0, 0), 850); });
 
@@ -4539,7 +4272,6 @@
       observer.mode = el("o-mode").value || "altaz";
       observer.enabled = true;
       if (pinned) showPanel(pinned, { pin: true });
-      updateHorizon(); // horizon depends on lat/lon/time
       syncURLStateDebounced();
     }
     ["o-lat", "o-lon", "o-time", "o-mode"].forEach(id => el(id).addEventListener("input", syncObserverFromUI));
@@ -4555,17 +4287,17 @@
       let msg;
       switch (pulsarStyle.colorBy) {
         case "binary":
-          msg = "Pulsar colour: cyan = in a binary · magenta = isolated. Hover a pulsar for details.";
+          msg = "Pulsars: cyan = binary, magenta = isolated.";
           break;
         case "dm":
-          msg = "Pulsar colour: dispersion measure (DM) — cyan = low · amber = high.";
+          msg = "Pulsars: DM colour — cyan = low DM, amber = high DM.";
           break;
         case "period":
-          msg = "Pulsar colour: spin period — orange = slow · blue = fast (millisecond).";
+          msg = "Pulsars: spin period — orange = slow, blue = fast.";
           break;
         case "none":
         default:
-          msg = "Pulsar colour: single colour (no encoding).";
+          msg = "Pulsars: uniform magenta colour (no encoding).";
           break;
       }
       showToast(msg);
@@ -4672,19 +4404,8 @@
       });
     }
 
-    // Distinguish a genuine click from a drag-release: a click that travelled more than a
-    // few pixels (orbiting / panning on a trackpad) must NOT select an object.
-    let clickDownX = 0, clickDownY = 0, clickMoved = false;
-    renderer.domElement.addEventListener("mousedown", (e) => {
-      clickDownX = e.clientX; clickDownY = e.clientY; clickMoved = false;
-    });
-    renderer.domElement.addEventListener("mousemove", (e) => {
-      if (Math.hypot(e.clientX - clickDownX, e.clientY - clickDownY) > 6) clickMoved = true;
-    });
-
     renderer.domElement.addEventListener("click", (e) => {
       if (isTouchPointer) return;
-      if (clickMoved) return; // released after a drag — not a real click
       const c = pickCluster(e);
       if (c) {
         lastView = snapshotView();
@@ -4808,7 +4529,6 @@
     // Escape key.
     window.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
-      if (earthViewActive) { exitEarthView(); restoreView(lastView); lastView = null; return; }
       if (el("psr-panel").classList.contains("visible")) {
         hidePulsarPanel();
       }
@@ -4841,8 +4561,7 @@
     // Sync UI controls with restored state.
     el("p-color").value = pulsarStyle.colorBy;
     el("p-spin").value = String(pulsarStyle.spinScale);
-    // Don't clobber the first-visit hint with the colour legend on initial load.
-    if (!firstVisitHintActive) updatePulsarColorLegend();
+    updatePulsarColorLegend();
     loadData({ noCache: false }).then(() => {
       applyPendingCompare();
     });
@@ -4856,24 +4575,18 @@
     function animate() {
       requestAnimationFrame(animate);
       const dt = clock.getDelta();
-
-      if (earthViewActive) {
-        // First-person: camera pinned at the Sun, orientation driven by yaw/pitch.
-        applyFirstPersonOrientation();
-      } else {
-        controls.update();
-
-        // Fly-to animation.
-        if (fly) {
-          const t = clamp((performance.now() - fly.t0) / fly.ms, 0, 1);
-          const e = easeInOut(t);
-          camera.position.lerpVectors(fly.cam0, fly.cam1, e);
-          controls.target.lerpVectors(fly.tar0, fly.tar1, e);
-          controls.update();
-          if (t >= 1) fly = null;
-        }
-      }
+      controls.update();
       updateScaleBar();
+
+      // Fly-to animation.
+      if (fly) {
+        const t = clamp((performance.now() - fly.t0) / fly.ms, 0, 1);
+        const e = easeInOut(t);
+        camera.position.lerpVectors(fly.cam0, fly.cam1, e);
+        controls.target.lerpVectors(fly.tar0, fly.tar1, e);
+        controls.update();
+        if (t >= 1) fly = null;
+      }
 
       // Pulsar rotation.
       for (const p of pulsarSystems) {

@@ -1,7 +1,1421 @@
 {
-  "generatedAt": "2025-12-21T22:37:59.838Z",
-  "count": 283,
+  "generatedAt": "2026-06-06T00:44:54.627Z",
+  "count": 360,
   "docs": [
+    {
+      "slug": "J1357-5128",
+      "name": "J1357-5128",
+      "dm": 42.02,
+      "period_ms": 460.06,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 33.01,
+        "discovery_plot": "discoveries/J1357-5128_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1357-5128_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1440-6313",
+      "name": "J1440-6313",
+      "dm": 344,
+      "period_ms": 960.41,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.34,
+        "discovery_plot": "discoveries/J1440-6313_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1440-6313_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1458-6415",
+      "name": "J1458-6415",
+      "dm": 208.4,
+      "period_ms": 446.88,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 10.93,
+        "discovery_plot": "discoveries/J1458-6415_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1458-6415_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1514-6457",
+      "name": "J1514-6457",
+      "dm": 85.95,
+      "period_ms": 12.69,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 9.94,
+        "discovery_plot": "discoveries/J1514-6457_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1514-6457_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1542-6534",
+      "name": "J1542-6534",
+      "dm": 146.92,
+      "period_ms": 965.01,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 16.45,
+        "discovery_plot": "discoveries/J1542-6534_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1542-6534_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1605-6503",
+      "name": "J1605-6503",
+      "dm": 66.54,
+      "period_ms": 992.1,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.5,
+        "discovery_plot": "discoveries/J1605-6503_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1605-6503_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1606-6516",
+      "name": "J1606-6516",
+      "dm": 50.82,
+      "period_ms": 4.19,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.14,
+        "discovery_plot": "discoveries/J1606-6516_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1606-6516_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1657-6026",
+      "name": "J1657-6026",
+      "dm": 73.83,
+      "period_ms": 1455.8,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 18.18,
+        "discovery_plot": "discoveries/J1657-6026_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1657-6026_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1806-4116",
+      "name": "J1806-4116",
+      "dm": 108.5,
+      "period_ms": 27.67,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 20.56,
+        "discovery_plot": "discoveries/J1806-4116_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1806-4116_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1816-3813",
+      "name": "J1816-3813",
+      "dm": 124,
+      "period_ms": 850.38,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 29.5,
+        "discovery_plot": "discoveries/J1816-3813_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1816-3813_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1841-2611",
+      "name": "J1841-2611",
+      "dm": 115,
+      "period_ms": 2509.81,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-25",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 17.1,
+        "discovery_plot": "discoveries/J1841-2611_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1841-2611_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1405-5340",
+      "name": "J1405-5340",
+      "dm": 25.35,
+      "period_ms": 5.92,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-05-24",
+        "observation_date": "2026-05-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 9.34,
+        "discovery_plot": "discoveries/J1405-5340_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1405-5340_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1403-5454",
+      "name": "J1403-5454",
+      "dm": 158.75,
+      "period_ms": 740.93,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-21",
+        "observation_date": "2026-04-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 12.49,
+        "discovery_plot": "discoveries/J1403-5454_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1403-5454_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1421-6232",
+      "name": "J1421-6232",
+      "dm": 319,
+      "period_ms": 892.81,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-21",
+        "observation_date": "2026-04-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 10.01,
+        "discovery_plot": "discoveries/J1421-6232_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1421-6232_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1822-3649",
+      "name": "J1822-3649",
+      "dm": 97.56,
+      "period_ms": 836.92,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-21",
+        "observation_date": "2026-04-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 41.69,
+        "discovery_plot": "discoveries/J1822-3649_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1822-3649_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1822-3721",
+      "name": "J1822-3721",
+      "dm": 33.207,
+      "period_ms": 8.96,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-21",
+        "observation_date": "2026-04-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 12.22,
+        "discovery_plot": "discoveries/J1822-3721_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1822-3721_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1829-3235",
+      "name": "J1829-3235",
+      "dm": 21,
+      "period_ms": 4487.46,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-21",
+        "observation_date": "2026-04-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 12.99,
+        "discovery_plot": "discoveries/J1829-3235_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1829-3235_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1605-6625",
+      "name": "J1605-6625",
+      "dm": 90.51,
+      "period_ms": 1259,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 54.29,
+        "discovery_plot": "discoveries/J1605-6625_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1605-6625_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1744-4707",
+      "name": "J1744-4707",
+      "dm": 60.4745,
+      "period_ms": 5.24,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 36.32,
+        "discovery_plot": "discoveries/J1744-4707_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1744-4707_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1817-3904",
+      "name": "J1817-3904",
+      "dm": 17.588,
+      "period_ms": 12.85,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 16.66,
+        "discovery_plot": "discoveries/J1817-3904_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1817-3904_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1818-3915",
+      "name": "J1818-3915",
+      "dm": 111.75,
+      "period_ms": 632.8,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 12.36,
+        "discovery_plot": "discoveries/J1818-3915_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1818-3915_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1836-3101",
+      "name": "J1836-3101",
+      "dm": 79.08,
+      "period_ms": 1391.75,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 13.93,
+        "discovery_plot": "discoveries/J1836-3101_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1836-3101_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1847-2609",
+      "name": "J1847-2609",
+      "dm": 80.28,
+      "period_ms": 1873.19,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 21.55,
+        "discovery_plot": "discoveries/J1847-2609_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1847-2609_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1855-2157",
+      "name": "J1855-2157",
+      "dm": 104.85,
+      "period_ms": 4.8,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-10",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 23.03,
+        "discovery_plot": "discoveries/J1855-2157_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1855-2157_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1402-5843",
+      "name": "J1402-5843",
+      "dm": 229.3,
+      "period_ms": 445.81,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-04-09",
+        "observation_date": "2026-03-30",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.18,
+        "discovery_plot": "discoveries/J1402-5843_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1402-5843_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1344-5503",
+      "name": "J1344-5503",
+      "dm": 62.8326,
+      "period_ms": 5.73,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-09",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 33.95,
+        "discovery_plot": "discoveries/J1344-5503_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1344-5503_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1336-5326",
+      "name": "J1336-5326",
+      "dm": 116.287,
+      "period_ms": 2.74,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 25.47,
+        "discovery_plot": "discoveries/J1336-5326_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1336-5326_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1339-5203",
+      "name": "J1339-5203",
+      "dm": 136.15,
+      "period_ms": 239.27,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.14,
+        "discovery_plot": "discoveries/J1339-5203_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1339-5203_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1339-5411",
+      "name": "J1339-5411",
+      "dm": 29,
+      "period_ms": 3240.03,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 10.4,
+        "discovery_plot": "discoveries/J1339-5411_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1339-5411_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1339-5434",
+      "name": "J1339-5434",
+      "dm": 163.35,
+      "period_ms": 1621.59,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 21.21,
+        "discovery_plot": "discoveries/J1339-5434_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1339-5434_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1342-5346",
+      "name": "J1342-5346",
+      "dm": 106.378,
+      "period_ms": 6.26,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 12.49,
+        "discovery_plot": "discoveries/J1342-5346_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1342-5346_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1343-5539",
+      "name": "J1343-5539",
+      "dm": 199.4,
+      "period_ms": 791.43,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 31.04,
+        "discovery_plot": "discoveries/J1343-5539_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1343-5539_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1345-5440",
+      "name": "J1345-5440",
+      "dm": 203,
+      "period_ms": 1372.98,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 16.29,
+        "discovery_plot": "discoveries/J1345-5440_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1345-5440_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1750-3703K",
+      "name": "J1750-3703K",
+      "dm": 228.9,
+      "period_ms": 3.398,
+      "binary": true,
+      "associations": [
+        {
+          "name": "NGC 6441",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-03-06",
+        "observation_date": "2021-06-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Nexto / PULSAR_MINER / Presto",
+        "project": "GC",
+        "discovery_snr": 5.8,
+        "discovery_plot": "discoveries/NGC6441K_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6441K_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1458-6649",
+      "name": "J1458-6649",
+      "dm": 67.02,
+      "period_ms": 439.54,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-05",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 53.25,
+        "discovery_plot": "discoveries/J1458-6649_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1458-6649_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1802-4251",
+      "name": "J1802-4251",
+      "dm": 86.58,
+      "period_ms": 235.2,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-05",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.14,
+        "discovery_plot": "discoveries/J1802-4251_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1802-4251_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1833-3147",
+      "name": "J1833-3147",
+      "dm": 95,
+      "period_ms": 1296.98,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-05",
+        "observation_date": "2026-03-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 64.39,
+        "discovery_plot": "discoveries/J1833-3147_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1833-3147_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1754-2718",
+      "name": "J1754-2718",
+      "dm": 332.5,
+      "period_ms": 4.566713,
+      "binary": false,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-03-02",
+        "observation_date": "2026-02-26",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "S-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-S",
+        "discovery_snr": 14.86,
+        "discovery_plot": "discoveries/J1754-2718_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1754-2718_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1345-6148",
+      "name": "J1345-6148",
+      "dm": 367,
+      "period_ms": 2102.69,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-26",
+        "observation_date": "2026-02-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 14.71,
+        "discovery_plot": "discoveries/J1345-6148_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1345-6148_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1415-6722",
+      "name": "J1415-6722",
+      "dm": 228.1,
+      "period_ms": 804.12,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-26",
+        "observation_date": "2026-02-13",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 33.99,
+        "discovery_plot": "discoveries/J1415-6722_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1415-6722_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1750-2715",
+      "name": "J1750-2715",
+      "dm": 688,
+      "period_ms": 140.93493,
+      "binary": false,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-23",
+        "observation_date": "2026-02-06",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "S-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-S",
+        "discovery_snr": 17.95,
+        "discovery_plot": "discoveries/J1750-2715_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1750-2715_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1337-6211",
+      "name": "J1337-6211",
+      "dm": 334,
+      "period_ms": 857,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-10",
+        "observation_date": "2026-02-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.25,
+        "discovery_plot": "discoveries/J1337-6211_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1337-6211_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1327-5647",
+      "name": "J1327-5647",
+      "dm": 167.8,
+      "period_ms": 21.6,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-09",
+        "observation_date": "2026-02-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 13.52,
+        "discovery_plot": "discoveries/J1327-5647_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1327-5647_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1722-5449",
+      "name": "J1722-5449",
+      "dm": 111,
+      "period_ms": 524,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-08",
+        "observation_date": "2026-02-03",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 16.74,
+        "discovery_plot": "discoveries/J1722-5449_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1722-5449_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1310-5341",
+      "name": "J1310-5341",
+      "dm": 101.288,
+      "period_ms": 6.56,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-05",
+        "observation_date": "2026-01-31",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 24.2,
+        "discovery_plot": "discoveries/J1310-5341_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1310-5341_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1323-6145",
+      "name": "J1323-6145",
+      "dm": 133.35,
+      "period_ms": 668,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-05",
+        "observation_date": "2026-01-31",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.65,
+        "discovery_plot": "discoveries/J1323-6145_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1323-6145_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1333-6548",
+      "name": "J1333-6548",
+      "dm": 234.5,
+      "period_ms": 640,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-02-05",
+        "observation_date": "2026-01-31",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 9.61,
+        "discovery_plot": "discoveries/J1333-6548_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1333-6548_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1305-5501",
+      "name": "J1305-5501",
+      "dm": 148,
+      "period_ms": 4872,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-23",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 26.63,
+        "discovery_plot": "discoveries/J1305-5501_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1305-5501_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1314-5705",
+      "name": "J1314-5705",
+      "dm": 323.5,
+      "period_ms": 458,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-23",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 28.57,
+        "discovery_plot": "discoveries/J1314-5705_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1314-5705_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1318-6324",
+      "name": "J1318-6324",
+      "dm": 278,
+      "period_ms": 126,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-23",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 10.24,
+        "discovery_plot": "discoveries/J1318-6324_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1318-6324_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1304-6106",
+      "name": "J1304-6106",
+      "dm": 160,
+      "period_ms": 926,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-22",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 13.72,
+        "discovery_plot": "discoveries/J1304-6106_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1304-6106_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1315-6830",
+      "name": "J1315-6830",
+      "dm": 152.072,
+      "period_ms": 9.27,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-22",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.83,
+        "discovery_plot": "discoveries/J1315-6830_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1315-6830_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1716-5655",
+      "name": "J1716-5655",
+      "dm": 90.87,
+      "period_ms": 1224,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-22",
+        "observation_date": "2026-01-10",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 13.85,
+        "discovery_plot": "discoveries/J1716-5655_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1716-5655_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444K",
+      "name": "J1736-4444K",
+      "dm": 240.7,
+      "period_ms": 3.92,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-21",
+        "observation_date": "2025-11-29",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 5.52,
+        "discovery_plot": "discoveries/NGC6388K_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388K_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1257-6102",
+      "name": "J1257-6102",
+      "dm": 154.75,
+      "period_ms": 1002,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-20",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.8,
+        "discovery_plot": "discoveries/J1257-6102_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1257-6102_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444I",
+      "name": "J1736-4444I",
+      "dm": 245.47,
+      "period_ms": 2.18,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-19",
+        "observation_date": "2025-11-29",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 12.36,
+        "discovery_plot": "discoveries/NGC6388I_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388I_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444J",
+      "name": "J1736-4444J",
+      "dm": 240.6,
+      "period_ms": 2.88,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-19",
+        "observation_date": "2025-11-29",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 10.87,
+        "discovery_plot": "discoveries/NGC6388J_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388J_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1248-5626",
+      "name": "J1248-5626",
+      "dm": 226.7,
+      "period_ms": 542,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-17",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.94,
+        "discovery_plot": "discoveries/J1248-5626_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1248-5626_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1254-5408",
+      "name": "J1254-5408",
+      "dm": 72.99,
+      "period_ms": 13.5,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-17",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 28.5,
+        "discovery_plot": "discoveries/J1254-5408_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1254-5408_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1257-6139",
+      "name": "J1257-6139",
+      "dm": 238,
+      "period_ms": 219,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-17",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 11.98,
+        "discovery_plot": "discoveries/J1257-6139_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1257-6139_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1258-6001",
+      "name": "J1258-6001",
+      "dm": 326,
+      "period_ms": 651,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-17",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 15.42,
+        "discovery_plot": "discoveries/J1258-6001_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1258-6001_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1414-6931",
+      "name": "J1414-6931",
+      "dm": 151,
+      "period_ms": 727,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2026-01-16",
+        "observation_date": "2025-12-22",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 38.12,
+        "discovery_plot": "discoveries/J1414-6931_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1414-6931_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J0524-2431B",
+      "name": "J0524-2431B",
+      "dm": 62.27,
+      "period_ms": 4.522,
+      "binary": true,
+      "associations": [
+        {
+          "name": "M79",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-29",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Elden-Ring / Peasoup",
+        "project": "GC",
+        "discovery_snr": 22.73,
+        "discovery_plot": "discoveries/M79B_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/M79B_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444C",
+      "name": "J1736-4444C",
+      "dm": 243.97,
+      "period_ms": 6.91,
+      "binary": true,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 7.63,
+        "discovery_plot": "discoveries/NGC6388C_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388C_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444D",
+      "name": "J1736-4444D",
+      "dm": 243.64,
+      "period_ms": 5.66,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 16.66,
+        "discovery_plot": "discoveries/NGC6388D_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388D_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444E",
+      "name": "J1736-4444E",
+      "dm": 241.8,
+      "period_ms": 4.88,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 12.12,
+        "discovery_plot": "discoveries/NGC6388E_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388E_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444F",
+      "name": "J1736-4444F",
+      "dm": 240.3,
+      "period_ms": 5.54,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 18.53,
+        "discovery_plot": "discoveries/NGC6388F_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388F_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444G",
+      "name": "J1736-4444G",
+      "dm": 245.45,
+      "period_ms": 4.36,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 19.34,
+        "discovery_plot": "discoveries/NGC6388G_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388G_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1736-4444H",
+      "name": "J1736-4444H",
+      "dm": 242.9,
+      "period_ms": 4.31,
+      "binary": false,
+      "associations": [
+        {
+          "name": "NGC 6388",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2026-01-12",
+        "observation_date": "2025-11-21",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Peasoup",
+        "project": "GC",
+        "discovery_snr": 12.3,
+        "discovery_plot": "discoveries/NGC6388H_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6388H_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1750-3703J",
+      "name": "J1750-3703J",
+      "dm": 230,
+      "period_ms": 2.704,
+      "binary": true,
+      "associations": [
+        {
+          "name": "NGC 6441",
+          "type": "Globular Cluster"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2025-12-05",
+        "observation_date": "2020-07-09",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "L-band",
+        "pipeline": "Nexto / PULSAR_MINER / Presto",
+        "project": "GC",
+        "discovery_snr": 5.7,
+        "discovery_plot": "discoveries/NGC6441J_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/NGC6441J_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1826+2401",
+      "name": "J1824+2401",
+      "dm": 46.6,
+      "period_ms": 2.7,
+      "binary": true,
+      "associations": [
+        {
+          "name": "4FGL J1824.7+2403",
+          "type": "Fermi LAT source"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2025-10-25",
+        "observation_date": "2025-10-12",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 52.3,
+        "discovery_plot": "discoveries/J1824+2401_discovery_plot.png",
+        "discovery_plot_url": ""
+      }
+    },
     {
       "slug": "J1736-4444B",
       "name": "J1736-4444B",
@@ -48,6 +1462,116 @@
         "discovery_snr": 11.5,
         "discovery_plot": "discoveries/NGC6388A_discovery_plot.png",
         "discovery_plot_url": "/trapum/discoveries/NGC6388A_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J0840-3133",
+      "name": "J0840-3133",
+      "dm": 79.3,
+      "period_ms": 262,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2025-09-24",
+        "observation_date": "2025-09-20",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 23.7,
+        "discovery_plot": "discoveries/J0840-3133_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J0840-3133_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J0919-6206",
+      "name": "J0919-6206",
+      "dm": 120.5,
+      "period_ms": 3.7,
+      "binary": true,
+      "associations": [
+        {
+          "name": "4FGL J0919.5-6203",
+          "type": "Fermi LAT source"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2025-09-24",
+        "observation_date": "2025-09-20",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 24.4,
+        "discovery_plot": "discoveries/J0919-6206_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J0919-6206_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J0310-69",
+      "name": "J0310-69",
+      "dm": 27.4,
+      "period_ms": 1283,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2025-09-18",
+        "observation_date": "2025-09-16",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 16.9,
+        "discovery_plot": "discoveries/J0310-69_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J0310-69_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1015-6355",
+      "name": "J1015-6355",
+      "dm": 139.1,
+      "period_ms": 5.2,
+      "binary": true,
+      "associations": [
+        {
+          "name": "4FGL J1015.1-6353",
+          "type": "Fermi LAT source"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2025-09-18",
+        "observation_date": "2025-09-16",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 21.1,
+        "discovery_plot": "discoveries/J1015-6355_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1015-6355_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "J1105-2558",
+      "name": "J1105-2558",
+      "dm": 22.9,
+      "period_ms": 3.5,
+      "binary": true,
+      "associations": [
+        {
+          "name": "4FGL J1105.1-2600",
+          "type": "Fermi LAT source"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2025-09-18",
+        "observation_date": "2025-09-16",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Peasoup",
+        "project": "FERMI",
+        "discovery_snr": 59.2,
+        "discovery_plot": "discoveries/J1105-2558_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1105-2558_discovery_plot.png"
       }
     },
     {
@@ -401,7 +1925,7 @@
     {
       "slug": "J1243-5605",
       "name": "J1243-5605",
-      "dm": 23.84,
+      "dm": 261.4,
       "period_ms": 723,
       "binary": true,
       "associations": [],
@@ -466,25 +1990,6 @@
       }
     },
     {
-      "slug": "J1223-5417",
-      "name": "J1223-5417",
-      "dm": 131.65,
-      "period_ms": 2015,
-      "binary": true,
-      "associations": [],
-      "discovery": {
-        "discovery_date": "2025-01-24",
-        "observation_date": "2024-12-20",
-        "backend": "FBFUSE/APSUSE",
-        "discovery_band": "UHF-band",
-        "pipeline": "Peasoup",
-        "project": "MMGPS-UHF",
-        "discovery_snr": 17.74,
-        "discovery_plot": "discoveries/J1223-5417_discovery_plot.png",
-        "discovery_plot_url": "/trapum/discoveries/J1223-5417_discovery_plot.png"
-      }
-    },
-    {
       "slug": "J1232-6406",
       "name": "J1232-6406",
       "dm": 316,
@@ -504,6 +2009,25 @@
       }
     },
     {
+      "slug": "J1233-5417",
+      "name": "J1233-5417",
+      "dm": 131.65,
+      "period_ms": 2015,
+      "binary": true,
+      "associations": [],
+      "discovery": {
+        "discovery_date": "2025-01-24",
+        "observation_date": "2024-12-20",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF-band",
+        "pipeline": "Peasoup",
+        "project": "MMGPS-UHF",
+        "discovery_snr": 17.74,
+        "discovery_plot": "discoveries/J1233-5417_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1233-5417_discovery_plot.png"
+      }
+    },
+    {
       "slug": "J1223-6601",
       "name": "J1223-6601",
       "dm": 196,
@@ -520,6 +2044,30 @@
         "discovery_snr": 10,
         "discovery_plot": "discoveries/J1223-6601_discovery_plot.png",
         "discovery_plot_url": "/trapum/discoveries/J1223-6601_discovery_plot.png"
+      }
+    },
+    {
+      "slug": "1213-4415",
+      "name": "J1213-4415",
+      "dm": 60.5,
+      "period_ms": 2.22,
+      "binary": true,
+      "associations": [
+        {
+          "name": "4FGL J1213.9-4416",
+          "type": "Fermi-LAT source"
+        }
+      ],
+      "discovery": {
+        "discovery_date": "2024-12-16",
+        "observation_date": "2024-11-24",
+        "backend": "FBFUSE/APSUSE",
+        "discovery_band": "UHF",
+        "pipeline": "Pulsar_miner",
+        "project": "FERMI",
+        "discovery_snr": 16.1,
+        "discovery_plot": "discoveries/J1213-4415_discovery_plot.png",
+        "discovery_plot_url": "/trapum/discoveries/J1213-4415_discovery_plot.png"
       }
     },
     {
@@ -2231,7 +3779,7 @@
     },
     {
       "slug": "J1649-3752",
-      "name": "J1647-3752",
+      "name": "J1649-3752",
       "dm": 222.9,
       "period_ms": 587.24,
       "binary": false,
@@ -6305,6 +7853,11 @@
       "slug": "J1823-3021H",
       "plotBase": "NGC6624H_discovery_plot_TBR.png",
       "plotRel": "discoveries/NGC6624H_discovery_plot_TBR.png"
+    },
+    {
+      "slug": "J1826+2401",
+      "plotBase": "J1824+2401_discovery_plot.png",
+      "plotRel": "discoveries/J1824+2401_discovery_plot.png"
     },
     {
       "slug": "J1831-0941",

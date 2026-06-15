@@ -315,6 +315,7 @@ export default function App() {
                   }
                 />
                 <Route path="/globular-cluster-explorer" element={<StaticRedirect to="/globular-clusters-3d.html" />} />
+                <Route path="/lighthouse-model" element={<StaticRedirect to="/pulsar_geometry_course.html" />} />
                 <Route path="/site-philosophy" element={<Philosophy theme={theme} />} />
                 <Route path="/resources/for-astronomers" element={<ForAstronomers theme={theme} />} />
                 <Route path="/resources/for-students" element={<ForStudents theme={theme} />} />

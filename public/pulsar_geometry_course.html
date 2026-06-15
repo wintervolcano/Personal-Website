@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lighthouse — Pulsar Beam Geometry</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    /* ink-on-parchment, cool observatory */
+    --bg:#0e1218;
+    --bg2:#11161e;
+    --paper:#13181f;
+    --ink:#e7e3d8;          /* warm bone */
+    --ink-soft:#b6b3a8;
+    --ink-dim:#7c7d78;
+    --ink-faint:#4e524f;
+    --rule:#222a33;
+    --rule-soft:#1a212a;
+    --gold:#c9a86a;          /* starlight, muted */
+    --gold-soft:#9a8556;
+    --blue:#8da9c4;          /* cool steel, for spin */
+    --blue-deep:#5e7790;
+    --rose:#b08a8f;          /* dusty, for magnetic */
+    --sage:#8ba596;          /* muted green for PA curve */
+    --glow:rgba(201,168,106,0.0);
+    --serif:'Fraunces',Georgia,serif;
+    --body:'Newsreader',Georgia,serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 80% -10%, #161c25 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--body);
+    overflow:hidden;
+    height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(201,168,106,0.22);color:var(--ink)}
+
+  /* faint paper grain overlay */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    opacity:.035;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .app{
+    display:grid;grid-template-columns:minmax(380px,440px) 1fr;
+    height:100vh;
+  }
+
+  /* ============ READING COLUMN ============ */
+  .read{
+    position:relative;
+    background:linear-gradient(180deg,var(--paper),#0f141b);
+    border-right:1px solid var(--rule);
+    display:flex;flex-direction:column;height:100vh;
+  }
+  .read::before{ /* hairline highlight on inner edge */
+    content:"";position:absolute;top:0;right:0;width:1px;height:100%;
+    background:linear-gradient(180deg,transparent,rgba(201,168,106,.18) 40%,rgba(201,168,106,.18) 60%,transparent);
+  }
+
+  .masthead{
+    padding:30px 40px 20px;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--gold);display:flex;align-items:center;gap:10px;margin-bottom:16px;
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold-soft),transparent)}
+  .masthead h1{
+    font-family:var(--serif);font-weight:500;font-size:30px;line-height:1.05;
+    letter-spacing:-.02em;color:var(--ink);
+  }
+  .masthead h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+  .masthead .standfirst{
+    font-size:14.5px;line-height:1.6;color:var(--ink-soft);margin-top:12px;
+    max-width:34ch;font-weight:400;
+  }
+
+  /* progress as an arc of ticks */
+  .progress{
+    padding:0 40px 22px;display:flex;align-items:center;gap:0;
+  }
+  .tick{
+    flex:1;height:24px;display:flex;align-items:flex-end;cursor:pointer;
+    position:relative;
+  }
+  .tick .bar{
+    width:100%;height:2px;background:var(--rule);transition:.45s cubic-bezier(.2,.8,.2,1);
+  }
+  .tick .num{
+    position:absolute;top:0;left:0;font-family:var(--mono);font-size:9px;
+    color:var(--ink-faint);transition:.3s;
+  }
+  .tick.done .bar{background:var(--gold-soft)}
+  .tick.active .bar{background:var(--gold);height:3px}
+  .tick.active .num{color:var(--gold)}
+  .tick:hover .num{color:var(--ink-soft)}
+
+  .scroll{flex:1;overflow-y:auto;padding:6px 40px 30px;scroll-behavior:smooth}
+  .scroll::-webkit-scrollbar{width:8px}
+  .scroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+  .scroll::-webkit-scrollbar-track{background:transparent}
+
+  /* step entrance */
+  .lesson{animation:rise .6s cubic-bezier(.2,.8,.2,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .chapter{
+    font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--ink-dim);margin-bottom:14px;
+  }
+  .lesson h2{
+    font-family:var(--serif);font-weight:500;font-size:25px;line-height:1.12;
+    letter-spacing:-.015em;margin-bottom:6px;color:var(--ink);
+  }
+  .lesson h2 .gl{font-family:var(--mono);font-style:normal;font-size:.78em;color:var(--gold);font-weight:500}
+  .lesson .deck{
+    font-family:var(--body);font-style:italic;font-size:14px;color:var(--ink-dim);
+    margin-bottom:22px;
+  }
+
+  .lesson p{font-size:14.5px;line-height:1.72;color:var(--ink-soft);margin-bottom:15px;font-weight:400}
+  .lesson p strong{color:var(--ink);font-weight:500}
+  .lesson .term{color:var(--gold);font-style:italic}
+  .lesson .termb{color:var(--blue)}
+  .lesson .termr{color:var(--rose)}
+
+  /* drop-cap on first paragraph */
+  .lesson .lead::first-letter{
+    font-family:var(--serif);font-weight:500;font-size:3.1em;line-height:.82;
+    float:left;margin:6px 10px 0 0;color:var(--gold);
+  }
+
+  /* equation slab */
+  .eq{
+    font-family:var(--mono);font-size:12.5px;line-height:1.85;
+    color:var(--ink);background:rgba(255,255,255,.018);
+    border:1px solid var(--rule-soft);border-left:2px solid var(--gold-soft);
+    border-radius:2px;padding:15px 18px;margin:20px 0;
+    letter-spacing:0;white-space:pre-wrap;overflow-x:auto;
+  }
+  .eq .c{color:var(--ink-faint);font-style:normal}
+  .eq .v{color:var(--gold)}
+
+  /* aside / margin note */
+  .note{
+    margin:22px 0;padding-left:18px;border-left:1px solid var(--rule);
+    font-size:13px;line-height:1.66;color:var(--ink-dim);font-style:italic;
+  }
+  .note .lab{
+    display:block;font-family:var(--mono);font-style:normal;font-size:9px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:6px;
+  }
+
+  /* ============ the live instrument control ============ */
+  .instrument{
+    margin:26px 0 8px;padding:18px 20px;
+    background:radial-gradient(120% 140% at 0% 0%, rgba(201,168,106,.05), transparent 60%),
+               rgba(255,255,255,.014);
+    border:1px solid var(--rule);border-radius:4px;position:relative;
+  }
+  .instrument::before{
+    content:"";position:absolute;left:-1px;top:14px;width:2px;height:22px;background:var(--gold);
+  }
+  .instrument .ihead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .instrument .iname{font-family:var(--body);font-size:14px;color:var(--ink)}
+  .instrument .iname .gl{font-family:var(--mono);color:var(--gold);font-size:15px}
+  .instrument .irel{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--ink-dim);text-transform:uppercase}
+  .instrument .ival{
+    font-family:var(--mono);font-size:22px;color:var(--gold);font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;line-height:1;
+  }
+  .instrument .ival .u{font-size:13px;color:var(--gold-soft)}
+
+  /* refined slider */
+  .slider{position:relative;height:30px;margin:6px 0 2px;display:flex;align-items:center}
+  .slider input{
+    -webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;
+    cursor:ew-resize;position:relative;z-index:2;margin:0;
+  }
+  .slider .track{
+    position:absolute;left:0;right:0;height:1px;background:var(--rule);top:50%;
+  }
+  .slider .fill{
+    position:absolute;left:0;height:1px;background:var(--gold);top:50%;transition:width .05s linear;
+  }
+  .slider input::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--bg);border:1.5px solid var(--gold);
+    box-shadow:0 0 0 4px rgba(201,168,106,.10), 0 2px 6px rgba(0,0,0,.4);
+    cursor:ew-resize;transition:box-shadow .2s,transform .1s;
+  }
+  .slider input::-webkit-slider-thumb:hover{box-shadow:0 0 0 6px rgba(201,168,106,.14),0 2px 6px rgba(0,0,0,.4)}
+  .slider input:active::-webkit-slider-thumb{transform:scale(.92)}
+  .slider input::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--bg);border:1.5px solid var(--gold);
+    box-shadow:0 0 0 4px rgba(201,168,106,.10);cursor:ew-resize;
+  }
+  .instrument .prompt{
+    font-family:var(--body);font-style:italic;font-size:12.5px;color:var(--ink-dim);
+    margin-top:12px;line-height:1.55;padding-top:12px;border-top:1px solid var(--rule-soft);
+  }
+  .instrument .prompt::before{content:"›  ";color:var(--gold)}
+
+  /* nav */
+  .nav{
+    padding:18px 40px;border-top:1px solid var(--rule);
+    display:flex;align-items:center;gap:14px;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.15));
+  }
+  .nav button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    cursor:pointer;border:none;background:none;transition:.2s;padding:6px 0;
+  }
+  .nav .back{color:var(--ink-dim)}
+  .nav .back:hover{color:var(--ink)}
+  .nav .back:disabled{opacity:.25;cursor:default}
+  .nav .spacer{flex:1}
+  .nav .next{
+    color:var(--bg);background:var(--gold);padding:11px 22px;border-radius:2px;
+    letter-spacing:.1em;box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
+  }
+  .nav .next:hover{background:#d4b478}
+  .nav .count{font-family:var(--mono);font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+  /* ============ OBSERVATORY (right) ============ */
+  .obs{position:relative;display:grid;grid-template-rows:1fr 232px;height:100vh;overflow:hidden}
+  .sky{position:relative;overflow:hidden}
+  canvas#scene{display:block;cursor:grab}
+  canvas#scene:active{cursor:grabbing}
+
+  /* vignette over sky */
+  .sky::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(80% 70% at 50% 45%, transparent 55%, rgba(8,11,15,.55) 100%);
+  }
+
+  .legend{
+    position:absolute;top:26px;left:28px;z-index:3;
+  }
+  .legend .lh{font-family:var(--mono);font-size:9px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:12px}
+  .legend .li{
+    display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;
+    color:var(--ink-dim);margin-bottom:7px;opacity:0;transform:translateX(-6px);
+    transition:.5s cubic-bezier(.2,.8,.2,1);letter-spacing:.02em;
+  }
+  .legend .li.on{opacity:1;transform:none;color:var(--ink-soft)}
+  .legend .li .sw{width:14px;height:2px;flex-shrink:0}
+  .legend .li .sw.dot{height:2px;background-image:repeating-linear-gradient(90deg,currentColor 0 3px,transparent 3px 6px)}
+
+  .stamp{
+    position:absolute;bottom:18px;right:26px;z-index:3;text-align:right;
+    font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--ink-faint);
+    line-height:1.7;pointer-events:none;
+  }
+  .stamp b{color:var(--gold-soft);font-weight:400}
+
+  .grab-hint{
+    position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;
+    font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);pointer-events:none;transition:opacity .4s;
+  }
+  .viewctl{
+    position:absolute;top:26px;right:28px;z-index:3;display:flex;gap:6px;
+  }
+  .viewctl button{
+    width:30px;height:30px;border-radius:3px;cursor:pointer;
+    background:rgba(20,26,34,.6);border:1px solid var(--rule);
+    color:var(--ink-dim);font-size:14px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:.2s;backdrop-filter:blur(4px);
+  }
+  .viewctl button:hover{border-color:var(--gold-soft);color:var(--gold);background:rgba(201,168,106,.08)}
+  .viewctl button.active{border-color:var(--gold);color:var(--gold)}
+
+  /* observer readout panels */
+  .panels{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule)}
+  .pane{
+    position:relative;padding:16px 24px;border-right:1px solid var(--rule);
+    background:linear-gradient(180deg,#10151c,#0d1117);
+  }
+  .pane:last-child{border-right:none}
+  .pane .ph{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11px;
+  }
+  .pane .pt{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)}
+  .pane .pmeta{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint)}
+  .pane canvas{display:block;width:100%;border-radius:2px}
+  .pane .readout{
+    font-family:var(--mono);font-size:11px;margin-top:11px;color:var(--ink-soft);
+    letter-spacing:.01em;line-height:1.5;
+  }
+  .pane .readout .ok{color:var(--gold)}
+  .pane .readout .miss{color:var(--rose)}
+  .pane .readout b{color:var(--sage);font-weight:500}
+
+  .veil{
+    position:absolute;inset:0;z-index:4;
+    background:linear-gradient(180deg,rgba(16,21,28,.94),rgba(13,17,23,.96));
+    backdrop-filter:blur(3px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:24px;gap:8px;
+  }
+  .veil .vi{font-family:var(--mono);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-soft)}
+  .veil .vt{font-family:var(--body);font-style:italic;font-size:13px;color:var(--ink-dim);max-width:30ch;line-height:1.5}
+
+  /* animate toggle inline button reused */
+  .ghostbtn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);background:transparent;border:1px solid var(--gold-soft);
+    border-radius:2px;padding:11px 0;width:100%;cursor:pointer;transition:.2s;margin-top:8px;
+  }
+  .ghostbtn:hover{background:rgba(201,168,106,.08)}
+
+  /* freeplay console */
+  .console{margin:18px 0 4px;border:1px solid var(--rule);border-radius:4px;
+    background:rgba(255,255,255,.012);padding:6px 14px}
+  .crow{display:grid;grid-template-columns:1fr 96px 42px;align-items:center;gap:12px;
+    padding:9px 0;border-bottom:1px solid var(--rule-soft)}
+  .crow:last-child{border-bottom:none}
+  .clabel{font-family:var(--body);font-size:12.5px;color:var(--ink-soft);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .clabel .cgl{font-family:var(--mono);font-size:13px;margin-right:4px}
+  .cslider{position:relative;height:20px;display:flex;align-items:center}
+  .cslider input{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;
+    cursor:ew-resize;margin:0;position:relative;z-index:2}
+  .ctrack{position:absolute;left:0;right:0;height:1px;background:var(--rule);top:50%}
+  .cfill{position:absolute;left:0;height:1px;top:50%;opacity:.7}
+  .cslider input::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;
+    background:var(--bg);border:1.5px solid var(--ink-dim);cursor:ew-resize;transition:transform .1s}
+  .cslider input:active::-webkit-slider-thumb{transform:scale(.9)}
+  .cslider input::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--bg);
+    border:1.5px solid var(--ink-dim);cursor:ew-resize}
+  .cval{font-family:var(--mono);font-size:11px;color:var(--gold);text-align:right;
+    font-variant-numeric:tabular-nums}
+
+  @media (max-width:920px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    .read{height:auto;max-height:54vh}
+    .obs{grid-template-rows:1fr 190px}
+    .masthead{padding:22px 26px 14px}
+    .scroll{padding:6px 26px 24px}
+    .progress,.nav{padding-left:26px;padding-right:26px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ READING COLUMN ============ -->
+  <aside class="read">
+    <div class="masthead">
+      <div class="eyebrow">A Field Guide</div>
+      <h1>The <em>Lighthouse</em><br>Problem</h1>
+      <p class="standfirst">A pulsar is a beam on a spinning star. Whether we ever see it is a question of angles. This guide builds the geometry one angle at a time.</p>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="scroll" id="scroll"></div>
+    <div class="nav">
+      <button class="back" id="back">Back</button>
+      <span class="spacer"></span>
+      <span class="count" id="count">01 / 08</span>
+      <button class="next" id="next">Begin</button>
+    </div>
+  </aside>
+
+  <!-- ============ OBSERVATORY ============ -->
+  <section class="obs">
+    <div class="sky">
+      <canvas id="scene"></canvas>
+      <div class="legend" id="legend"></div>
+      <div class="stamp">CELESTIAL SPHERE · <b>observer-centred frame</b><br>line of sight fixed · star free to tilt</div>
+      <div class="grab-hint" id="grabHint">drag to rotate · scroll to zoom · double-click to reset</div>
+      <div class="viewctl" id="viewctl">
+        <button data-v="default" title="Three-quarter view">⌖</button>
+        <button data-v="los" title="Look down the line of sight">◎</button>
+        <button data-v="side" title="Sky plane edge-on">▭</button>
+      </div>
+    </div>
+    <div class="panels">
+      <div class="pane" id="paneI">
+        <div class="ph"><span class="pt">Received Intensity</span><span class="pmeta" id="iMeta">one rotation</span></div>
+        <canvas id="pulseCanvas" height="104"></canvas>
+        <div class="readout" id="iRead"></div>
+        <div class="veil" id="veilI">
+          <span class="vi">Sealed</span>
+          <span class="vt">The pulse profile appears once the radio beam enters the picture.</span>
+        </div>
+      </div>
+      <div class="pane" id="paneP">
+        <div class="ph"><span class="pt">Polarisation Angle</span><span class="pmeta" id="pMeta">rotating vector model</span></div>
+        <canvas id="paCanvas" height="104"></canvas>
+        <div class="readout" id="pRead"></div>
+        <div class="veil" id="veilP">
+          <span class="vi">Sealed</span>
+          <span class="vt">The polarisation sweep is unsealed at the RVM chapter.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ====================== math ====================== */
+const D2R=Math.PI/180,R2D=180/Math.PI;
+const v=(x,y,z)=>({x,y,z});
+const add=(a,b)=>v(a.x+b.x,a.y+b.y,a.z+b.z);
+const mul=(a,s)=>v(a.x*s,a.y*s,a.z*s);
+const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const cross=(a,b)=>v(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
+const len=a=>Math.sqrt(dot(a,a));
+const norm=a=>{const l=len(a)||1;return mul(a,1/l)};
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ====================== state ====================== */
+const P={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13};
+const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false};
+let spinT=0,animOn=false;
+
+/* smoothed render values for graceful transitions */
+const R={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13,
+         los:0,sky:0,J:0,orbit:0,cone:0,S:0,mu:0,beam:0,sweep:0};
+function tickSmooth(){
+  let moving=false;
+  // cyclic angles (0-360) must lerp the short way around the circle
+  const cyclic={Omega:true,phase:true};
+  for(const k of['i','Omega','lambda','phase','alpha','rho']){
+    if(cyclic[k]){
+      let d=((P[k]-R[k]+540)%360)-180;        // shortest signed delta
+      if(Math.abs(d)>0.02){R[k]=(R[k]+d*0.18+360)%360;moving=true;}else R[k]=P[k];
+    }else{
+      if(Math.abs(R[k]-P[k])>0.02){R[k]=lerp(R[k],P[k],0.18);moving=true;}else R[k]=P[k];
+    }
+  }
+  for(const k of['los','sky','J','orbit','cone','S','mu','beam','sweep']){
+    const t=VIS[k]?1:0;if(Math.abs(R[k]-t)>0.004){R[k]=lerp(R[k],t,0.10);moving=true;}else R[k]=t;
+  }
+  return moving;
+}
+
+function geometry(){
+  const J=norm(v(
+    Math.sin(R.i*D2R)*Math.cos(R.Omega*D2R),
+    Math.sin(R.i*D2R)*Math.sin(R.Omega*D2R),
+    Math.cos(R.i*D2R)));
+  let ref=norm(cross(J,v(0,0,1)));if(len(cross(J,v(0,0,1)))<1e-4)ref=v(1,0,0);
+  const ref2=cross(J,ref);
+  const cd=add(mul(ref,Math.cos(R.phase*D2R)),mul(ref2,Math.sin(R.phase*D2R)));
+  const S=norm(add(mul(J,Math.cos(R.lambda*D2R)),mul(cd,Math.sin(R.lambda*D2R))));
+  let mref=norm(cross(S,J));if(len(cross(S,J))<1e-4)mref=norm(cross(S,v(1,0,0)));
+  const mref2=cross(S,mref);
+  const md=add(mul(mref,Math.cos(spinT)),mul(mref2,Math.sin(spinT)));
+  const mu=norm(add(mul(S,Math.cos(R.alpha*D2R)),mul(md,Math.sin(R.alpha*D2R))));
+  return {J,S,mu,mref,mref2};
+}
+function viewAngles(g){
+  const los=v(0,0,1);
+  const zeta=Math.acos(clamp(dot(g.S,los),-1,1))*R2D;
+  return {zeta,beta:zeta-R.alpha};
+}
+
+/* ====================== 3D ====================== */
+const cv=document.getElementById('scene'),ctx=cv.getContext('2d');
+// camera has a target (set by input) and a smoothed actual value (used to render)
+let yaw=0.62,pit=-0.30,zoom=1;
+let yawT=0.62,pitT=-0.30,zoomT=1;
+let drag=false,lx=0,ly=0,autoYaw=true;
+function camSmooth(){
+  let m=false;
+  if(Math.abs(yaw-yawT)>1e-4){yaw=lerp(yaw,yawT,drag?0.5:0.22);m=true;}else yaw=yawT;
+  if(Math.abs(pit-pitT)>1e-4){pit=lerp(pit,pitT,drag?0.5:0.22);m=true;}else pit=pitT;
+  if(Math.abs(zoom-zoomT)>1e-4){zoom=lerp(zoom,zoomT,0.22);m=true;}else zoom=zoomT;
+  return m;
+}
+function resize(){const r=cv.parentElement.getBoundingClientRect();
+  cv.width=r.width*devicePixelRatio;cv.height=r.height*devicePixelRatio;
+  cv.style.width=r.width+'px';cv.style.height=r.height+'px';}
+function proj(p){
+  let x=p.x,y=p.y,z=p.z;
+  const cy=Math.cos(yaw),sy=Math.sin(yaw);let nx=x*cy-z*sy,nz=x*sy+z*cy;x=nx;z=nz;
+  const cp=Math.cos(pit),sp=Math.sin(pit);let ny=y*cp-z*sp;nz=y*sp+z*cp;y=ny;z=nz;
+  const s=Math.min(cv.width,cv.height)*0.30*zoom;
+  return {x:cv.width/2+x*s,y:cv.height/2-y*s,z};
+}
+const DPR=()=>devicePixelRatio;
+function fontPx(px){return `${px*DPR()}px var(--mono),monospace`;}
+function seg(a,b,col,w,dash,alpha=1){
+  if(alpha<=0.01)return;
+  const A=proj(a),B=proj(b);
+  ctx.globalAlpha=alpha;ctx.strokeStyle=col;ctx.lineWidth=w*DPR();
+  ctx.setLineDash(dash?dash.map(d=>d*DPR()):[]);
+  ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+}
+function vec(to,col,label,alpha=1,w=1.6){
+  if(alpha<=0.01)return;
+  const O=v(0,0,0),A=proj(O),B=proj(to);
+  ctx.globalAlpha=alpha;
+  seg(O,to,col,w,null,1);
+  const ang=Math.atan2(B.y-A.y,B.x-A.x),h=9*DPR();
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(B.x,B.y);
+  ctx.lineTo(B.x-h*Math.cos(ang-0.38),B.y-h*Math.sin(ang-0.38));
+  ctx.lineTo(B.x-h*Math.cos(ang+0.38),B.y-h*Math.sin(ang+0.38));
+  ctx.closePath();ctx.fill();
+  if(label){ctx.fillStyle=col;ctx.font=`500 ${14*DPR()}px 'IBM Plex Mono',monospace`;
+    ctx.fillText(label,B.x+8*DPR(),B.y-3*DPR());}
+  ctx.globalAlpha=1;
+}
+function ring(n0,r,col,w,dash,alpha=1){
+  if(alpha<=0.01||r<=0)return;
+  const n=norm(n0);let u=norm(cross(n,v(0,1,0)));if(len(cross(n,v(0,1,0)))<1e-3)u=norm(cross(n,v(1,0,0)));
+  const w2=cross(n,u);
+  ctx.globalAlpha=alpha;ctx.strokeStyle=col;ctx.lineWidth=w*DPR();
+  ctx.setLineDash(dash?dash.map(d=>d*DPR()):[]);ctx.beginPath();
+  for(let t=0;t<=360;t+=2.5){const a=t*D2R;const pt=add(mul(u,r*Math.cos(a)),mul(w2,r*Math.sin(a)));
+    const pr=proj(pt);if(t===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+  ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+}
+function coneShape(axis,half,L,col,fillA,lineA){
+  if(lineA<=0.01)return;
+  const n=norm(axis);const rimC=mul(n,L*Math.cos(half*D2R)),rimR=L*Math.sin(half*D2R);
+  let u=norm(cross(n,v(0,1,0)));if(len(cross(n,v(0,1,0)))<1e-3)u=norm(cross(n,v(1,0,0)));
+  const w2=cross(n,u);
+  // fill
+  ctx.globalAlpha=fillA;ctx.fillStyle=col;ctx.beginPath();
+  for(let t=0;t<=360;t+=5){const a=t*D2R;const pt=add(rimC,add(mul(u,rimR*Math.cos(a)),mul(w2,rimR*Math.sin(a))));
+    const pr=proj(pt);if(t===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+  ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+  // rim
+  ctx.globalAlpha=lineA;ctx.strokeStyle=col;ctx.lineWidth=1.1*DPR();ctx.beginPath();
+  for(let t=0;t<=360;t+=2.5){const a=t*D2R;const pt=add(rimC,add(mul(u,rimR*Math.cos(a)),mul(w2,rimR*Math.sin(a))));
+    const pr=proj(pt);if(t===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+  ctx.stroke();
+  seg(v(0,0,0),add(rimC,mul(u,rimR)),col,0.9,null,lineA*0.7);
+  seg(v(0,0,0),add(rimC,mul(u,-rimR)),col,0.9,null,lineA*0.7);
+  ctx.globalAlpha=1;
+}
+function arc(a,b,r,col,label,alpha=1){
+  if(alpha<=0.01)return;
+  const A=norm(a),B=norm(b),axis=norm(cross(A,B));
+  if(len(cross(A,B))<1e-5)return;
+  const tot=Math.acos(clamp(dot(A,B),-1,1));
+  const rotv=(p,ax,an)=>{const k=norm(ax),c=Math.cos(an),s=Math.sin(an);
+    return add(add(mul(p,c),mul(cross(k,p),s)),mul(k,dot(k,p)*(1-c)));};
+  ctx.globalAlpha=alpha;ctx.strokeStyle=col;ctx.lineWidth=1.3*DPR();ctx.beginPath();
+  for(let k=0;k<=24;k++){const pt=mul(rotv(A,axis,tot*k/24),r);const pr=proj(pt);
+    if(k===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+  ctx.stroke();
+  if(label){const mid=mul(rotv(A,axis,tot/2),r*1.16);const pr=proj(mid);
+    ctx.fillStyle=col;ctx.font=`italic 500 ${13*DPR()}px 'IBM Plex Mono',monospace`;
+    ctx.fillText(label,pr.x,pr.y);}
+  ctx.globalAlpha=1;
+}
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const g=geometry();
+  const s=Math.min(cv.width,cv.height)*0.30*zoom;
+  // sphere — soft double ring
+  ctx.strokeStyle='rgba(141,169,196,0.10)';ctx.lineWidth=1*DPR();
+  ctx.beginPath();ctx.arc(cv.width/2,cv.height/2,s,0,2*Math.PI);ctx.stroke();
+  ctx.strokeStyle='rgba(201,168,106,0.05)';ctx.lineWidth=4*DPR();
+  ctx.beginPath();ctx.arc(cv.width/2,cv.height/2,s,0,2*Math.PI);ctx.stroke();
+
+  if(R.sky>0.01) ring(v(0,0,1),1,'#8da9c4',1,null,R.sky*0.28);
+  if(R.orbit>0.01) ring(g.J,0.97,'#c9a86a',1.1,[5,5],R.orbit*0.42);
+  if(R.cone>0.01) coneShape(g.J,R.lambda,0.92,'#8da9c4',R.cone*0.10,R.cone*0.5);
+
+  if(R.los>0.01){
+    vec(v(0,0,1.26),'#9fb0c2','to observer',R.los*0.75,1.4);
+    seg(v(0,0,0),v(0,0,-1.28),'#9fb0c2',1.2,[4,5],R.los*0.5);
+    const pr=proj(v(0,0,-1.33));ctx.globalAlpha=R.los*0.7;ctx.fillStyle='#9fb0c2';
+    ctx.font=`${11*DPR()}px 'IBM Plex Mono',monospace`;ctx.fillText('K',pr.x+6*DPR(),pr.y);ctx.globalAlpha=1;
+  }
+  if(R.J>0.01){
+    vec(mul(g.J,1.12),'#c9a86a','J',R.J,1.8);
+    if(R.los>0.5) arc(v(0,0,1),g.J,0.40,'#c9a86a','i',R.J*R.los);
+  }
+  if(R.S>0.01){
+    vec(mul(g.S,1.03),'#8da9c4','S',R.S,1.9);
+    if(R.cone>0.5) arc(g.J,g.S,0.54,'#8da9c4','λ',R.S*R.cone);
+  }
+  if(R.mu>0.01){
+    vec(mul(g.mu,0.95),'#b08a8f','μ',R.mu,1.7);
+    if(R.S>0.5) arc(g.S,g.mu,0.33,'#b08a8f','α',R.mu*R.S);
+  }
+  if(R.beam>0.01) coneShape(g.mu,R.rho,0.9,'#b08a8f',R.beam*0.09,R.beam*0.6);
+  if(R.sweep>0.01){
+    const n=norm(g.S);let u=norm(cross(n,v(0,1,0)));if(len(cross(n,v(0,1,0)))<1e-3)u=norm(cross(n,v(1,0,0)));
+    const w2=cross(n,u);const rC=mul(n,Math.cos(R.alpha*D2R)),rR=Math.sin(R.alpha*D2R);
+    ctx.globalAlpha=R.sweep*0.45;ctx.strokeStyle='#b08a8f';ctx.lineWidth=1*DPR();
+    ctx.setLineDash([6*DPR(),4*DPR(),2*DPR(),4*DPR()]);ctx.beginPath();
+    for(let t=0;t<=360;t+=2.5){const a=t*D2R;
+      const pt=mul(add(rC,add(mul(u,rR*Math.cos(a)),mul(w2,rR*Math.sin(a)))),0.9);
+      const pr=proj(pt);if(t===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+    ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  }
+  if(VIS.mu) drawProfile(g);
+  if(VIS.pa) drawPA(g);
+  syncLegend();
+}
+
+/* ====================== profile ====================== */
+const pc=document.getElementById('pulseCanvas'),pctx=pc.getContext('2d');
+function drawProfile(g){
+  const cssW=pc.clientWidth;if(cssW<=0)return;
+  const H0=104,W=cssW*DPR(),H=H0*DPR();
+  if(pc.width!==W)pc.width=W; if(pc.height!==H)pc.height=H;
+  pc.style.height=H0+'px'; pctx.clearRect(0,0,W,H);
+  const los=v(0,0,1),N=361,sep=[];
+  for(let k=0;k<N;k++){const a=(k-180)*D2R;
+    const md=add(mul(g.mref,Math.cos(a)),mul(g.mref2,Math.sin(a)));
+    const mu=norm(add(mul(g.S,Math.cos(R.alpha*D2R)),mul(md,Math.sin(R.alpha*D2R))));
+    sep.push(Math.acos(clamp(dot(mu,los),-1,1))*R2D);}
+  const I=sep.map(x=>x<R.rho*1.9?Math.exp(-0.5*(x/(R.rho*0.55))**2):0);
+  const crosses=sep.some(x=>x<R.rho),minSep=Math.min(...sep),maxI=Math.max(...I,1e-3);
+  const base=H-16*DPR(),amp=H-30*DPR();
+  pctx.strokeStyle='#1c242e';pctx.lineWidth=1*DPR();
+  pctx.beginPath();pctx.moveTo(0,base);pctx.lineTo(W,base);pctx.stroke();
+  pctx.strokeStyle='#161d26';pctx.setLineDash([2*DPR(),3*DPR()]);
+  pctx.beginPath();pctx.moveTo(W/2,8*DPR());pctx.lineTo(W/2,base);pctx.stroke();pctx.setLineDash([]);
+  const col=crosses?'#c9a86a':'#7c6a6d';
+  const grad=pctx.createLinearGradient(0,base-amp,0,base);
+  grad.addColorStop(0,(crosses?'rgba(201,168,106,0.22)':'rgba(176,138,143,0.12)'));
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  pctx.fillStyle=grad;pctx.beginPath();
+  for(let k=0;k<N;k++){const x=k/(N-1)*W,y=base-(I[k]/maxI)*amp;if(k===0)pctx.moveTo(x,base);pctx.lineTo(x,y);}
+  pctx.lineTo(W,base);pctx.closePath();pctx.fill();
+  pctx.strokeStyle=col;pctx.lineWidth=1.6*DPR();pctx.beginPath();
+  for(let k=0;k<N;k++){const x=k/(N-1)*W,y=base-(I[k]/maxI)*amp;if(k===0){pctx.moveTo(x,base);}pctx.lineTo(x,y);}
+  pctx.stroke();
+  const {zeta,beta}=viewAngles(g),r=document.getElementById('iRead');
+  if(crosses){const w50=I.filter(x=>x/maxI>0.5).length;
+    r.innerHTML=`ζ ${zeta.toFixed(1)}°&nbsp;&nbsp;β ${beta.toFixed(1)}°&nbsp;&nbsp;<span class="ok">W₅₀ ≈ ${w50}° — a pulse arrives</span>`;
+  }else{
+    r.innerHTML=`ζ ${zeta.toFixed(1)}°&nbsp;&nbsp;β ${beta.toFixed(1)}°&nbsp;&nbsp;<span class="miss">nearest ${minSep.toFixed(1)}° — the beam misses</span>`;
+  }
+}
+
+/* ====================== RVM ====================== */
+const pac=document.getElementById('paCanvas'),patx=pac.getContext('2d');
+function drawPA(g){
+  const cssW=pac.clientWidth;if(cssW<=0)return;
+  const H0=104,W=cssW*DPR(),H=H0*DPR();
+  if(pac.width!==W)pac.width=W; if(pac.height!==H)pac.height=H;
+  pac.style.height=H0+'px'; patx.clearRect(0,0,W,H);
+  const {zeta,beta}=viewAngles(g),a=R.alpha*D2R,z=zeta*D2R,N=361,PA=[];
+  for(let k=0;k<N;k++){const phi=(k-180)*D2R;
+    const num=Math.sin(a)*Math.sin(phi),den=Math.sin(z)*Math.cos(a)-Math.cos(z)*Math.sin(a)*Math.cos(phi);
+    PA.push(Math.atan2(num,den)*R2D);}
+  patx.strokeStyle='#161d26';patx.lineWidth=1*DPR();
+  [0,.5,1].forEach(f=>{const y=10*DPR()+f*(H-20*DPR());patx.beginPath();patx.moveTo(0,y);patx.lineTo(W,y);patx.stroke();});
+  patx.setLineDash([2*DPR(),3*DPR()]);patx.beginPath();patx.moveTo(W/2,8*DPR());patx.lineTo(W/2,H-10*DPR());patx.stroke();patx.setLineDash([]);
+  patx.fillStyle='#4e524f';patx.font=`${9*DPR()}px 'IBM Plex Mono',monospace`;
+  patx.fillText('+90',5*DPR(),15*DPR());patx.fillText('−90',5*DPR(),H-11*DPR());
+  patx.strokeStyle='#8ba596';patx.lineWidth=1.8*DPR();patx.beginPath();
+  let started=false,prevY=null;
+  for(let k=0;k<N;k++){const x=k/(N-1)*W,y=10*DPR()+(1-(PA[k]+90)/180)*(H-20*DPR());
+    if(prevY!==null&&Math.abs(y-prevY)>H*0.5){patx.stroke();patx.beginPath();started=false;}
+    if(!started){patx.moveTo(x,y);started=true;}else patx.lineTo(x,y);prevY=y;}
+  patx.stroke();
+  const slope=Math.sin(a)/Math.sin(Math.abs(beta)*D2R||1e-3);
+  document.getElementById('pRead').innerHTML=
+    `max slope ∝ sin α / sin β = <b>${slope.toFixed(1)}</b>&nbsp;&nbsp;<span style="color:#7c7d78">steeper ⇒ closer pass</span>`;
+}
+
+/* ====================== legend ====================== */
+const legendDefs=[
+  {f:'los',c:'#9fb0c2',t:'line of sight',d:false},
+  {f:'sky',c:'#8da9c4',t:'sky plane',d:false},
+  {f:'J',c:'#c9a86a',t:'J — orbital axis',d:false},
+  {f:'cone',c:'#8da9c4',t:'precession cone',d:false},
+  {f:'S',c:'#8da9c4',t:'S — spin axis',d:false},
+  {f:'mu',c:'#b08a8f',t:'μ — magnetic axis',d:false},
+  {f:'beam',c:'#b08a8f',t:'radio beam',d:false},
+  {f:'sweep',c:'#b08a8f',t:'beam path',d:true},
+];
+let legendBuilt=false;
+function buildLegend(){
+  const el=document.getElementById('legend');
+  el.innerHTML='<div class="lh">In view</div>'+legendDefs.map(d=>
+    `<div class="li" data-f="${d.f}"><span class="sw ${d.d?'dot':''}" style="background:${d.d?'':d.c};color:${d.c}"></span>${d.t}</div>`).join('');
+  legendBuilt=true;
+}
+function syncLegend(){
+  if(!legendBuilt)buildLegend();
+  legendDefs.forEach(d=>{
+    const el=document.querySelector(`.legend .li[data-f="${d.f}"]`);
+    if(el)el.classList.toggle('on',VIS[d.f]);
+  });
+}
+
+/* ====================== lessons ====================== */
+const STEPS=[
+{
+  chapter:'Chapter I — The Frame',
+  title:'One fixed direction',
+  deck:'Everything is measured against the line to us.',
+  vis:{los:true},
+  set:{i:90,Omega:125,lambda:0,alpha:0,phase:0},
+  ctrl:null,
+  body:`<p class="lead">A pulsar does not know we are watching. It spins and beams the same whether or not Earth lies in its path. So the first thing to fix is not the star but <strong>us</strong>: the single line running from the pulsar to the telescope.</p>
+  <p>That line is the anchor. Astronomers call its direction <span class="term">K</span> — pointing back along our sightline. Every angle in this guide answers one question: <em>how is some axis of the star tilted against this line?</em></p>
+  <div class="note"><span class="lab">Why begin here</span>Two identical pulsars can look utterly different to us, or one may be invisible while the other blazes — purely because of orientation. Geometry, not physics, decides what reaches the dish.</div>
+  <p>Try the sphere on the right. Drag it. The line of sight holds still while your viewpoint moves — you are walking around the star, not turning it.</p>`
+},
+{
+  chapter:'Chapter II — The Orbit',
+  title:'Inclination & node, <span class="gl">i, Ω</span>',
+  deck:'How the binary plane tips into view — and which way.',
+  vis:{los:true,sky:true,J:true,orbit:true},
+  set:{lambda:0,alpha:0},
+  ctrls:[
+    {key:'i',min:0,max:180,step:1,name:'Inclination',gl:'i',rel:'J to line of sight',
+      prompt:'Swing to 90° for edge-on, then toward 0° for face-on. Watch J tip toward the sightline.'},
+    {key:'Omega',min:0,max:360,step:1,name:'Longitude of ascending node',gl:'Ω',rel:'orientation on the sky',
+      prompt:'Now turn the hinge. Ω spins the whole orbit around the line of sight without changing how steeply it tips.'}
+  ],
+  body:`<p class="lead">Most pulsars worth timing sit in binaries. The orbit carries an angular-momentum axis, <span class="term">J</span> — the gold arrow, perpendicular to the orbital plane. The angle between <strong>J</strong> and our line of sight is the <span class="term">inclination, i</span>.</p>
+  <div class="eq"><span class="v">i = 90°</span>  <span class="c">edge-on — we see through the orbital plane</span>
+<span class="v">i = 0°</span>   <span class="c">face-on — J points straight at us</span></div>
+  <p>The dashed gold ellipse is the orbital plane; the steel ring is the <strong>sky plane</strong>, square to our view. Inclination is the tilt between them.</p>
+  <p>But a tilt needs a <em>direction</em> too. The two planes meet along a line — the <strong>line of nodes</strong> — and where the orbit rises through the sky plane, away from us, is the <strong>ascending node</strong>. The angle to that point, measured around the sky, is the <span class="term">longitude of the ascending node, Ω</span>. Where <span class="term">i</span> says how steeply the orbit tips, <span class="term">Ω</span> says which way the hinge is turned.</p>
+  <div class="note"><span class="lab">In practice</span>Near edge-on, the companion passes almost in front of the pulsar each orbit. Its gravity delays the pulses — the <em>Shapiro delay</em> — which is how binary pulsars are weighed. Geometry hands us a scale. (Ω rotates the whole picture on the sky but leaves the timing largely unchanged — which is why it is often the hardest of the orbital angles to pin down.)</div>`
+},
+{
+  chapter:'Chapter III — The Tilt',
+  title:'Misalignment, <span class="gl">λ</span>',
+  deck:'When the spin refuses to follow the orbit.',
+  vis:{los:true,sky:true,J:true,orbit:true,cone:true,S:true},
+  set:{phase:32,alpha:0},
+  ctrl:{key:'lambda',min:0,max:55,step:1,name:'Spin–orbit misalignment',gl:'λ',rel:'S to J',
+    prompt:'At 0° the spin lies on J — flat, no cone. Open it up and a cone of possibility appears.'},
+  body:`<p class="lead">The star's <span class="termb">spin axis, S</span> need not align with the orbit's <span class="term">J</span>. A supernova kick at birth can knock them apart by an angle <span class="termb">λ</span>.</p>
+  <p>This matters because of a relativistic effect: <strong>geodetic precession</strong>. The spin axis is dragged slowly around <strong>J</strong>, tracing a <em>cone of half-angle λ</em> over years or decades. λ sets how wide that cone opens.</p>
+  <div class="eq">S precesses around J on a cone of half-angle <span class="v">λ</span>
+period set by the masses and the orbit</div>
+  <div class="note"><span class="lab">The slow clock</span>λ is fixed at birth. What changes is where <em>on</em> the cone the spin currently points — and that slow drift is what reshapes the beam we see, year over year. It is one of the few ways to watch general relativity act in real time.</div>`
+},
+{
+  chapter:'Chapter IV — The Phase',
+  title:'Where on the cone, <span class="gl">φ</span>',
+  deck:'A telescope catches only a slice of the slow turn.',
+  vis:{los:true,sky:true,J:true,orbit:true,cone:true,S:true},
+  set:{alpha:0},
+  ctrl:{key:'phase',min:0,max:360,step:1,name:'Precession phase',gl:'φ',rel:'position on cone',
+    prompt:'Sweep the full circle. The spin walks around the cone — but real data only ever see a short arc of this.'},
+  body:`<p class="lead">The width of the cone is set. <span class="term">φ</span> is the <strong>phase</strong> — where the spin axis sits on that cone right now. Across a full precession period, φ runs once around the circle.</p>
+  <p>Here is the catch that defines the field: precession periods run to <strong>decades</strong>, but observing campaigns run to <strong>years</strong>. A telescope samples only a small arc of φ — a few degrees of a slow, century-scale turn.</p>
+  <div class="note"><span class="lab">The measurement problem</span>If the spin barely moves over your baseline, the beam geometry barely changes — and the data cannot pin down where on the cone you are. A short record leaves the phase loosely held. Only the angles that don't depend on φ stay sharp. One of those is next.</div>`
+},
+{
+  chapter:'Chapter V — The Beam',
+  title:'Obliquity, <span class="gl">α</span>',
+  deck:'The lighthouse tilt that makes a pulsar pulse.',
+  vis:{los:true,sky:true,J:true,cone:true,S:true,mu:true,beam:true},
+  set:{rho:15},
+  ctrl:{key:'alpha',min:0,max:180,step:1,name:'Magnetic obliquity',gl:'α',rel:'μ to S',
+    prompt:'At 0° the beam hugs the spin axis — no real sweep. Near 90° it carves the widest circle on the sky.'},
+  body:`<p class="lead">Radio emission streams from the <span class="termr">magnetic axis, μ</span> — and on a neutron star, the magnetic pole rarely sits on the spin pole. The angle between them is the <span class="termr">obliquity, α</span>.</p>
+  <p>Because the star spins, μ and its narrow beam sweep a circle across the sky every rotation. That sweep is the lighthouse. The intensity panel below has just woken up to show what an observer in the beam would record.</p>
+  <div class="eq"><span class="v">α</span> = angle( S , μ )   <span class="c">the lighthouse tilt</span></div>
+  <div class="note"><span class="lab">The angle that endures</span>α is read off the spin axis directly, not from the precession cone. So even when φ is loosely held by a short record, α stays well-determined. It is the sturdy parameter — the one that survives.</div>`
+},
+{
+  chapter:'Chapter VI — The Encounter',
+  title:'Impact, <span class="gl">β = ζ − α</span>',
+  deck:'Whether the beam ever finds us.',
+  vis:{los:true,sky:true,cone:true,S:true,mu:true,beam:true,sweep:true},
+  set:{},
+  ctrl:{key:'rho',min:1,max:38,step:0.5,name:'Beam half-width',gl:'ρ',rel:'opening of the beam',
+    prompt:'Shrink ρ until the intensity panel turns rose. The beam reaches us only if its swept path passes within ρ of the sightline.'},
+  body:`<p class="lead">Two derived angles settle everything. <span class="termb">ζ</span> is the angle between the spin axis and our line of sight. Subtract the obliquity and you get the <span class="term">impact angle, β</span>.</p>
+  <div class="eq"><span class="v">ζ</span> = angle( S , line of sight )   <span class="c">viewing angle</span>
+<span class="v">β = ζ − α</span>                      <span class="c">impact angle</span></div>
+  <p>β is the closest the beam centre comes to our sightline. If <strong>|β| is smaller than the beam half-width ρ</strong>, the beam sweeps across us and a pulse arrives. If not, it misses, and the pulsar is dark to us — though plainly visible from another angle.</p>
+  <div class="note"><span class="lab">Read the panel</span>The dash-dot ring is the path μ traces in one rotation. The profile glows gold when that ring dips within ρ of the line of sight, rose when it never does. Because ζ depends on φ, β drifts as the star precesses — and the pulse width slowly breathes. That breathing is the precession signal itself.</div>`
+},
+{
+  chapter:'Chapter VII — The Signature',
+  title:'The polarisation S-curve',
+  deck:'Geometry written into the light itself.',
+  vis:{los:true,cone:true,S:true,mu:true,beam:true,sweep:true,pa:true},
+  set:{},
+  ctrl:{key:'alpha',min:5,max:175,step:1,name:'Obliquity, revisited',gl:'α',rel:'μ to S',
+    prompt:'Move α and watch the sage S-curve steepen and slide. This curve is what you actually fit in real polarimetry.'},
+  body:`<p class="lead">The beam carries linearly polarised light, and the angle of that polarisation, <strong>ψ</strong>, traces the magnetic field lines as the beam sweeps past. The <span style="color:#8ba596;font-style:italic">Rotating Vector Model</span> predicts its shape — a clean S.</p>
+  <div class="eq">tan(ψ − ψ₀) =        sin α · sin φ
+              ──────────────────────────────
+              sin ζ cos α − cos ζ sin α cos φ</div>
+  <p>The curve is steepest at closest approach, and that steepness is the prize:</p>
+  <div class="eq">( dψ / dφ )<span class="c">max</span> ∝ sin α / sin β</div>
+  <p>A <strong>steep</strong> S-curve means a <strong>small impact angle</strong> — the sightline cut close to the magnetic pole. Fit the curve, and α and β fall out. This is the most powerful geometric handle in all of pulsar polarimetry.</p>
+  <div class="note"><span class="lab">The drift, again</span>As the star precesses and ζ creeps, the S-curve subtly changes shape between epochs. Watching that change — or confirming its absence over a baseline — is how geodetic precession is measured in polarised light.</div>`
+},
+{
+  chapter:'Chapter VIII — The Whole',
+  title:'The observatory',
+  deck:'Every angle, yours to set.',
+  vis:{los:true,sky:true,J:true,orbit:true,cone:true,S:true,mu:true,beam:true,sweep:true,pa:true},
+  set:{},
+  ctrl:null,
+  freeplay:true,
+  body:`<p class="lead">Everything is unsealed and every angle is live. The logic runs in one line, from orbit to observation:</p>
+  <div class="eq"><span style="color:#c9a86a">i, Ω</span> place the orbit  →  <span style="color:#8da9c4">λ</span> opens the cone
+→  <span style="color:#8da9c4">φ</span> says where the spin is now
+→  <span style="color:#b08a8f">α</span> tilts the beam off the spin
+→  ζ, β decide if the beam finds us
+→  <span style="color:#c9a86a">width</span> + <span style="color:#8ba596">S-curve</span> = what we record</div>
+  <p>Set the star spinning, then walk the precession phase φ slowly. <strong>The recorded width and the polarisation S-curve evolve together</strong> — that coupled drift is how a slowly precessing pulsar becomes a test of gravity.</p>
+  <div class="console" id="console"></div>
+  <button class="ghostbtn" id="animBtn">▶ Set the star spinning</button>
+  <div class="note"><span class="lab">The long game</span>The sturdy angles — α above all — are pinned by even a short record. The cone-bound ones wait on time. A longer baseline is the instrument that resolves the slow turn, and with it, a measurement of spacetime curvature written in radio light.</div>`
+}
+];
+
+/* ====================== engine ====================== */
+let cur=0;
+const scroll=document.getElementById('scroll');
+const progress=document.getElementById('progress');
+STEPS.forEach((_,k)=>{const t=document.createElement('div');t.className='tick';
+  t.innerHTML=`<span class="num">${String(k+1).padStart(2,'0')}</span><span class="bar"></span>`;
+  t.onclick=()=>go(k);progress.appendChild(t);});
+
+function applySet(set){for(const k in set)P[k]=set[k];}
+function render(){
+  const st=STEPS[cur];
+  for(const k in VIS)VIS[k]=!!st.vis[k];
+  applySet(st.set||{});
+  document.getElementById('veilI').style.display=VIS.mu?'none':'flex';
+  document.getElementById('veilP').style.display=VIS.pa?'none':'flex';
+  [...progress.children].forEach((t,k)=>{t.className='tick'+(k<cur?' done':'')+(k===cur?' active':'');});
+  let ctrlHTML='';
+  const ctrls = st.ctrls || (st.ctrl?[st.ctrl]:[]);
+  ctrls.forEach((c,idx)=>{
+    ctrlHTML+=`<div class="instrument">
+      <div class="ihead">
+        <div><div class="iname"><span class="gl">${c.gl}</span> · ${c.name}</div></div>
+        <div class="ival" id="ival${idx}">${P[c.key]}<span class="u">°</span></div>
+      </div>
+      <div class="irel">${c.rel}</div>
+      <div class="slider"><div class="track"></div><div class="fill" id="sfill${idx}"></div>
+        <input type="range" id="sl${idx}" min="${c.min}" max="${c.max}" step="${c.step}" value="${P[c.key]}"></div>
+      ${c.prompt?`<div class="prompt">${c.prompt}</div>`:''}
+    </div>`;
+  });
+  scroll.innerHTML=`<div class="lesson">
+    <div class="chapter">${st.chapter}</div>
+    <h2>${st.title}</h2>
+    <div class="deck">${st.deck}</div>
+    ${ctrlHTML}${st.body}</div>`;
+  scroll.scrollTop=0;
+  ctrls.forEach((c,idx)=>{
+    const sl=document.getElementById('sl'+idx),val=document.getElementById('ival'+idx),fill=document.getElementById('sfill'+idx);
+    const setFill=()=>{fill.style.width=((sl.value-c.min)/(c.max-c.min)*100)+'%';};
+    setFill();
+    sl.addEventListener('input',()=>{P[c.key]=parseFloat(sl.value);
+      val.innerHTML=sl.value+'<span class="u">°</span>';setFill();ensureLoop();});
+  });
+  const ab=document.getElementById('animBtn');
+  if(ab)ab.onclick=()=>{animOn=!animOn;ab.textContent=animOn?'❚❚ Pause the spin':'▶ Set the star spinning';ensureLoop();};
+
+  // freeplay console — all six angles live
+  if(st.freeplay){
+    const cons=document.getElementById('console');
+    const fields=[
+      {key:'i',min:0,max:180,step:1,gl:'i',name:'inclination',c:'#c9a86a'},
+      {key:'Omega',min:0,max:360,step:1,gl:'Ω',name:'node angle',c:'#c9a86a'},
+      {key:'lambda',min:0,max:60,step:1,gl:'λ',name:'spin–orbit misalign.',c:'#8da9c4'},
+      {key:'phase',min:0,max:360,step:1,gl:'φ',name:'precession phase',c:'#8da9c4'},
+      {key:'alpha',min:0,max:180,step:1,gl:'α',name:'magnetic obliquity',c:'#b08a8f'},
+      {key:'rho',min:1,max:40,step:0.5,gl:'ρ',name:'beam half-width',c:'#b08a8f'},
+    ];
+    cons.innerHTML=fields.map(f=>`
+      <div class="crow" data-k="${f.key}">
+        <div class="clabel"><span class="cgl" style="color:${f.c}">${f.gl}</span> ${f.name}</div>
+        <div class="cslider"><div class="ctrack"></div><div class="cfill" style="background:${f.c}"></div>
+          <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${P[f.key]}"></div>
+        <div class="cval">${P[f.key]}°</div>
+      </div>`).join('');
+    fields.forEach(f=>{
+      const row=cons.querySelector(`.crow[data-k="${f.key}"]`);
+      const sl=row.querySelector('input'),fill=row.querySelector('.cfill'),val=row.querySelector('.cval');
+      const setF=()=>{fill.style.width=((sl.value-f.min)/(f.max-f.min)*100)+'%';};
+      setF();
+      sl.addEventListener('input',()=>{P[f.key]=parseFloat(sl.value);val.textContent=sl.value+'°';setF();ensureLoop();});
+    });
+    // keep console sliders in sync while φ animates
+    consoleSync=()=>{
+      fields.forEach(f=>{
+        const row=cons.querySelector(`.crow[data-k="${f.key}"]`);if(!row)return;
+        const sl=row.querySelector('input');
+        if(document.activeElement!==sl){
+          sl.value=P[f.key];
+          row.querySelector('.cfill').style.width=((P[f.key]-f.min)/(f.max-f.min)*100)+'%';
+          row.querySelector('.cval').textContent=Math.round(P[f.key]*10)/10+'°';
+        }
+      });
+    };
+  } else consoleSync=null;
+
+  document.getElementById('back').disabled=(cur===0);
+  document.getElementById('next').textContent=(cur===STEPS.length-1)?'↺ Restart':'Continue';
+  document.getElementById('count').textContent=`${String(cur+1).padStart(2,'0')} / ${String(STEPS.length).padStart(2,'0')}`;
+  ensureLoop();
+}
+function go(k){cur=clamp(k,0,STEPS.length-1);render();}
+document.getElementById('next').onclick=()=>{cur=(cur===STEPS.length-1)?0:cur+1;render();};
+document.getElementById('back').onclick=()=>{if(cur>0){cur--;render();}};
+
+/* ====================== loop ====================== */
+let raf=null;
+let consoleSync=null;
+function loop(){
+  let moving=tickSmooth();
+  if(camSmooth())moving=true;
+  if(animOn){spinT+=0.05;moving=true;}
+  if(autoYaw && !drag){yawT+=0.0011;moving=true;}
+  draw();
+  if(consoleSync)consoleSync();
+  if(moving)raf=requestAnimationFrame(loop);else raf=null;
+}
+function ensureLoop(){if(!raf)raf=requestAnimationFrame(loop);}
+
+/* orientation presets */
+function orientTo(yT,pT,zT){autoYaw=false;yawT=yT;pitT=pT;if(zT)zoomT=zT;ensureLoop();}
+const VIEWS={
+  // default three-quarter
+  default:{yaw:0.62,pit:-0.30,zoom:1,label:'Three-quarter'},
+  // line of sight is +Z; at yaw0/pit0 it points straight into the screen → we look down it
+  los:{yaw:0.0001,pit:0.0001,zoom:1.2,label:'Down the line of sight'},
+  // tip the pole up so the sky plane (XY ring) is seen edge-on as a line
+  side:{yaw:0.0001,pit:-Math.PI/2+0.06,zoom:1,label:'Sky plane edge-on'},
+};
+
+/* camera */
+let grabbed=false;
+const DRAG_SENS=0.006;
+cv.addEventListener('mousedown',e=>{drag=true;autoYaw=false;lx=e.clientX;ly=e.clientY;
+  if(!grabbed){grabbed=true;document.getElementById('grabHint').style.opacity='0';}});
+window.addEventListener('mouseup',()=>drag=false);
+window.addEventListener('mousemove',e=>{if(!drag)return;
+  yawT+=(e.clientX-lx)*DRAG_SENS;pitT=clamp(pitT+(e.clientY-ly)*DRAG_SENS,-Math.PI/2,Math.PI/2);
+  lx=e.clientX;ly=e.clientY;ensureLoop();});
+cv.addEventListener('dblclick',()=>orientTo(VIEWS.default.yaw,VIEWS.default.pit,VIEWS.default.zoom));
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomT=clamp(zoomT*(e.deltaY<0?1.08:0.92),0.55,2.6);ensureLoop();},{passive:false});
+cv.addEventListener('touchstart',e=>{drag=true;autoYaw=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;
+  document.getElementById('grabHint').style.opacity='0';},{passive:true});
+cv.addEventListener('touchmove',e=>{if(!drag)return;e.preventDefault();
+  yawT+=(e.touches[0].clientX-lx)*0.008;pitT=clamp(pitT+(e.touches[0].clientY-ly)*0.008,-Math.PI/2,Math.PI/2);
+  lx=e.touches[0].clientX;ly=e.touches[0].clientY;ensureLoop();},{passive:false});
+cv.addEventListener('touchend',()=>drag=false);
+window.addEventListener('resize',()=>{resize();ensureLoop();});
+
+/* view orientation buttons */
+document.querySelectorAll('#viewctl button').forEach(b=>{
+  b.onclick=()=>{const view=VIEWS[b.dataset.v];orientTo(view.yaw,view.pit,view.zoom);
+    document.querySelectorAll('#viewctl button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');};
+});
+
+resize();buildLegend();render();
+</script>
+</body>
+</html>

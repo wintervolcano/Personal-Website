@@ -49,6 +49,12 @@ export function Resources({
             onClick: () => navigate("/globular-cluster-explorer"),
           },
           {
+            k: "a1d",
+            t: "The lighthouse model",
+            d: "A simple interactive model of pulsar emission geometry.",
+            onClick: () => navigate("/lighthouse-model"),
+          },
+          {
             k: "a2",
             t: "For Astronomers",
             d: "Software and helpful links",

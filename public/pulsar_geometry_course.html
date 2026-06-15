@@ -73,9 +73,81 @@
   }
   .eyebrow{
     font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;
-    color:var(--gold);display:flex;align-items:center;gap:10px;margin-bottom:16px;
+    color:var(--gold);display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;
   }
   .eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold-soft),transparent)}
+  .helpbtn{
+    order:3;flex:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+    color:#0e1218;background:var(--gold);
+    border:1px solid var(--gold);border-radius:4px;padding:6px 12px;
+    box-shadow:0 1px 0 rgba(0,0,0,.3),0 0 0 0 rgba(201,168,106,.5);
+    transition:transform .15s ease,box-shadow .25s ease,background .2s ease;
+    white-space:nowrap;animation:helpPulse 2.6s ease-in-out infinite;
+  }
+  .helpbtn:hover{
+    background:#dcbd80;transform:translateY(-1px);
+    box-shadow:0 3px 10px rgba(201,168,106,.3),0 0 0 3px rgba(201,168,106,.16);
+    animation:none;
+  }
+  .helpbtn:active{transform:translateY(0)}
+  @keyframes helpPulse{
+    0%,100%{box-shadow:0 1px 0 rgba(0,0,0,.3),0 0 0 0 rgba(201,168,106,.45)}
+    50%{box-shadow:0 1px 0 rgba(0,0,0,.3),0 0 0 5px rgba(201,168,106,0)}
+  }
+  @media (prefers-reduced-motion:reduce){.helpbtn{animation:none}}
+
+  /* ============ equations / help overlay ============ */
+  .help-overlay{
+    position:fixed;inset:0;z-index:1000;display:none;
+    background:rgba(8,11,15,.72);backdrop-filter:blur(6px);
+    align-items:center;justify-content:center;padding:4vh 4vw;
+  }
+  .help-overlay.open{display:flex;animation:helpfade .25s ease}
+  @keyframes helpfade{from{opacity:0}to{opacity:1}}
+  .help-panel{
+    position:relative;width:min(960px,100%);max-height:92vh;overflow-y:auto;
+    background:linear-gradient(180deg,var(--paper),#0f141b);
+    border:1px solid var(--rule);border-radius:6px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,106,.06);
+    padding:34px 44px 48px;
+  }
+  .help-panel::before{
+    content:"";position:absolute;left:0;top:0;width:100%;height:2px;
+    background:linear-gradient(90deg,var(--gold),transparent 70%);
+  }
+  .help-close{
+    position:absolute;top:18px;right:20px;width:32px;height:32px;border-radius:4px;cursor:pointer;
+    background:rgba(20,26,34,.6);border:1px solid var(--rule);color:var(--ink-dim);
+    font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.2s;
+  }
+  .help-close:hover{border-color:var(--gold-soft);color:var(--gold);background:rgba(201,168,106,.08)}
+  .help-panel h2{
+    font-family:var(--serif);font-weight:500;font-size:26px;letter-spacing:-.02em;color:var(--ink);margin-bottom:4px;
+  }
+  .help-panel h2 em{font-style:italic;color:var(--gold);font-weight:400}
+  .help-sub{font-size:13.5px;color:var(--ink-soft);line-height:1.6;max-width:62ch;margin-bottom:8px}
+  .help-h{
+    font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--gold);margin:30px 0 12px;display:flex;align-items:center;gap:12px;
+  }
+  .help-h::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--rule),transparent)}
+  .help-panel p{font-size:13.5px;line-height:1.66;color:var(--ink-dim);margin:10px 0}
+  .help-panel p strong{color:var(--ink-soft);font-weight:500}
+  .deriv{margin:14px 0 22px}
+  .deriv-step{font-size:13px;line-height:1.6;color:var(--ink-dim);margin:8px 0;padding-left:20px;position:relative}
+  .deriv-step::before{
+    content:attr(data-n);position:absolute;left:0;top:0;
+    font-family:var(--mono);font-size:10px;color:var(--gold-soft);
+  }
+  /* symbol glossary table */
+  .glos{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:13px}
+  .glos td{padding:7px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top;line-height:1.5}
+  .glos tr:last-child td{border-bottom:none}
+  .glos .sym{font-family:var(--mono);color:var(--gold);width:54px;font-size:14px;white-space:nowrap}
+  .glos .nm{color:var(--ink-soft);width:200px}
+  .glos .ds{color:var(--ink-dim)}
   .masthead h1{
     font-family:var(--serif);font-weight:500;font-size:30px;line-height:1.05;
     letter-spacing:-.02em;color:var(--ink);
@@ -266,6 +338,20 @@
   }
   .stamp b{color:var(--gold-soft);font-weight:400}
 
+  /* time-lapse heads-up display — only visible while the precession animates */
+  .tlapse{
+    position:absolute;top:26px;left:28px;z-index:3;
+    padding:7px 11px;border-radius:4px;
+    background:rgba(20,26,34,.62);border:1px solid var(--blue);
+    backdrop-filter:blur(4px);pointer-events:none;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+    color:var(--blue);line-height:1.65;
+    opacity:0;transition:opacity .35s;
+  }
+  .tlapse.on{opacity:1}
+  .tlapse b{color:#cfe0ee;font-weight:500;font-size:11px}
+  .tlapse span{color:var(--ink-faint);letter-spacing:.06em}
+
   .grab-hint{
     position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;
     font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
@@ -360,7 +446,7 @@
   <!-- ============ READING COLUMN ============ -->
   <aside class="read">
     <div class="masthead">
-      <div class="eyebrow">A Field Guide</div>
+      <div class="eyebrow">A Field Guide<button class="helpbtn" id="helpBtn" title="Open the equations &amp; derivations reference">✦ Equations</button></div>
       <h1>The <em>Lighthouse</em><br>Problem</h1>
       <p class="standfirst">A pulsar is a beam on a spinning star. Whether we ever see it is a question of angles. This guide builds the geometry one angle at a time.</p>
     </div>
@@ -380,6 +466,7 @@
       <canvas id="scene"></canvas>
       <div class="legend" id="legend"></div>
       <div class="stamp">CELESTIAL SPHERE · <b>observer-centred frame</b><br>line of sight fixed · star free to tilt</div>
+      <div class="tlapse" id="tlapse">⟳ TIME-LAPSE · <b id="tlYears">0 yr</b> compressed<br><span>real period ≈ 297 yr · sped up to watch</span></div>
       <div class="grab-hint" id="grabHint">drag to rotate · scroll to zoom · double-click to reset</div>
       <div class="viewctl" id="viewctl">
         <button data-v="default" title="Three-quarter view">⌖</button>
@@ -410,6 +497,80 @@
   </section>
 </div>
 
+<!-- ============ EQUATIONS & DERIVATIONS HELP WINDOW ============ -->
+<div class="help-overlay" id="helpOverlay">
+  <div class="help-panel" role="dialog" aria-modal="true" aria-label="Equations and derivations">
+    <button class="help-close" id="helpClose" title="Close (Esc)">×</button>
+    <h2>Equations &amp; <em>Derivations</em></h2>
+    <p class="help-sub">Every formula this guide draws on, with the geometry behind it. All angles are in the observer-centred frame: the line of sight is fixed along <span style="color:#9fb0c2">+z</span> (toward the telescope), and the sky plane is <span style="color:#8da9c4">z = 0</span>.</p>
+
+    <div class="help-h">Symbols</div>
+    <table class="glos">
+      <tr><td class="sym">i</td><td class="nm">Inclination</td><td class="ds">angle between the orbital axis <b>J</b> and the line of sight.</td></tr>
+      <tr><td class="sym">Ω</td><td class="nm">Longitude of ascending node</td><td class="ds">orientation of the line of nodes in the sky plane, measured from a fixed reference (celestial north).</td></tr>
+      <tr><td class="sym">λ</td><td class="nm">Spin–orbit misalignment</td><td class="ds">half-angle of the cone the spin axis <b>S</b> precesses around <b>J</b>.</td></tr>
+      <tr><td class="sym">φ</td><td class="nm">Precession phase</td><td class="ds">where <b>S</b> currently sits on that cone; runs 0–360° once per precession period.</td></tr>
+      <tr><td class="sym">α</td><td class="nm">Magnetic obliquity</td><td class="ds">angle between the spin axis <b>S</b> and the magnetic axis <b>μ</b>.</td></tr>
+      <tr><td class="sym">ζ</td><td class="nm">Viewing angle</td><td class="ds">angle between the spin axis <b>S</b> and the line of sight (derived).</td></tr>
+      <tr><td class="sym">β</td><td class="nm">Impact angle</td><td class="ds">closest approach of the beam centre to the sightline, β = ζ − α (derived).</td></tr>
+      <tr><td class="sym">ρ</td><td class="nm">Beam half-width</td><td class="ds">angular radius of the emission cone about <b>μ</b>.</td></tr>
+      <tr><td class="sym">ψ</td><td class="nm">Polarisation angle</td><td class="ds">position angle of the linear polarisation as the beam sweeps past.</td></tr>
+    </table>
+
+    <div class="help-h">1 · The orbital axis J (i, Ω)</div>
+    <p>The orbital angular-momentum axis is placed by its tilt from the sightline (i) and its azimuth in the sky plane (Ω):</p>
+    <div class="eq"><span class="v">J</span> = ( sin i · cos Ω ,  sin i · sin Ω ,  cos i )</div>
+    <p>At <strong>i = 0°</strong>, J = (0,0,1) — face-on, pointing straight at us. At <strong>i = 90°</strong>, J lies in the sky plane — edge-on.</p>
+    <div class="deriv">
+      <div class="deriv-step" data-n="·">The <strong>line of nodes</strong> is where the orbital plane meets the sky plane (z = 0), along the direction <span style="color:#c9a86a">J × ẑ</span>.</div>
+      <div class="deriv-step" data-n="·">With J as above, J × ẑ = (sin i·sin Ω, −sin i·cos Ω, 0), which sits at azimuth <strong>Ω − 90°</strong> — so the ascending node lies exactly where the orbit ring crosses the sky ring. Ω is read from a fixed reference, swept within the sky plane.</div>
+    </div>
+
+    <div class="help-h">2 · The spin axis S (λ, φ)</div>
+    <p>The spin axis precesses on a cone of half-angle <strong>λ</strong> about <strong>J</strong>. Build an orthonormal pair {<b>e₁</b>, <b>e₂</b>} spanning the plane ⟂ J, then place S at phase φ:</p>
+    <div class="eq"><span class="v">e₁</span> = normalize( J × ẑ ) ,   <span class="v">e₂</span> = J × e₁
+<span class="v">d</span>  = cos φ · e₁ + sin φ · e₂
+<span class="v">S</span>  = cos λ · J + sin λ · d</div>
+    <p>When <strong>λ = 0</strong>, S = J (spin aligned with orbit, no cone). As φ advances 0 → 360°, S traces the full cone once — this is <strong>geodetic precession</strong>, time-lapsed in the visualization.</p>
+
+    <div class="help-h">3 · The magnetic axis μ (α) and the sweep</div>
+    <p>The magnetic axis sits at obliquity <strong>α</strong> from <strong>S</strong>, and the star's rotation (phase θ) sweeps μ around S each rotation:</p>
+    <div class="eq"><span class="v">m₁</span> = normalize( S × J ) ,   <span class="v">m₂</span> = S × m₁
+<span class="v">μ</span>  = cos α · S + sin α · ( cos θ · m₁ + sin θ · m₂ )</div>
+    <p>Over one rotation (θ: 0 → 2π), μ — and its beam — traces a circle of angular radius α on the sky: the lighthouse sweep.</p>
+
+    <div class="help-h">4 · Derived viewing angles (ζ, β)</div>
+    <p>The line of sight is <b>k̂</b> = (0,0,1). The viewing angle ζ is the angle between the spin axis and that line; the impact angle β subtracts the obliquity:</p>
+    <div class="eq"><span class="v">ζ</span> = arccos( S · k̂ )
+<span class="v">β</span> = ζ − α</div>
+    <p>Because S depends on φ, so does ζ — and therefore β. As the star precesses, β drifts and the pulse width slowly breathes. <strong>A pulse reaches us only when |β| ≲ ρ</strong>, i.e. the swept beam passes within its half-width of the sightline.</p>
+
+    <div class="help-h">5 · The pulse profile</div>
+    <p>For each rotational phase the angular separation between the beam axis μ and the sightline is computed; intensity falls off as a Gaussian in that separation Δ:</p>
+    <div class="eq"><span class="v">Δ(θ)</span> = arccos( μ(θ) · k̂ )
+<span class="v">I(θ)</span> ∝ exp( − ½ · ( Δ / (0.55 ρ) )² )</div>
+    <p>The profile glows when the swept ring dips within ρ of the sightline (a pulse arrives) and stays dark when it never does.</p>
+
+    <div class="help-h">6 · The Rotating Vector Model (ψ)</div>
+    <p>The linear polarisation angle traces the projected magnetic field lines as the beam sweeps past. The classic <strong>Rotating Vector Model</strong> gives:</p>
+    <div class="eq">tan( ψ − ψ₀ ) =        sin α · sin φ
+                ──────────────────────────────────
+                sin ζ · cos α − cos ζ · sin α · cos φ</div>
+    <p>The steepest gradient of this S-curve, at closest approach, encodes the geometry:</p>
+    <div class="eq">( dψ / dφ )<span class="c">max</span>  ∝  sin α / sin β</div>
+    <div class="deriv">
+      <div class="deriv-step" data-n="·">A <strong>steep</strong> S-curve ⇒ small |β| ⇒ the sightline cut close to the magnetic pole.</div>
+      <div class="deriv-step" data-n="·">Fitting ψ(φ) returns α and β — the most powerful geometric handle in pulsar polarimetry. As the star precesses, ζ creeps and the curve subtly reshapes between epochs; that change (or its absence over a baseline) is how geodetic precession is measured in polarised light.</div>
+    </div>
+
+    <div class="help-h">7 · Geodetic precession &amp; the time-lapse</div>
+    <p>Geodetic precession turns the spin axis on a timescale of decades to centuries — far slower than any observing campaign. The visualization compresses it: φ is advanced rapidly and the equivalent real time is tallied against a representative period,</p>
+    <div class="eq"><span class="v">T<sub>prec</sub></span> ≈ 297 yr   <span class="c">(PSR B1913+16, representative)</span>
+years compressed = T<sub>prec</sub> · (Δφ / 360°)</div>
+    <p>So a few seconds of animation stand in for a human lifetime of monitoring — the only way to actually <em>watch</em> the cone turn.</p>
+  </div>
+</div>
+
 <script>
 /* ====================== math ====================== */
 const D2R=Math.PI/180,R2D=180/Math.PI;
@@ -427,6 +588,14 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 const P={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13};
 const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false,node:false};
 let spinT=0,animOn=false;
+/* geodetic precession is a ~century-long turn — far too slow to watch in real time.
+   We time-lapse it: walk φ rapidly and report how much real time we are compressing.
+   PRECESS_PERIOD_YR is a representative geodetic period (PSR B1913+16 ≈ 297 yr). */
+let precessOn=false;
+const PRECESS_PERIOD_YR=297;     // real precession period this time-lapse stands in for
+const PRECESS_DEG_PER_FRAME=0.6; // φ advance per animation frame in time-lapse
+let precessYears=0;              // accumulated compressed time, in years
+const sTrail=[];                 // recent spin-axis positions, for the precession path
 
 /* smoothed render values for graceful transitions */
 const R={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13,
@@ -630,6 +799,17 @@ function draw(){
     if(R.los>0.5) arc(v(0,0,1),g.J,0.40,'#c9a86a','i',R.J*R.los);
   }
   if(R.S>0.01){
+    // record the spin axis while time-lapsing, then draw its fading precession trail
+    if(precessOn){sTrail.push(g.S);if(sTrail.length>220)sTrail.shift();}
+    if(sTrail.length>1 && R.S>0.5){
+      ctx.lineWidth=1.4*DPR();ctx.strokeStyle='#8da9c4';
+      for(let k=1;k<sTrail.length;k++){
+        ctx.globalAlpha=R.S*0.55*(k/sTrail.length);   // older points fade out
+        const A=proj(mul(sTrail[k-1],1.0)),B=proj(mul(sTrail[k],1.0));
+        ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
     vec(mul(g.S,1.03),'#8da9c4','S',R.S,1.9);
     if(R.cone>0.5) arc(g.J,g.S,0.54,'#8da9c4','λ',R.S*R.cone);
   }
@@ -797,12 +977,14 @@ period set by the masses and the orbit</div>
   title:'Where on the cone, <span class="gl">φ</span>',
   deck:'A telescope catches only a slice of the slow turn.',
   vis:{los:true,sky:true,J:true,orbit:true,cone:true,S:true},
-  set:{alpha:0},
+  set:{lambda:35,alpha:0},
+  precess:true,
   ctrl:{key:'phase',min:0,max:360,step:1,name:'Precession phase',gl:'φ',rel:'position on cone',
     prompt:'Sweep the full circle. The spin walks around the cone — but real data only ever see a short arc of this.'},
   body:`<p class="lead">The width of the cone is set. <span class="term">φ</span> is the <strong>phase</strong> — where the spin axis sits on that cone right now. Across a full precession period, φ runs once around the circle.</p>
   <p>Here is the catch that defines the field: precession periods run to <strong>decades</strong>, but observing campaigns run to <strong>years</strong>. A telescope samples only a small arc of φ — a few degrees of a slow, century-scale turn.</p>
-  <div class="note"><span class="lab">The measurement problem</span>If the spin barely moves over your baseline, the beam geometry barely changes — and the data cannot pin down where on the cone you are. A short record leaves the phase loosely held. Only the angles that don't depend on φ stay sharp. One of those is next.</div>`
+  <div class="note"><span class="lab">Seeing the unseeable</span>You could never watch this live — the spin axis of PSR B1913+16 takes about <strong>297 years</strong> to circle the cone once. So we <em>time-lapse</em> it: the button below sets φ running fast and tallies how much real time you are compressing. Watch <strong>S</strong> trace the cone and the cone-bound readouts breathe — that breathing <em>is</em> geodetic precession, a slow turning of spacetime made visible.</div>
+  <button class="ghostbtn" id="precBtn">⟳ Watch it precess (time-lapse)</button>`
 },
 {
   chapter:'Chapter V — The Beam',
@@ -856,6 +1038,7 @@ period set by the masses and the orbit</div>
   set:{},
   ctrl:null,
   freeplay:true,
+  precess:true,
   body:`<p class="lead">Everything is unsealed and every angle is live. The logic runs in one line, from orbit to observation:</p>
   <div class="eq"><span style="color:#c9a86a">i, Ω</span> place the orbit  →  <span style="color:#8da9c4">λ</span> opens the cone
 →  <span style="color:#8da9c4">φ</span> says where the spin is now
@@ -865,6 +1048,7 @@ period set by the masses and the orbit</div>
   <p>Set the star spinning, then walk the precession phase φ slowly. <strong>The recorded width and the polarisation S-curve evolve together</strong> — that coupled drift is how a slowly precessing pulsar becomes a test of gravity.</p>
   <div class="console" id="console"></div>
   <button class="ghostbtn" id="animBtn">▶ Set the star spinning</button>
+  <button class="ghostbtn" id="precBtn">⟳ Watch it precess (time-lapse)</button>
   <div class="note"><span class="lab">The long game</span>The sturdy angles — α above all — are pinned by even a short record. The cone-bound ones wait on time. A longer baseline is the instrument that resolves the slow turn, and with it, a measurement of spacetime curvature written in radio light.</div>`
 }
 ];
@@ -912,8 +1096,23 @@ function render(){
     sl.addEventListener('input',()=>{P[c.key]=parseFloat(sl.value);
       val.innerHTML=sl.value+'<span class="u">°</span>';setFill();ensureLoop();});
   });
+  // keep chapter sliders following any angle the animation drives (e.g. φ in time-lapse)
+  ctrlSync=()=>{
+    ctrls.forEach((c,idx)=>{
+      const sl=document.getElementById('sl'+idx);if(!sl||document.activeElement===sl)return;
+      if(Math.abs(parseFloat(sl.value)-P[c.key])<0.5)return;
+      sl.value=P[c.key];
+      const fill=document.getElementById('sfill'+idx),val=document.getElementById('ival'+idx);
+      if(fill)fill.style.width=((P[c.key]-c.min)/(c.max-c.min)*100)+'%';
+      if(val)val.innerHTML=Math.round(P[c.key])+'<span class="u">°</span>';
+    });
+  };
   const ab=document.getElementById('animBtn');
   if(ab)ab.onclick=()=>{animOn=!animOn;ab.textContent=animOn?'❚❚ Pause the spin':'▶ Set the star spinning';ensureLoop();};
+  // precession time-lapse: only runs on chapters that show the cone; stop it elsewhere
+  if(!st.precess && precessOn) setPrecess(false);
+  const pb=document.getElementById('precBtn');
+  if(pb)pb.onclick=()=>setPrecess(!precessOn);
 
   // freeplay console — all six angles live
   if(st.freeplay){
@@ -963,19 +1162,52 @@ function go(k){cur=clamp(k,0,STEPS.length-1);render();}
 document.getElementById('next').onclick=()=>{cur=(cur===STEPS.length-1)?0:cur+1;render();};
 document.getElementById('back').onclick=()=>{if(cur>0){cur--;render();}};
 
+/* ====================== equations help window ====================== */
+const helpOverlay=document.getElementById('helpOverlay');
+function setHelp(open){helpOverlay.classList.toggle('open',open);}
+document.getElementById('helpBtn').onclick=()=>setHelp(true);
+document.getElementById('helpClose').onclick=()=>setHelp(false);
+helpOverlay.addEventListener('click',e=>{if(e.target===helpOverlay)setHelp(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&helpOverlay.classList.contains('open'))setHelp(false);});
+
 /* ====================== loop ====================== */
 let raf=null;
 let consoleSync=null;
+let ctrlSync=null;
 function loop(){
   let moving=tickSmooth();
   if(camSmooth())moving=true;
   if(animOn){spinT+=0.05;moving=true;}
+  if(precessOn){
+    // time-lapse the slow geodetic turn: advance φ and tally the compressed years
+    P.phase=(P.phase+PRECESS_DEG_PER_FRAME)%360;
+    precessYears+=PRECESS_PERIOD_YR*PRECESS_DEG_PER_FRAME/360;
+    moving=true;
+    updatePrecessHUD();
+  }
   if(autoYaw && !drag){yawT+=0.0011;moving=true;}
   draw();
   if(consoleSync)consoleSync();
+  if(ctrlSync && precessOn)ctrlSync();
   if(moving)raf=requestAnimationFrame(loop);else raf=null;
 }
 function ensureLoop(){if(!raf)raf=requestAnimationFrame(loop);}
+
+/* time-lapse HUD + toggle for geodetic precession */
+function updatePrecessHUD(){
+  const y=document.getElementById('tlYears');
+  if(y)y.textContent=(precessYears<10?precessYears.toFixed(1):Math.round(precessYears))+' yr';
+}
+function setPrecess(on){
+  precessOn=on;
+  const hud=document.getElementById('tlapse');
+  if(hud)hud.classList.toggle('on',on);
+  if(on){precessYears=0;sTrail.length=0;updatePrecessHUD();}
+  else sTrail.length=0;
+  const pb=document.getElementById('precBtn');
+  if(pb)pb.textContent=on?'❚❚ Pause precession':'⟳ Watch it precess (time-lapse)';
+  ensureLoop();
+}
 
 /* orientation presets */
 function orientTo(yT,pT,zT){autoYaw=false;yawT=yT;pitT=pT;if(zT)zoomT=zT;ensureLoop();}

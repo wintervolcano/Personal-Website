@@ -425,12 +425,12 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 
 /* ====================== state ====================== */
 const P={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13};
-const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false};
+const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false,node:false};
 let spinT=0,animOn=false;
 
 /* smoothed render values for graceful transitions */
 const R={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13,
-         los:0,sky:0,J:0,orbit:0,cone:0,S:0,mu:0,beam:0,sweep:0};
+         los:0,sky:0,J:0,orbit:0,cone:0,S:0,mu:0,beam:0,sweep:0,node:0};
 function tickSmooth(){
   let moving=false;
   // cyclic angles (0-360) must lerp the short way around the circle
@@ -443,7 +443,7 @@ function tickSmooth(){
       if(Math.abs(R[k]-P[k])>0.02){R[k]=lerp(R[k],P[k],0.18);moving=true;}else R[k]=P[k];
     }
   }
-  for(const k of['los','sky','J','orbit','cone','S','mu','beam','sweep']){
+  for(const k of['los','sky','J','orbit','cone','S','mu','beam','sweep','node']){
     const t=VIS[k]?1:0;if(Math.abs(R[k]-t)>0.004){R[k]=lerp(R[k],t,0.10);moving=true;}else R[k]=t;
   }
   return moving;
@@ -562,6 +562,47 @@ function arc(a,b,r,col,label,alpha=1){
     ctx.fillText(label,pr.x,pr.y);}
   ctx.globalAlpha=1;
 }
+/* flat angle in the sky plane (z=0): sweep `span` deg starting at azimuth `from` */
+function skyArc2(from,span,r,col,label,alpha=1){
+  if(alpha<=0.01)return;
+  const f=from*D2R,s=span*D2R;
+  ctx.globalAlpha=alpha;ctx.strokeStyle=col;ctx.lineWidth=1.3*DPR();ctx.beginPath();
+  const steps=Math.max(8,Math.round(Math.abs(span)/4));
+  for(let k=0;k<=steps;k++){const t=f+s*k/steps;const pr=proj(v(r*Math.cos(t),r*Math.sin(t),0));
+    if(k===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
+  ctx.stroke();
+  if(label){const m=f+s/2;const pr=proj(v(r*1.2*Math.cos(m),r*1.2*Math.sin(m),0));
+    ctx.fillStyle=col;ctx.font=`italic 600 ${13*DPR()}px 'IBM Plex Mono',monospace`;
+    ctx.textAlign='center';ctx.fillText(label,pr.x,pr.y);ctx.textAlign='left';}
+  ctx.globalAlpha=1;
+}
+
+/* line of nodes, the Ω=0 reference, and the Ω angle drawn in the sky plane */
+function drawNode(g,al){
+  const refCol='#6f7d8c',nodeCol='#c9a86a';
+  const Om=R.Omega;
+  // The orbital plane (⊥ J) meets the sky plane (z=0) along the LINE OF NODES,
+  // the direction cross(J,ẑ). With J at azimuth Ω, that line sits at azimuth Ω−90°,
+  // so the node lies exactly where the gold orbit ring crosses the steel sky ring.
+  // We measure Ω from a fixed reference at azimuth −90° (the −y axis), so the arc we
+  // draw reads the same number as the Ω slider.
+  const refAz=-90;
+  const node=v(Math.cos((Om+refAz)*D2R),Math.sin((Om+refAz)*D2R),0);
+  // fixed reference direction (Ω = 0) — the line everything is measured from
+  vec(v(Math.cos(refAz*D2R)*1.18,Math.sin(refAz*D2R)*1.18,0),refCol,'Ω=0',al*0.8,1.2);
+  // line of nodes: full diameter through the centre, ascending end solid
+  seg(v(0,0,0),mul(node,1.12),nodeCol,1.5,null,al*0.9);
+  seg(v(0,0,0),mul(node,-1.12),nodeCol,1,[4,5],al*0.5);
+  // mark + label the ascending node
+  const pr=proj(mul(node,1.12));
+  ctx.globalAlpha=al;ctx.fillStyle=nodeCol;
+  ctx.beginPath();ctx.arc(pr.x,pr.y,3.4*DPR(),0,2*Math.PI);ctx.fill();
+  ctx.font=`600 ${12*DPR()}px 'IBM Plex Mono',monospace`;
+  ctx.fillText('☊ ascending node',pr.x+7*DPR(),pr.y-4*DPR());
+  ctx.globalAlpha=1;
+  // the Ω angle itself, swept in the sky plane from the reference to the node
+  skyArc2(refAz,Om,0.46,nodeCol,`Ω ${Om.toFixed(0)}°`,al);
+}
 
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
@@ -575,6 +616,7 @@ function draw(){
 
   if(R.sky>0.01) ring(v(0,0,1),1,'#8da9c4',1,null,R.sky*0.28);
   if(R.orbit>0.01) ring(g.J,0.97,'#c9a86a',1.1,[5,5],R.orbit*0.42);
+  if(R.node>0.01) drawNode(g,R.node);
   if(R.cone>0.01) coneShape(g.J,R.lambda,0.92,'#8da9c4',R.cone*0.10,R.cone*0.5);
 
   if(R.los>0.01){
@@ -680,6 +722,7 @@ const legendDefs=[
   {f:'los',c:'#9fb0c2',t:'line of sight',d:false},
   {f:'sky',c:'#8da9c4',t:'sky plane',d:false},
   {f:'J',c:'#c9a86a',t:'J — orbital axis',d:false},
+  {f:'node',c:'#c9a86a',t:'line of nodes — Ω',d:false},
   {f:'cone',c:'#8da9c4',t:'precession cone',d:false},
   {f:'S',c:'#8da9c4',t:'S — spin axis',d:false},
   {f:'mu',c:'#b08a8f',t:'μ — magnetic axis',d:false},
@@ -719,7 +762,7 @@ const STEPS=[
   chapter:'Chapter II — The Orbit',
   title:'Inclination & node, <span class="gl">i, Ω</span>',
   deck:'How the binary plane tips into view — and which way.',
-  vis:{los:true,sky:true,J:true,orbit:true},
+  vis:{los:true,sky:true,J:true,orbit:true,node:true},
   set:{lambda:0,alpha:0},
   ctrls:[
     {key:'i',min:0,max:180,step:1,name:'Inclination',gl:'i',rel:'J to line of sight',
@@ -731,7 +774,8 @@ const STEPS=[
   <div class="eq"><span class="v">i = 90°</span>  <span class="c">edge-on — we see through the orbital plane</span>
 <span class="v">i = 0°</span>   <span class="c">face-on — J points straight at us</span></div>
   <p>The dashed gold ellipse is the orbital plane; the steel ring is the <strong>sky plane</strong>, square to our view. Inclination is the tilt between them.</p>
-  <p>But a tilt needs a <em>direction</em> too. The two planes meet along a line — the <strong>line of nodes</strong> — and where the orbit rises through the sky plane, away from us, is the <strong>ascending node</strong>. The angle to that point, measured around the sky, is the <span class="term">longitude of the ascending node, Ω</span>. Where <span class="term">i</span> says how steeply the orbit tips, <span class="term">Ω</span> says which way the hinge is turned.</p>
+  <p>But a tilt needs a <em>direction</em> too. The two planes meet along a line — the <strong>line of nodes</strong>, shown solid gold where the orbit ring crosses the sky ring. Where the orbit rises through the sky plane, away from us, sits the <strong>☊ ascending node</strong>. The angle to that point is the <span class="term">longitude of the ascending node, Ω</span> — and the gold arc on the sphere shows it directly.</p>
+  <p><strong>Measured from where?</strong> Ω is swept <em>within the sky plane</em>, starting from a fixed reference direction (the line marked <span class="term">Ω = 0</span>) and turning toward the ascending node. On the real sky that zero is celestial north; here it is a fixed mark you can measure against. Where <span class="term">i</span> says how steeply the orbit tips, <span class="term">Ω</span> says which way that hinge is turned — drag the slider and watch the gold arc open and close.</p>
   <div class="note"><span class="lab">In practice</span>Near edge-on, the companion passes almost in front of the pulsar each orbit. Its gravity delays the pulses — the <em>Shapiro delay</em> — which is how binary pulsars are weighed. Geometry hands us a scale. (Ω rotates the whole picture on the sky but leaves the timing largely unchanged — which is why it is often the hardest of the orbital angles to pin down.)</div>`
 },
 {

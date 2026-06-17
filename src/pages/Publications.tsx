@@ -87,7 +87,7 @@ export function Publications({ theme }: { theme: Theme }) {
 
   // Put your IDs here, or read them from env or config.
   const ORCID_ID = "0000-0003-2444-838X";
-  const SCHOLAR_URL = "https://scholar.google.com/citations?user=XXXX";
+  const SCHOLAR_URL = "https://scholar.google.com/citations?user=1oB-O_EAAAAJ";
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -105,8 +105,9 @@ export function Publications({ theme }: { theme: Theme }) {
 
   const talks = useMemo(
     () => [
-      { id: "post-1", title: "Poster: Effelsberg COMPACT Pipeline", where: "Sardinia", year: 2025, url: "/EFFELSBERG_SEARCH_POSTER_A0_FINAL.pdf" },
-      { id: "talk-1", title: "Who am i?", where: "MPIfR Bonn", year: 2024, url: "/whoami.pdf" },
+      { id: "poster-2", title: "Poster: Two decades of timing the Double Neutron Star PSR J1756−2251", where: "IPTA 2026", year: 2026, url: "posters/J1756-2251_IPTA2026_poster_A0.pdf" },
+      { id: "poster-1", title: "Poster: Effelsberg COMPACT Pipeline", where: "Sardinia", year: 2025, url: "posters/EFFELSBERG_SEARCH_POSTER_A0_FINAL.pdf" },
+      { id: "talk-1", title: "Who am i?", where: "MPIfR Bonn", year: 2024, url: "slides/whoami.pdf" },
     ],
     []
   );

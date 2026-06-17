@@ -223,6 +223,11 @@
   }
   .eq .c{color:var(--ink-faint);font-style:normal}
   .eq .v{color:var(--gold)}
+  .eq .frac{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;white-space:normal}
+  .eq .frac .lhs{white-space:nowrap}
+  .eq .frac .ratio{display:inline-flex;flex-direction:column;align-items:center;text-align:center}
+  .eq .frac .num{padding:0 12px 4px}
+  .eq .frac .den{padding:6px 12px 0;border-top:1px solid var(--ink-faint)}
 
   /* aside / margin note */
   .note{
@@ -409,6 +414,17 @@
   }
   .ghostbtn:hover{background:rgba(201,168,106,.08)}
 
+  /* scene-overlay toggles */
+  .toggles{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+  .tgl{display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-dim);
+    border:1px solid var(--rule);border-radius:2px;padding:8px 11px;transition:.2s;user-select:none}
+  .tgl:hover{border-color:var(--gold-soft);color:var(--ink-soft)}
+  .tgl .box{width:11px;height:11px;border:1px solid var(--ink-dim);border-radius:2px;transition:.2s}
+  .tgl.on{color:var(--gold);border-color:var(--gold-soft)}
+  .tgl.on .box{background:var(--gold);border-color:var(--gold)}
+  .tgl .hint{color:var(--ink-faint);text-transform:none;letter-spacing:0;font-size:10px}
+
   /* freeplay console */
   .console{margin:18px 0 4px;border:1px solid var(--rule);border-radius:4px;
     background:rgba(255,255,255,.012);padding:6px 14px}
@@ -553,9 +569,7 @@
 
     <div class="help-h">6 · The Rotating Vector Model (ψ)</div>
     <p>The linear polarisation angle traces the projected magnetic field lines as the beam sweeps past. The classic <strong>Rotating Vector Model</strong> gives:</p>
-    <div class="eq">tan( ψ − ψ₀ ) =        sin α · sin φ
-                ──────────────────────────────────
-                sin ζ · cos α − cos ζ · sin α · cos φ</div>
+    <div class="eq"><span class="frac"><span class="lhs">tan( ψ − ψ₀ ) =</span><span class="ratio"><span class="num">sin α · sin φ</span><span class="den">sin ζ · cos α − cos ζ · sin α · cos φ</span></span></span></div>
     <p>The steepest gradient of this S-curve, at closest approach, encodes the geometry:</p>
     <div class="eq">( dψ / dφ )<span class="c">max</span>  ∝  sin α / sin β</div>
     <div class="deriv">
@@ -586,7 +600,7 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 
 /* ====================== state ====================== */
 const P={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13};
-const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false,node:false};
+const VIS={los:false,sky:false,J:false,orbit:false,cone:false,S:false,mu:false,beam:false,sweep:false,pa:false,node:false,ang:false};
 let spinT=0,animOn=false;
 /* geodetic precession is a ~century-long turn — far too slow to watch in real time.
    We time-lapse it: walk φ rapidly and report how much real time we are compressing.
@@ -599,7 +613,7 @@ const sTrail=[];                 // recent spin-axis positions, for the precessi
 
 /* smoothed render values for graceful transitions */
 const R={i:90,Omega:125,lambda:0,phase:0,alpha:0,rho:13,
-         los:0,sky:0,J:0,orbit:0,cone:0,S:0,mu:0,beam:0,sweep:0,node:0};
+         los:0,sky:0,J:0,orbit:0,cone:0,S:0,mu:0,beam:0,sweep:0,node:0,ang:0};
 function tickSmooth(){
   let moving=false;
   // cyclic angles (0-360) must lerp the short way around the circle
@@ -612,7 +626,7 @@ function tickSmooth(){
       if(Math.abs(R[k]-P[k])>0.02){R[k]=lerp(R[k],P[k],0.18);moving=true;}else R[k]=P[k];
     }
   }
-  for(const k of['los','sky','J','orbit','cone','S','mu','beam','sweep','node']){
+  for(const k of['los','sky','J','orbit','cone','S','mu','beam','sweep','node','ang']){
     const t=VIS[k]?1:0;if(Math.abs(R[k]-t)>0.004){R[k]=lerp(R[k],t,0.10);moving=true;}else R[k]=t;
   }
   return moving;
@@ -828,6 +842,13 @@ function draw(){
       const pr=proj(pt);if(t===0)ctx.moveTo(pr.x,pr.y);else ctx.lineTo(pr.x,pr.y);}
     ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
   }
+  if(R.ang>0.01){
+    const {zeta,beta}=viewAngles(g),los=v(0,0,1);
+    // ζ — viewing angle, between the line of sight and the spin axis S
+    if(R.S>0.5) arc(los,g.S,0.62,'#9fb0c2',`ζ ${zeta.toFixed(0)}°`,R.ang*R.S);
+    // β — impact angle, between the line of sight and the magnetic axis μ
+    if(R.mu>0.5) arc(los,g.mu,0.47,'#b6c2cf',`β ${beta.toFixed(0)}°`,R.ang*R.mu);
+  }
   if(VIS.mu) drawProfile(g);
   if(VIS.pa) drawPA(g);
   syncLegend();
@@ -1022,9 +1043,7 @@ period set by the masses and the orbit</div>
   ctrl:{key:'alpha',min:5,max:175,step:1,name:'Obliquity, revisited',gl:'α',rel:'μ to S',
     prompt:'Move α and watch the sage S-curve steepen and slide. This curve is what you actually fit in real polarimetry.'},
   body:`<p class="lead">The beam carries linearly polarised light, and the angle of that polarisation, <strong>ψ</strong>, traces the magnetic field lines as the beam sweeps past. The <span style="color:#8ba596;font-style:italic">Rotating Vector Model</span> predicts its shape — a clean S.</p>
-  <div class="eq">tan(ψ − ψ₀) =        sin α · sin φ
-              ──────────────────────────────
-              sin ζ cos α − cos ζ sin α cos φ</div>
+  <div class="eq"><span class="frac"><span class="lhs">tan(ψ − ψ₀) =</span><span class="ratio"><span class="num">sin α · sin φ</span><span class="den">sin ζ cos α − cos ζ sin α cos φ</span></span></span></div>
   <p>The curve is steepest at closest approach, and that steepness is the prize:</p>
   <div class="eq">( dψ / dφ )<span class="c">max</span> ∝ sin α / sin β</div>
   <p>A <strong>steep</strong> S-curve means a <strong>small impact angle</strong> — the sightline cut close to the magnetic pole. Fit the curve, and α and β fall out. This is the most powerful geometric handle in all of pulsar polarimetry.</p>
@@ -1038,6 +1057,7 @@ period set by the masses and the orbit</div>
   set:{},
   ctrl:null,
   freeplay:true,
+  toggles:[{flag:'ang',name:'ζ &amp; β angles',hint:'viewing &amp; impact angles, drawn in the scene'}],
   precess:true,
   body:`<p class="lead">Everything is unsealed and every angle is live. The logic runs in one line, from orbit to observation:</p>
   <div class="eq"><span style="color:#c9a86a">i, Ω</span> place the orbit  →  <span style="color:#8da9c4">λ</span> opens the cone
@@ -1083,11 +1103,17 @@ function render(){
       ${c.prompt?`<div class="prompt">${c.prompt}</div>`:''}
     </div>`;
   });
+  let togHTML='';
+  const toggles = st.toggles || [];
+  if(toggles.length){
+    togHTML=`<div class="toggles">`+toggles.map(t=>
+      `<span class="tgl${VIS[t.flag]?' on':''}" data-flag="${t.flag}"><span class="box"></span>${t.name}${t.hint?`<span class="hint">${t.hint}</span>`:''}</span>`).join('')+`</div>`;
+  }
   scroll.innerHTML=`<div class="lesson">
     <div class="chapter">${st.chapter}</div>
     <h2>${st.title}</h2>
     <div class="deck">${st.deck}</div>
-    ${ctrlHTML}${st.body}</div>`;
+    ${ctrlHTML}${togHTML}${st.body}</div>`;
   scroll.scrollTop=0;
   ctrls.forEach((c,idx)=>{
     const sl=document.getElementById('sl'+idx),val=document.getElementById('ival'+idx),fill=document.getElementById('sfill'+idx);
@@ -1095,6 +1121,16 @@ function render(){
     setFill();
     sl.addEventListener('input',()=>{P[c.key]=parseFloat(sl.value);
       val.innerHTML=sl.value+'<span class="u">°</span>';setFill();ensureLoop();});
+  });
+  // scene-overlay toggles (e.g. ζ & β angles in the freeplay observatory)
+  toggles.forEach(t=>{
+    const el=scroll.querySelector(`.tgl[data-flag="${t.flag}"]`);
+    if(!el)return;
+    el.addEventListener('click',()=>{
+      VIS[t.flag]=!VIS[t.flag];
+      el.classList.toggle('on',VIS[t.flag]);
+      ensureLoop();
+    });
   });
   // keep chapter sliders following any angle the animation drives (e.g. φ in time-lapse)
   ctrlSync=()=>{

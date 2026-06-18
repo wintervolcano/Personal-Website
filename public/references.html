@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>References · Fazal Kareem</title>
+  <meta name="description" content="References for the poster — PSR J1756−2251." />
+
+  <link rel="icon" type="image/svg+xml" href="/FK.svg" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/svg+xml" href="/FK-dark.svg" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/svg+xml" href="/FK.svg" />
+  <meta name="theme-color" content="#0e1218" />
+
+  <meta property="og:title" content="References · Fazal Kareem" />
+  <meta property="og:description" content="References for the poster." />
+  <meta property="og:url" content="https://www.fazalkareem.com/references.html" />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================= -->
+  <!--  HOW TO UPDATE THE REFERENCES:                                -->
+  <!--  Just replace /public/posters/references.bib with a fresh     -->
+  <!--  export from Zotero / ADS / Overleaf, then redeploy.          -->
+  <!--  This page parses it automatically — no HTML edits needed.    -->
+  <!--  (Change the masthead text in the config block below if you   -->
+  <!--   want a different title / .bib path.)                        -->
+  <!-- ============================================================= -->
+  <script id="config" type="application/json">
+  {
+    "eyebrow": "References",
+    "title": "Cited <em>Works</em>",
+    "deck": "Sources referenced on the poster — PSR J1756−2251.",
+    "bib": "/posters/references.bib",
+    "backLabel": "Back to all links",
+    "backUrl": "/links.html",
+    "footer": "Fazal Kareem · MPIfR Bonn"
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg:#0e1218; --bg2:#11161e; --paper:#13181f;
+      --ink:#e7e3d8; --ink-soft:#b6b3a8; --ink-dim:#7c7d78; --ink-faint:#4e524f;
+      --rule:#222a33; --rule-soft:#1a212a;
+      --gold:#c9a86a; --gold-soft:#9a8556;
+      --blue:#8da9c4; --blue-deep:#5e7790;
+      --serif:'Fraunces',Georgia,serif; --body:'Newsreader',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: radial-gradient(120% 80% at 80% -10%, #161c25 0%, var(--bg) 55%), var(--bg);
+      color: var(--ink); font-family: var(--body); min-height: 100dvh;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    ::selection { background: rgba(201,168,106,0.22); color: var(--ink); }
+    body::after {
+      content:""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      opacity: .035; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* pulsar field (same as the links page) */
+    #pulsars { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .pulsar { position: absolute; transform: translate(-50%, -50%); }
+    .star { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fbf6ea, var(--blue) 60%, var(--blue-deep) 100%);
+      box-shadow: 0 0 10px rgba(141,169,196,0.6), 0 0 24px rgba(94,119,144,0.35); }
+    .halo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%;
+      background: radial-gradient(circle, rgba(141,169,196,0.35), rgba(14,18,24,0) 70%); filter: blur(1px); }
+    .beams { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); transform-origin: 50% 50%; transform-style: preserve-3d; animation: spin linear infinite; }
+    .beam-wrap { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; transform-style: preserve-3d; }
+    .beam { position: absolute; left: 50%; transform: translate(-50%, -100%); transform-origin: 50% 100%; border-radius: 999px;
+      background: linear-gradient(to top, rgba(201,168,106,0), rgba(201,168,106,0.34)); filter: blur(0.5px); }
+    .beam-core { position: absolute; left: 50%; transform: translate(-50%, -100%); transform-origin: 50% 100%; border-radius: 999px;
+      background: linear-gradient(to top, rgba(231,227,216,0), rgba(231,227,216,0.42)); filter: blur(0.15px); opacity: 0.95; }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+    @keyframes drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(5px,-7px); } }
+    .binary { position: absolute; transform: translate(-50%,-50%); }
+    .orbit { position: absolute; left: 50%; top: 50%; width: 1px; height: 1px; animation: spin linear infinite; }
+    .dwarf { position: absolute; left: 50%; top: 50%; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fbf6ea, #d9cdb4 55%, rgba(201,168,106,0.15) 100%);
+      box-shadow: 0 0 9px rgba(231,227,216,0.6); }
+
+    .wrap { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; padding: clamp(40px,9vw,72px) clamp(22px,6vw,40px) 64px; }
+
+    /* masthead */
+    .eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: .32em; text-transform: uppercase;
+      color: var(--gold); display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+    .eyebrow::after { content:""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-soft), transparent); }
+    h1.title { font-family: var(--serif); font-weight: 500; letter-spacing: -.02em; font-size: clamp(2.2rem, 8vw, 3.2rem); line-height: 1.02; color: var(--ink); }
+    h1.title em { font-style: italic; color: var(--gold); font-weight: 500; }
+    .deck { font-family: var(--body); font-style: italic; font-size: clamp(1rem, 3.4vw, 1.15rem); line-height: 1.6; color: var(--ink-soft); margin-top: 16px; max-width: 52ch; }
+    .rule { height: 1px; margin: 32px 0 26px; background: linear-gradient(90deg, var(--gold-soft), var(--rule) 60%, transparent); }
+    .section-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold-soft); margin-bottom: 20px; display: flex; align-items: baseline; gap: 10px; }
+    .section-label .count { color: var(--ink-faint); letter-spacing: .18em; }
+
+    /* reference list */
+    ol.refs { list-style: none; counter-reset: ref; display: flex; flex-direction: column; gap: 4px; }
+    .ref {
+      position: relative; counter-increment: ref;
+      display: grid; grid-template-columns: 2.4em 1fr; gap: 14px;
+      padding: 16px 4px 16px 0; border-top: 1px solid var(--rule-soft);
+      opacity: 0; animation: rise .5s ease forwards;
+    }
+    .ref:first-child { border-top: none; }
+    .ref .num {
+      font-family: var(--mono); font-size: 12px; color: var(--gold-soft);
+      padding-top: 4px; white-space: nowrap;
+    }
+    .ref .num::before { content: "[" counter(ref) "]"; }
+    .ref .body { min-width: 0; }
+    .ref .authors { font-family: var(--body); font-size: 1.02rem; line-height: 1.5; color: var(--ink); }
+    .ref .year { color: var(--ink-dim); }
+    .ref .rtitle { font-family: var(--serif); font-weight: 500; font-size: 1.06rem; line-height: 1.35; color: var(--ink); margin: 3px 0 4px; }
+    .ref .venue { font-family: var(--body); font-style: italic; font-size: .96rem; color: var(--ink-soft); line-height: 1.45; }
+    .ref .venue .vol { font-style: normal; }
+    .ref a.doi {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em;
+      color: var(--blue); text-decoration: none; border-bottom: 1px solid transparent;
+      transition: color .2s ease, border-color .2s ease;
+    }
+    .ref a.doi:hover { color: var(--gold); border-color: var(--gold-soft); }
+    .ref a.doi svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .state { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); padding: 20px 0; line-height: 1.7; }
+    .state.err { color: var(--gold-soft); }
+
+    .back {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 40px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--ink-dim); text-decoration: none; transition: color .2s ease;
+    }
+    .back:hover { color: var(--gold); }
+    .back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+    .footer { margin-top: 28px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-faint); }
+    .footer .star-mark { color: var(--gold-soft); margin: 0 8px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .beams, .orbit, .pulsar, .binary, .ref { animation: none !important; }
+      .ref { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="pulsars" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 class="title" id="title"></h1>
+    <p class="deck" id="deck"></p>
+
+    <div class="rule"></div>
+    <div class="section-label"><span id="seclabel">Bibliography</span><span class="count" id="count"></span></div>
+
+    <div id="list"><div class="state" id="state">Loading references…</div></div>
+
+    <a class="back" id="back" href="/links.html">
+      <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+      <span id="backLabel">Back to all links</span>
+    </a>
+    <p class="footer" id="footer"></p>
+  </div>
+
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <script>
+    const cfg = JSON.parse(document.getElementById('config').textContent);
+    document.getElementById('eyebrow').textContent = cfg.eyebrow || 'References';
+    document.getElementById('title').innerHTML = cfg.title || 'References';
+    const deckEl = document.getElementById('deck');
+    if (cfg.deck) deckEl.innerHTML = cfg.deck; else deckEl.remove();
+    document.getElementById('footer').innerHTML = (cfg.footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
+    document.title = 'References · ' + (cfg.footer || 'Fazal Kareem').split('·')[0].trim();
+    const back = document.getElementById('back');
+    back.href = cfg.backUrl || '/links.html';
+    document.getElementById('backLabel').textContent = cfg.backLabel || 'Back to all links';
+
+    /* ---------------- minimal BibTeX parser ---------------- */
+    // Strips a handful of common LaTeX accents/escapes for display.
+    function deLatex(s) {
+      if (!s) return '';
+      return s
+        .replace(/\\[`'^"~=.]\{?([a-zA-Z])\}?/g, '$1')   // accents: \"o \'e etc.
+        .replace(/\{\\(?:ss)\}|\\ss\b/g, 'ß')
+        .replace(/\\&/g, '&').replace(/\\%/g, '%').replace(/\\_/g, '_').replace(/\\#/g, '#')
+        .replace(/---/g, '—').replace(/--/g, '–')
+        .replace(/[{}]/g, '')                              // drop remaining braces
+        .replace(/~/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function parseBib(text) {
+      const entries = [];
+      // Strip line comments starting with %
+      text = text.replace(/^[ \t]*%.*$/gm, '');
+      let i = 0;
+      while (i < text.length) {
+        const at = text.indexOf('@', i);
+        if (at === -1) break;
+        const braceOpen = text.indexOf('{', at);
+        if (braceOpen === -1) break;
+        const type = text.slice(at + 1, braceOpen).trim().toLowerCase();
+        // find matching closing brace for the whole entry
+        let depth = 0, j = braceOpen, end = -1;
+        for (; j < text.length; j++) {
+          if (text[j] === '{') depth++;
+          else if (text[j] === '}') { depth--; if (depth === 0) { end = j; break; } }
+        }
+        if (end === -1) break;
+        const inner = text.slice(braceOpen + 1, end);
+        i = end + 1;
+        if (type === 'comment' || type === 'string' || type === 'preamble') continue;
+
+        // key is up to first comma
+        const firstComma = inner.indexOf(',');
+        if (firstComma === -1) continue;
+        const key = inner.slice(0, firstComma).trim();
+        const fieldsStr = inner.slice(firstComma + 1);
+
+        const fields = {};
+        let k = 0;
+        while (k < fieldsStr.length) {
+          const eq = fieldsStr.indexOf('=', k);
+          if (eq === -1) break;
+          const name = fieldsStr.slice(k, eq).trim().toLowerCase();
+          let v = '', p = eq + 1;
+          while (p < fieldsStr.length && /\s/.test(fieldsStr[p])) p++;
+          if (fieldsStr[p] === '{') {
+            let d = 0, q = p;
+            for (; q < fieldsStr.length; q++) {
+              if (fieldsStr[q] === '{') d++;
+              else if (fieldsStr[q] === '}') { d--; if (d === 0) { q++; break; } }
+            }
+            v = fieldsStr.slice(p + 1, q - 1); p = q;
+          } else if (fieldsStr[p] === '"') {
+            let q = p + 1;
+            for (; q < fieldsStr.length; q++) if (fieldsStr[q] === '"') { q++; break; }
+            v = fieldsStr.slice(p + 1, q - 1); p = q;
+          } else {
+            let q = p;
+            while (q < fieldsStr.length && fieldsStr[q] !== ',') q++;
+            v = fieldsStr.slice(p, q).trim(); p = q;
+          }
+          if (name) fields[name] = v;
+          const nextComma = fieldsStr.indexOf(',', p);
+          k = nextComma === -1 ? fieldsStr.length : nextComma + 1;
+        }
+        fields._type = type; fields._key = key;
+        entries.push(fields);
+      }
+      return entries;
+    }
+
+    // "Last, First and Last2, F. and others" -> structured list
+    function parseAuthors(raw) {
+      if (!raw) return [];
+      return raw.split(/\s+and\s+/i).map(a => a.trim()).filter(Boolean).map(a => {
+        if (/^others$/i.test(a)) return { last: 'others', first: '' };
+        if (a.includes(',')) {
+          const [last, first] = a.split(',');
+          return { last: deLatex(last.trim()), first: deLatex((first || '').trim()) };
+        }
+        const parts = a.split(/\s+/);
+        const last = parts.pop();
+        return { last: deLatex(last), first: deLatex(parts.join(' ')) };
+      });
+    }
+
+    function initials(first) {
+      return first.split(/[\s.-]+/).filter(Boolean).map(p => p[0].toUpperCase() + '.').join(' ');
+    }
+
+    function formatAuthors(authors) {
+      const names = authors.map(a => a.last === 'others' ? null : (a.last + (a.first ? ', ' + initials(a.first) : '')));
+      const hasEtAl = authors.some(a => a.last === 'others');
+      const real = names.filter(Boolean);
+      let out;
+      if (real.length === 0) out = '';
+      else if (real.length === 1) out = real[0];
+      else if (real.length <= 4 && !hasEtAl) out = real.slice(0, -1).join(', ') + ' & ' + real[real.length - 1];
+      else out = real[0] + ' et al.';
+      if (hasEtAl && real.length > 0 && real.length <= 4) out += ' et al.';
+      return out || '—';
+    }
+
+    function sortKey(e) {
+      const a = parseAuthors(e.author || e.editor || '');
+      const last = (a[0] && a[0].last !== 'others') ? a[0].last.toLowerCase() : 'zzzz';
+      const year = parseInt((e.year || '9999').replace(/\D/g, '')) || 9999;
+      return last + ' ' + String(year).padStart(4, '0');
+    }
+
+    function doiUrl(e) {
+      if (e.doi) return 'https://doi.org/' + e.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '');
+      if (e.url) return e.url;
+      if (e.adsurl) return e.adsurl;
+      if (e.eprint && /arxiv/i.test(e.archiveprefix || '')) return 'https://arxiv.org/abs/' + e.eprint;
+      return null;
+    }
+
+    const LINK_SVG = '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>';
+
+    function renderEntry(e) {
+      const authors = parseAuthors(e.author || e.editor || '');
+      const year = (e.year || '').replace(/[^0-9]/g, '');
+      const title = deLatex(e.title || '');
+      const venue = deLatex(e.journal || e.booktitle || e.publisher || e.school || e.howpublished || '');
+      const vol = deLatex(e.volume || '');
+      const num = deLatex(e.number || e.issue || '');
+      const pages = deLatex((e.pages || '').replace(/\+/g, ''));
+
+      const li = document.createElement('li');
+      li.className = 'ref';
+
+      let venueHtml = '';
+      if (venue) {
+        venueHtml = venue;
+        if (vol) venueHtml += ' <span class="vol">' + vol + (num ? '(' + num + ')' : '') + '</span>';
+        if (pages) venueHtml += (vol ? ', ' : ' ') + pages;
+        venueHtml += '.';
+      }
+
+      const url = doiUrl(e);
+      const doiHtml = url
+        ? '<a class="doi" href="' + url + '" target="_blank" rel="noopener noreferrer">' + LINK_SVG +
+          (e.doi ? 'doi.org/' + e.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '') : 'View source') + '</a>'
+        : '';
+
+      li.innerHTML =
+        '<div class="num"></div>' +
+        '<div class="body">' +
+          '<div class="authors">' + formatAuthors(authors) +
+            (year ? ' <span class="year">(' + year + ')</span>' : '') + '</div>' +
+          (title ? '<div class="rtitle">' + title + '</div>' : '') +
+          (venueHtml ? '<div class="venue">' + venueHtml + '</div>' : '') +
+          doiHtml +
+        '</div>';
+      return li;
+    }
+
+    function show(entries) {
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      if (!entries.length) {
+        list.innerHTML = '<div class="state err">No references found in the .bib file.</div>';
+        return;
+      }
+      entries.sort((a, b) => sortKey(a) < sortKey(b) ? -1 : 1);
+      const ol = document.createElement('ol');
+      ol.className = 'refs';
+      entries.forEach((e, i) => {
+        const li = renderEntry(e);
+        li.style.animationDelay = (Math.min(i, 12) * 0.04 + 0.05) + 's';
+        ol.appendChild(li);
+      });
+      list.appendChild(ol);
+      document.getElementById('count').textContent = '— ' + entries.length + ' source' + (entries.length === 1 ? '' : 's');
+    }
+
+    fetch(cfg.bib || '/posters/references.bib', { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(text => show(parseBib(text)))
+      .catch(err => {
+        document.getElementById('list').innerHTML =
+          '<div class="state err">Could not load <code>' + (cfg.bib || '/posters/references.bib') +
+          '</code>.<br>Make sure the .bib file is in <code>/public/posters/</code> and redeployed.<br><br>(' + err.message + ')</div>';
+      });
+
+    /* ---------- pulsar background (same as links page) ---------- */
+    (function buildPulsars() {
+      const host = document.getElementById('pulsars');
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function render() {
+        host.innerHTML = '';
+        const W = window.innerWidth, H = Math.max(document.body.scrollHeight, window.innerHeight);
+        const isMobile = W < 768;
+        const count = Math.max(4, Math.min(isMobile ? 5 : 9, Math.round((W * H) / 180000)));
+        const nBin = Math.max(1, Math.round(count * 0.33));
+        const slots = new Set();
+        while (slots.size < nBin) slots.add(Math.floor(Math.random() * count));
+        for (let i = 0; i < count; i++) {
+          const x = 10 + Math.random() * 80, y = (i + Math.random()) / count * 100;
+          slots.has(i) ? makeBinary(x, y) : makePulsar(x, y);
+        }
+      }
+      function makePulsar(xPct, yPct) {
+        const r = 5 + Math.random() * 6, beamLen = 60 + Math.random() * 70, beamW = 7 + Math.random() * 6;
+        const spin = (1.2 + Math.random() * 3).toFixed(2);
+        const tilt = 14 + Math.random() * 10, coreW = Math.max(4, Math.round(beamW * 0.35)), coreLen = Math.max(34, Math.round(beamLen * 0.45));
+        const wrap = document.createElement('div'); wrap.className = 'pulsar';
+        wrap.style.left = xPct + '%'; wrap.style.top = yPct + '%';
+        wrap.style.opacity = (0.4 + Math.random() * 0.4).toFixed(2);
+        if (!reduced) wrap.style.animation = 'drift ' + (9 + Math.random() * 5).toFixed(1) + 's ease-in-out infinite';
+        const beams = document.createElement('div'); beams.className = 'beams';
+        beams.style.animationDuration = spin + 's'; if (reduced) beams.style.animation = 'none';
+        for (const rot of [0, 180]) {
+          const w2 = document.createElement('div'); w2.className = 'beam-wrap';
+          w2.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg) rotateX(' + tilt + 'deg)';
+          const o = document.createElement('div'); o.className = 'beam'; o.style.width = beamW + 'px'; o.style.height = beamLen + 'px';
+          const c = document.createElement('div'); c.className = 'beam-core'; c.style.width = coreW + 'px'; c.style.height = coreLen + 'px';
+          w2.append(o, c); beams.appendChild(w2);
+        }
+        const halo = document.createElement('div'); halo.className = 'halo'; halo.style.width = (r * 2.6) + 'px'; halo.style.height = (r * 2.6) + 'px';
+        const star = document.createElement('div'); star.className = 'star'; star.style.width = (r * 2) + 'px'; star.style.height = (r * 2) + 'px';
+        wrap.append(beams, halo, star); host.appendChild(wrap);
+      }
+      function makeBinary(xPct, yPct) {
+        const orbitR = 16 + Math.random() * 26, rP = 5 + Math.random() * 4, rC = 3.5 + Math.random() * 2.5;
+        const orbitSec = (3.5 + Math.random() * 5).toFixed(2);
+        const wrap = document.createElement('div'); wrap.className = 'binary';
+        wrap.style.left = xPct + '%'; wrap.style.top = yPct + '%';
+        wrap.style.opacity = (0.38 + Math.random() * 0.35).toFixed(2);
+        if (!reduced) wrap.style.animation = 'drift ' + (10 + Math.random() * 4).toFixed(1) + 's ease-in-out infinite';
+        const orbit = document.createElement('div'); orbit.className = 'orbit';
+        orbit.style.animationDuration = orbitSec + 's'; if (reduced) orbit.style.animation = 'none';
+        const p = document.createElement('div'); p.className = 'star'; p.style.width = (rP * 2) + 'px'; p.style.height = (rP * 2) + 'px';
+        p.style.transform = 'translate(calc(-50% + ' + orbitR + 'px), -50%)';
+        const d = document.createElement('div'); d.className = 'dwarf'; d.style.width = (rC * 2) + 'px'; d.style.height = (rC * 2) + 'px';
+        d.style.transform = 'translate(calc(-50% - ' + orbitR + 'px), -50%)';
+        orbit.append(p, d); wrap.appendChild(orbit); host.appendChild(wrap);
+      }
+      render();
+      let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 250); });
+      window.addEventListener('load', () => setTimeout(render, 100));
+    })();
+  </script>
+</body>
+</html>

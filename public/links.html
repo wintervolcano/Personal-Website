@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Fazal Kareem · Links</title>
+  <meta name="description" content="All of Fazal Kareem's links in one place — portfolio, posters, publications and social media." />
+
+  <link rel="icon" type="image/svg+xml" href="/FK.svg" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/svg+xml" href="/FK-dark.svg" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/svg+xml" href="/FK.svg" />
+  <meta name="theme-color" content="#0e1218" />
+
+  <meta property="og:title" content="Fazal Kareem · Links" />
+  <meta property="og:description" content="Portfolio, posters, publications and social media — all in one place." />
+  <meta property="og:image" content="https://www.fazalkareem.com/logo.png" />
+  <meta property="og:url" content="https://www.fazalkareem.com/links.html" />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================= -->
+  <!--  EDIT EVERYTHING IN THE <script id="config"> BLOCK BELOW.     -->
+  <!--  Save the file and redeploy — no build step needed.          -->
+  <!-- ============================================================= -->
+  <script id="config" type="application/json">
+  {
+    "eyebrow": "Radio Astronomy · MPIfR Bonn",
+    "title": "Fazal <em>Kareem</em>",
+    "deck": "Two decades of timing the Double Neutron Star PSR J1756−2251.",
+    "links": [
+      {
+        "label": "This Poster",
+        "sublabel": "Download the A0 PDF",
+        "url": "/posters/J1756-2251_IPTA2026_poster_A0.pdf",
+        "icon": "poster",
+        "featured": true
+      },
+      {
+        "label": "References",
+        "sublabel": "Citations for this poster",
+        "url": "/references.html",
+        "icon": "paper"
+      },
+      {
+        "label": "My Website",
+        "sublabel": "fazalkareem.com",
+        "url": "https://www.fazalkareem.com",
+        "icon": "globe"
+      },
+      {
+        "label": "Globular Cluster Explorer",
+        "sublabel": "Interactive 3D tool",
+        "url": "/globular-cluster-explorer",
+        "icon": "sparkle"
+      },
+      {
+        "label": "GitHub",
+        "sublabel": "@wintervolcano",
+        "url": "https://github.com/",
+        "icon": "github"
+      },
+      {
+        "label": "Email",
+        "sublabel": "Get in touch",
+        "url": "mailto:fkareem@mpifr-bonn.de",
+        "icon": "mail"
+      }
+    ],
+    "footer": "Fazal Kareem · MPIfR Bonn"
+  }
+  </script>
+
+  <style>
+    :root {
+      /* ink-on-parchment, cool observatory — from the geometry course */
+      --bg:#0e1218;
+      --bg2:#11161e;
+      --paper:#13181f;
+      --ink:#e7e3d8;          /* warm bone */
+      --ink-soft:#b6b3a8;
+      --ink-dim:#7c7d78;
+      --ink-faint:#4e524f;
+      --rule:#222a33;
+      --rule-soft:#1a212a;
+      --gold:#c9a86a;          /* starlight, muted */
+      --gold-soft:#9a8556;
+      --blue:#8da9c4;          /* cool steel, for spin */
+      --blue-deep:#5e7790;
+
+      --serif:'Fraunces',Georgia,serif;
+      --body:'Newsreader',Georgia,serif;
+      --mono:'IBM Plex Mono',ui-monospace,monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      background:
+        radial-gradient(120% 80% at 80% -10%, #161c25 0%, var(--bg) 55%),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    ::selection { background: rgba(201,168,106,0.22); color: var(--ink); }
+
+    /* faint paper grain overlay (same as the course) */
+    body::after {
+      content:""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      opacity: .035; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ---------- Pulsar field (recolored to the observatory palette) ---------- */
+    #pulsars { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .pulsar { position: absolute; transform: translate(-50%, -50%); }
+    .star {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fbf6ea, var(--blue) 60%, var(--blue-deep) 100%);
+      box-shadow: 0 0 10px rgba(141,169,196,0.6), 0 0 24px rgba(94,119,144,0.35);
+    }
+    .halo {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(141,169,196,0.35), rgba(14,18,24,0) 70%);
+      filter: blur(1px);
+    }
+    .beams { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); transform-origin: 50% 50%; transform-style: preserve-3d; animation: spin linear infinite; }
+    /* Two-layer beam matching the website's HeroPulsars: a soft outer beam
+       plus a thinner, sharper inner core, with a 3D tilt for depth. */
+    .beam-wrap { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; transform-style: preserve-3d; }
+    .beam {
+      position: absolute; left: 50%; margin-left: 0; transform: translate(-50%, -100%); transform-origin: 50% 100%;
+      border-radius: 999px;
+      background: linear-gradient(to top, rgba(201,168,106,0), rgba(201,168,106,0.34));
+      filter: blur(0.5px);
+    }
+    .beam-core {
+      position: absolute; left: 50%; transform: translate(-50%, -100%); transform-origin: 50% 100%;
+      border-radius: 999px;
+      background: linear-gradient(to top, rgba(231,227,216,0), rgba(231,227,216,0.42));
+      filter: blur(0.15px);
+      opacity: 0.95;
+    }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+    @keyframes drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(5px,-7px); } }
+
+    .binary { position: absolute; transform: translate(-50%,-50%); }
+    .orbit { position: absolute; left: 50%; top: 50%; width: 1px; height: 1px; animation: spin linear infinite; }
+    .dwarf {
+      position: absolute; left: 50%; top: 50%; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fbf6ea, #d9cdb4 55%, rgba(201,168,106,0.15) 100%);
+      box-shadow: 0 0 9px rgba(231,227,216,0.6);
+    }
+
+    /* ---------- Layout shell ---------- */
+    .wrap { position: relative; z-index: 2; max-width: 560px; margin: 0 auto; padding: clamp(40px,9vw,72px) clamp(22px,6vw,40px) 56px; }
+
+    /* ---------- Masthead ---------- */
+    .eyebrow {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .32em; text-transform: uppercase;
+      color: var(--gold); display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
+    }
+    .eyebrow::after { content:""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-soft), transparent); }
+
+    h1.title {
+      font-family: var(--serif); font-weight: 500; letter-spacing: -.02em;
+      font-size: clamp(2.4rem, 9vw, 3.6rem); line-height: 1.02; color: var(--ink);
+    }
+    h1.title em { font-style: italic; color: var(--gold); font-weight: 500; }
+
+    .deck {
+      font-family: var(--body); font-style: italic;
+      font-size: clamp(1rem, 3.4vw, 1.18rem); line-height: 1.6; color: var(--ink-soft);
+      margin-top: 18px; max-width: 46ch;
+    }
+
+    .rule { height: 1px; margin: 34px 0 28px;
+      background: linear-gradient(90deg, var(--gold-soft), var(--rule) 60%, transparent); }
+
+    .section-label {
+      font-family: var(--mono); font-size: 9.5px; letter-spacing: .28em; text-transform: uppercase;
+      color: var(--gold-soft); margin-bottom: 16px;
+    }
+
+    /* ---------- Link rows (editorial cards) ---------- */
+    .links { display: flex; flex-direction: column; gap: 12px; }
+
+    .link {
+      position: relative; display: flex; align-items: center; gap: 18px;
+      padding: 18px 20px;
+      text-decoration: none; color: var(--ink);
+      background: linear-gradient(180deg, var(--paper), #0f141b);
+      border: 1px solid var(--rule);
+      border-radius: 9px;
+      /* depth: soft drop shadow + a 1px inner top highlight, like lit paper */
+      box-shadow:
+        0 1px 0 rgba(231,227,216,0.04) inset,
+        0 1px 2px rgba(0,0,0,0.4),
+        0 6px 18px rgba(0,0,0,0.22);
+      transition: transform .22s cubic-bezier(.2,.7,.2,1), border-color .25s ease, box-shadow .25s ease;
+      overflow: hidden;
+      opacity: 0; animation: rise .55s ease forwards;
+    }
+    /* hairline gold highlight on the left edge */
+    .link::before {
+      content:""; position: absolute; left: 0; top: 0; width: 2px; height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(201,168,106,0) 40%, rgba(201,168,106,0) 60%, transparent);
+      transition: background .25s ease;
+    }
+    /* soft warm wash that sweeps in from the right on hover */
+    .link::after {
+      content:""; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+      background: radial-gradient(120% 140% at 100% 50%, rgba(201,168,106,0.10), transparent 55%);
+      transition: opacity .3s ease;
+    }
+    /* Lit/lifted state — only on devices with a real hover pointer (mouse),
+       plus keyboard focus. This stops the styling sticking after a tap on touch. */
+    @media (hover: hover) and (pointer: fine) {
+      .link:hover {
+        transform: translateY(-3px);
+        border-color: var(--gold-soft);
+        box-shadow:
+          0 1px 0 rgba(231,227,216,0.06) inset,
+          0 2px 4px rgba(0,0,0,0.4),
+          0 14px 34px rgba(0,0,0,0.42),
+          0 0 0 1px rgba(201,168,106,0.10);
+      }
+      .link:hover::before {
+        background: linear-gradient(180deg, transparent, rgba(201,168,106,.7) 38%, rgba(201,168,106,.7) 62%, transparent);
+      }
+      .link:hover::after { opacity: 1; }
+      .link:hover .icon { transform: scale(1.05); }
+    }
+    .link:focus-visible {
+      transform: translateY(-3px);
+      border-color: var(--gold-soft);
+      box-shadow:
+        0 1px 0 rgba(231,227,216,0.06) inset,
+        0 0 0 2px var(--gold-soft),
+        0 14px 34px rgba(0,0,0,0.42);
+      outline: none;
+    }
+    .link:focus-visible::before {
+      background: linear-gradient(180deg, transparent, rgba(201,168,106,.7) 38%, rgba(201,168,106,.7) 62%, transparent);
+    }
+    .link:focus-visible::after { opacity: 1; }
+    /* brief tap feedback on touch, then it releases */
+    .link:active { transform: translateY(-1px); }
+
+    /* Featured = gold leading rule + warm wash */
+    .link.featured {
+      border-color: var(--gold-soft);
+      background: linear-gradient(180deg, #1b1d1a, #14140e);
+      box-shadow:
+        0 1px 0 rgba(231,227,216,0.06) inset,
+        0 1px 2px rgba(0,0,0,0.4),
+        0 8px 24px rgba(0,0,0,0.3),
+        0 0 0 1px rgba(201,168,106,0.12);
+    }
+    .link.featured::before {
+      background: linear-gradient(180deg, var(--gold), var(--gold-soft));
+    }
+    .link.featured::after { opacity: .5; }
+    @media (hover: hover) and (pointer: fine) { .link.featured:hover::after { opacity: 1; } }
+    .link.featured .icon { color: var(--gold); border-color: var(--gold-soft); background: rgba(201,168,106,0.08); }
+
+    .icon {
+      position: relative;
+      flex: 0 0 auto; width: 44px; height: 44px; border-radius: 8px;
+      display: grid; place-items: center;
+      color: var(--blue); border: 1px solid var(--rule-soft);
+      background: linear-gradient(180deg, rgba(141,169,196,0.08), rgba(141,169,196,0.02));
+      box-shadow: 0 1px 0 rgba(231,227,216,0.05) inset;
+      transition: transform .22s ease, color .22s ease, border-color .22s ease;
+    }
+    .icon svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .link-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .link-label { font-family: var(--serif); font-weight: 500; font-size: 1.12rem; letter-spacing: -.01em; line-height: 1.2; color: var(--ink); }
+    .link-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-dim); margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .arrow { flex: 0 0 auto; color: var(--ink-faint); transition: transform .2s ease, color .2s ease; }
+    .arrow svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    @media (hover: hover) and (pointer: fine) {
+      .link:hover .arrow { transform: translateX(4px); color: var(--gold); }
+    }
+    .link:focus-visible .arrow { transform: translateX(4px); color: var(--gold); }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .footer {
+      margin-top: 40px; text-align: center;
+      font-family: var(--mono); font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-faint);
+    }
+    .footer .star-mark { color: var(--gold-soft); margin: 0 8px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .beams, .orbit, .pulsar, .binary, .link { animation: none !important; }
+      .link { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="pulsars" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 class="title" id="title"></h1>
+    <p class="deck" id="deck"></p>
+
+    <div class="rule"></div>
+    <div class="section-label">Links &amp; Resources</div>
+
+    <nav class="links" id="links" aria-label="Links"></nav>
+
+    <p class="footer" id="footer"></p>
+  </div>
+
+  <!-- Vercel Web Analytics (auto-served on your Vercel deployment) -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <script>
+    // ---------- Icons (thin-stroke, editorial) ----------
+    const ICONS = {
+      poster: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>',
+      globe:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>',
+      paper:  '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="16" x2="13" y2="16"/></svg>',
+      sparkle:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.7 1.8L21.5 17.5 19.7 18.2 19 20l-.7-1.8L16.5 17.5l1.8-.7z"/></svg>',
+      github: '<svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-1-2.6c3-.3 6-1.5 6-6.5a5 5 0 0 0-1.4-3.5 4.6 4.6 0 0 0-.1-3.5s-1.1-.3-3.5 1.3a12 12 0 0 0-6 0C6.1 1.7 5 2 5 2a4.6 4.6 0 0 0-.1 3.5A5 5 0 0 0 3.5 9c0 5 3 6.2 6 6.5a3.4 3.4 0 0 0-1 2.6V22"/></svg>',
+      linkedin:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="11" x2="8" y2="16"/><line x1="8" y1="8" x2="8" y2="8"/><path d="M12 16v-3a2 2 0 0 1 4 0v3"/><line x1="12" y1="11" x2="12" y2="16"/></svg>',
+      twitter:'<svg viewBox="0 0 24 24"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>',
+      mail:   '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1.5"/><polyline points="3 7 12 13 21 7"/></svg>',
+      link:   '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
+    };
+    const ARROW = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>';
+
+    const cfg = JSON.parse(document.getElementById('config').textContent);
+
+    // ---------- Masthead ----------
+    document.getElementById('eyebrow').textContent = cfg.eyebrow || '';
+    document.getElementById('title').innerHTML = cfg.title || '';
+    const deck = document.getElementById('deck');
+    if (cfg.deck) deck.innerHTML = cfg.deck; else deck.remove();
+    document.getElementById('footer').innerHTML =
+      (cfg.footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
+    document.title = (cfg.eyebrow ? cfg.eyebrow + ' · ' : '') + 'Links';
+
+    // ---------- Links ----------
+    const container = document.getElementById('links');
+    (cfg.links || []).forEach((l, i) => {
+      const a = document.createElement('a');
+      a.className = 'link' + (l.featured ? ' featured' : '');
+      a.href = l.url;
+      a.style.animationDelay = (0.06 * i + 0.1) + 's';
+      const external = /^https?:/.test(l.url) || l.url.endsWith('.pdf');
+      if (external) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+
+      a.innerHTML =
+        '<span class="icon">' + (ICONS[l.icon] || ICONS.link) + '</span>' +
+        '<span class="link-text"><span class="link-label"></span>' +
+          (l.sublabel ? '<span class="link-sub"></span>' : '') + '</span>' +
+        '<span class="arrow">' + ARROW + '</span>';
+      a.querySelector('.link-label').textContent = l.label || '';
+      if (l.sublabel) a.querySelector('.link-sub').textContent = l.sublabel;
+
+      // Vercel Analytics custom event per click → per-link stats
+      a.addEventListener('click', () => {
+        try { window.va && window.va('event', { name: 'link_click', data: { link: l.label, url: l.url } }); } catch (e) {}
+      });
+
+      container.appendChild(a);
+    });
+
+    // ---------- Pulsar background field ----------
+    (function buildPulsars() {
+      const host = document.getElementById('pulsars');
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function render() {
+        host.innerHTML = '';
+        const W = window.innerWidth;
+        const H = Math.max(document.body.scrollHeight, window.innerHeight);
+        const isMobile = W < 768;
+        const count = Math.max(4, Math.min(isMobile ? 5 : 9, Math.round((W * H) / 180000)));
+
+        // Guarantee at least one binary is always present (≈ a third otherwise),
+        // so it never rolls zero on small screens. Pick random slots so they
+        // spread down the page rather than clustering at the top.
+        const nBinaries = Math.max(1, Math.round(count * 0.33));
+        const binarySlots = new Set();
+        while (binarySlots.size < nBinaries) binarySlots.add(Math.floor(Math.random() * count));
+
+        for (let i = 0; i < count; i++) {
+          // Keep sprites inside a 10–90% horizontal band so orbiting bodies
+          // never fall off the edge of a narrow phone viewport.
+          const x = 10 + Math.random() * 80;
+          const y = (i + Math.random()) / count * 100;
+          binarySlots.has(i) ? makeBinary(host, x, y, reduced) : makePulsar(host, x, y, reduced);
+        }
+      }
+
+      function makePulsar(host, xPct, yPct, reduced) {
+        const r = 5 + Math.random() * 6;
+        const beamLen = 60 + Math.random() * 70;
+        const beamW = 7 + Math.random() * 6;
+        const spin = (1.2 + Math.random() * 3).toFixed(2);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'pulsar';
+        wrap.style.left = xPct + '%'; wrap.style.top = yPct + '%';
+        wrap.style.opacity = (0.4 + Math.random() * 0.4).toFixed(2);
+        if (!reduced) wrap.style.animation = 'drift ' + (9 + Math.random() * 5).toFixed(1) + 's ease-in-out infinite';
+
+        const tilt = 14 + Math.random() * 10;          // 3D tilt, like the website beams
+        const coreW = Math.max(4, Math.round(beamW * 0.35));
+        const coreLen = Math.max(34, Math.round(beamLen * 0.45));
+
+        const beams = document.createElement('div');
+        beams.className = 'beams';
+        beams.style.animationDuration = spin + 's';
+        if (reduced) beams.style.animation = 'none';
+        for (const rot of [0, 180]) {
+          // wrapper carries the rotation + 3D tilt; children are the two beam layers
+          const wrap2 = document.createElement('div');
+          wrap2.className = 'beam-wrap';
+          wrap2.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg) rotateX(' + tilt + 'deg)';
+
+          const outer = document.createElement('div');
+          outer.className = 'beam';
+          outer.style.width = beamW + 'px'; outer.style.height = beamLen + 'px';
+
+          const core = document.createElement('div');
+          core.className = 'beam-core';
+          core.style.width = coreW + 'px'; core.style.height = coreLen + 'px';
+
+          wrap2.append(outer, core);
+          beams.appendChild(wrap2);
+        }
+
+        const halo = document.createElement('div');
+        halo.className = 'halo';
+        halo.style.width = (r * 2.6) + 'px'; halo.style.height = (r * 2.6) + 'px';
+
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.width = (r * 2) + 'px'; star.style.height = (r * 2) + 'px';
+
+        wrap.append(beams, halo, star);
+        host.appendChild(wrap);
+      }
+
+      function makeBinary(host, xPct, yPct, reduced) {
+        const orbitR = 16 + Math.random() * 26;
+        const rP = 5 + Math.random() * 4;
+        const rC = 3.5 + Math.random() * 2.5;
+        const orbitSec = (3.5 + Math.random() * 5).toFixed(2);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'binary';
+        wrap.style.left = xPct + '%'; wrap.style.top = yPct + '%';
+        wrap.style.opacity = (0.38 + Math.random() * 0.35).toFixed(2);
+        if (!reduced) wrap.style.animation = 'drift ' + (10 + Math.random() * 4).toFixed(1) + 's ease-in-out infinite';
+
+        const orbit = document.createElement('div');
+        orbit.className = 'orbit';
+        orbit.style.animationDuration = orbitSec + 's';
+        if (reduced) orbit.style.animation = 'none';
+
+        const pulsar = document.createElement('div');
+        pulsar.className = 'star';
+        pulsar.style.width = (rP * 2) + 'px'; pulsar.style.height = (rP * 2) + 'px';
+        pulsar.style.transform = 'translate(calc(-50% + ' + orbitR + 'px), -50%)';
+
+        const dwarf = document.createElement('div');
+        dwarf.className = 'dwarf';
+        dwarf.style.width = (rC * 2) + 'px'; dwarf.style.height = (rC * 2) + 'px';
+        dwarf.style.transform = 'translate(calc(-50% - ' + orbitR + 'px), -50%)';
+
+        orbit.append(pulsar, dwarf);
+        wrap.appendChild(orbit);
+        host.appendChild(wrap);
+      }
+
+      render();
+      let t;
+      window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 250); });
+      window.addEventListener('load', () => setTimeout(render, 100));
+    })();
+  </script>
+</body>
+</html>

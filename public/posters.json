@@ -1,0 +1,59 @@
+{
+  "_README": "ADD A NEW POSTER: copy a block inside \"posters\", give it a NEW unique slug, point posterUrl + bib at the new files in /posters/. The slug is permanent — its QR (fazalkareem.com/p/<slug>) must keep working forever, so never reuse or rename an existing slug. 'default' is which poster /links.html shows when opened with no ?p=.",
+
+  "default": "j1756",
+
+  "site": {
+    "eyebrow": "Radio Astronomy · MPIfR Bonn",
+    "footer": "Fazal Kareem · MPIfR Bonn"
+  },
+
+  "commonLinks": [
+    {
+      "label": "My Website",
+      "sublabel": "fazalkareem.com",
+      "url": "https://www.fazalkareem.com",
+      "icon": "globe"
+    },
+    {
+      "label": "Globular Cluster Explorer",
+      "sublabel": "Interactive 3D tool",
+      "url": "/globular-cluster-explorer",
+      "icon": "sparkle"
+    },
+    {
+      "label": "GitHub",
+      "sublabel": "@wintervolcano",
+      "url": "https://github.com/",
+      "icon": "github"
+    },
+    {
+      "label": "Email",
+      "sublabel": "Get in touch",
+      "url": "mailto:fkareem@mpifr-bonn.de",
+      "icon": "mail"
+    }
+  ],
+
+  "posters": {
+    "j1756": {
+      "title": "Fazal <em>Kareem</em>",
+      "deck": "Two decades of timing the Double Neutron Star PSR J1756−2251.",
+      "posterUrl": "/posters/J1756-2251_IPTA2026_poster_A0.pdf",
+      "posterLabel": "This Poster",
+      "posterSublabel": "Download the A0 PDF",
+      "bib": "/posters/J1756-2251.bib",
+      "extraLinks": []
+    },
+
+    "effelsberg": {
+      "title": "Fazal <em>Kareem</em>",
+      "deck": "An Effelsberg search for new pulsars.",
+      "posterUrl": "/posters/EFFELSBERG_SEARCH_POSTER_A0_FINAL.pdf",
+      "posterLabel": "This Poster",
+      "posterSublabel": "Download the A0 PDF",
+      "bib": "/posters/references.bib",
+      "extraLinks": []
+    }
+  }
+}

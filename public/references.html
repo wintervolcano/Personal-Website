@@ -176,15 +176,24 @@
 
   <script>
     const cfg = JSON.parse(document.getElementById('config').textContent);
-    document.getElementById('eyebrow').textContent = cfg.eyebrow || 'References';
-    document.getElementById('title').innerHTML = cfg.title || 'References';
-    const deckEl = document.getElementById('deck');
-    if (cfg.deck) deckEl.innerHTML = cfg.deck; else deckEl.remove();
-    document.getElementById('footer').innerHTML = (cfg.footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
-    document.title = 'References · ' + (cfg.footer || 'Fazal Kareem').split('·')[0].trim();
-    const back = document.getElementById('back');
-    back.href = cfg.backUrl || '/links.html';
-    document.getElementById('backLabel').textContent = cfg.backLabel || 'Back to all links';
+    const slug = new URLSearchParams(location.search).get('p');
+
+    // These get resolved from posters.json (by slug) before the .bib is fetched.
+    let bibPath = cfg.bib || '/posters/references.bib';
+    let backUrl = (cfg.backUrl || '/links.html') + (slug ? '?p=' + encodeURIComponent(slug) : '');
+
+    function applyMasthead(deck, footer) {
+      document.getElementById('eyebrow').textContent = cfg.eyebrow || 'References';
+      document.getElementById('title').innerHTML = cfg.title || 'References';
+      const deckEl = document.getElementById('deck');
+      if (deck) deckEl.innerHTML = deck; else if (deckEl) deckEl.remove();
+      document.getElementById('footer').innerHTML = (footer || cfg.footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
+      document.title = 'References · ' + (footer || cfg.footer || 'Fazal Kareem').split('·')[0].trim();
+      const back = document.getElementById('back');
+      back.href = backUrl;
+      document.getElementById('backLabel').textContent = cfg.backLabel || 'Back to all links';
+    }
+    applyMasthead(cfg.deck, cfg.footer);  // immediate fallback; refined once posters.json loads
 
     /* ---------------- minimal BibTeX parser ---------------- */
     // Strips a handful of common LaTeX accents/escapes for display.
@@ -369,14 +378,33 @@
       document.getElementById('count').textContent = '— ' + entries.length + ' source' + (entries.length === 1 ? '' : 's');
     }
 
-    fetch(cfg.bib || '/posters/references.bib', { cache: 'no-cache' })
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(text => show(parseBib(text)))
-      .catch(err => {
-        document.getElementById('list').innerHTML =
-          '<div class="state err">Could not load <code>' + (cfg.bib || '/posters/references.bib') +
-          '</code>.<br>Make sure the .bib file is in <code>/public/posters/</code> and redeployed.<br><br>(' + err.message + ')</div>';
-      });
+    function loadBib() {
+      fetch(bibPath, { cache: 'no-cache' })
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(text => show(parseBib(text)))
+        .catch(err => {
+          document.getElementById('list').innerHTML =
+            '<div class="state err">Could not load <code>' + bibPath +
+            '</code>.<br>Make sure the .bib file is in <code>/public/posters/</code> and redeployed.<br><br>(' + err.message + ')</div>';
+        });
+    }
+
+    // Resolve this poster's .bib (and deck/back-link) from posters.json, then load it.
+    fetch('/posters.json', { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => {
+        const wanted = slug || data.default;
+        const poster = (data.posters || {})[wanted] || (data.posters || {})[data.default] || {};
+        const site = data.site || {};
+        if (poster.bib) bibPath = poster.bib;
+        backUrl = '/links.html' + (wanted ? '?p=' + encodeURIComponent(wanted) : '');
+        applyMasthead(
+          poster.deck ? ('Sources referenced on the poster.') : cfg.deck,
+          site.footer || cfg.footer
+        );
+      })
+      .catch(() => { /* keep fallback bibPath/backUrl */ })
+      .finally(loadBib);
 
     /* ---------- pulsar background (same as links page) ---------- */
     (function buildPulsars() {

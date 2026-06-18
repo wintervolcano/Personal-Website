@@ -5,6 +5,14 @@
             "destination": "/globular-clusters-3d.html"
         },
         {
+            "source": "/p/:slug/references",
+            "destination": "/references.html?p=:slug"
+        },
+        {
+            "source": "/p/:slug",
+            "destination": "/links.html?p=:slug"
+        },
+        {
             "source": "/((?!api).*)",
             "destination": "/"
         }

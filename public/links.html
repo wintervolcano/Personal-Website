@@ -21,55 +21,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-  <!-- ============================================================= -->
-  <!--  EDIT EVERYTHING IN THE <script id="config"> BLOCK BELOW.     -->
-  <!--  Save the file and redeploy — no build step needed.          -->
-  <!-- ============================================================= -->
+  <!-- ============================================================================ -->
+  <!--  YOU DON'T EDIT THIS FILE TO ADD POSTERS.                                     -->
+  <!--  All poster content lives in /public/posters.json. This page reads ?p=<slug>  -->
+  <!--  from the URL, looks that poster up, and builds the list automatically.       -->
+  <!--                                                                               -->
+  <!--  Each poster's QR should encode a PERMANENT slug URL, e.g.                     -->
+  <!--      https://www.fazalkareem.com/p/j1756                                       -->
+  <!--  Add a new poster = add a block to posters.json with a NEW slug. Old printed   -->
+  <!--  QRs keep pointing at their own poster forever.                               -->
+  <!--                                                                               -->
+  <!--  The block below is only a FALLBACK shown if posters.json fails to load.       -->
+  <!-- ============================================================================ -->
   <script id="config" type="application/json">
   {
     "eyebrow": "Radio Astronomy · MPIfR Bonn",
     "title": "Fazal <em>Kareem</em>",
-    "deck": "Two decades of timing the Double Neutron Star PSR J1756−2251.",
+    "deck": "Pulsar searches with MeerKAT &amp; Effelsberg.",
+    "footer": "Fazal Kareem · MPIfR Bonn",
     "links": [
-      {
-        "label": "This Poster",
-        "sublabel": "Download the A0 PDF",
-        "url": "/posters/J1756-2251_IPTA2026_poster_A0.pdf",
-        "icon": "poster",
-        "featured": true
-      },
-      {
-        "label": "References",
-        "sublabel": "Citations for this poster",
-        "url": "/references.html",
-        "icon": "paper"
-      },
-      {
-        "label": "My Website",
-        "sublabel": "fazalkareem.com",
-        "url": "https://www.fazalkareem.com",
-        "icon": "globe"
-      },
-      {
-        "label": "Globular Cluster Explorer",
-        "sublabel": "Interactive 3D tool",
-        "url": "/globular-cluster-explorer",
-        "icon": "sparkle"
-      },
-      {
-        "label": "GitHub",
-        "sublabel": "@wintervolcano",
-        "url": "https://github.com/",
-        "icon": "github"
-      },
-      {
-        "label": "Email",
-        "sublabel": "Get in touch",
-        "url": "mailto:fkareem@mpifr-bonn.de",
-        "icon": "mail"
-      }
-    ],
-    "footer": "Fazal Kareem · MPIfR Bonn"
+      { "label": "My Website", "sublabel": "fazalkareem.com", "url": "https://www.fazalkareem.com", "icon": "globe" },
+      { "label": "Email", "sublabel": "Get in touch", "url": "mailto:fkareem@mpifr-bonn.de", "icon": "mail" }
+    ]
   }
   </script>
 
@@ -345,42 +318,86 @@
     };
     const ARROW = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>';
 
-    const cfg = JSON.parse(document.getElementById('config').textContent);
+    const fallback = JSON.parse(document.getElementById('config').textContent);
+    const slug = new URLSearchParams(location.search).get('p');
 
-    // ---------- Masthead ----------
-    document.getElementById('eyebrow').textContent = cfg.eyebrow || '';
-    document.getElementById('title').innerHTML = cfg.title || '';
-    const deck = document.getElementById('deck');
-    if (cfg.deck) deck.innerHTML = cfg.deck; else deck.remove();
-    document.getElementById('footer').innerHTML =
-      (cfg.footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
-    document.title = (cfg.eyebrow ? cfg.eyebrow + ' · ' : '') + 'Links';
+    function renderMasthead(eyebrow, title, deck, footer) {
+      document.getElementById('eyebrow').textContent = eyebrow || '';
+      document.getElementById('title').innerHTML = title || '';
+      const deckEl = document.getElementById('deck');
+      if (deck) deckEl.innerHTML = deck; else deckEl.remove();
+      document.getElementById('footer').innerHTML = (footer || '').replace(/·/g, '<span class="star-mark">✦</span>');
+      document.title = (eyebrow ? eyebrow + ' · ' : '') + 'Links';
+    }
 
-    // ---------- Links ----------
-    const container = document.getElementById('links');
-    (cfg.links || []).forEach((l, i) => {
-      const a = document.createElement('a');
-      a.className = 'link' + (l.featured ? ' featured' : '');
-      a.href = l.url;
-      a.style.animationDelay = (0.06 * i + 0.1) + 's';
-      const external = /^https?:/.test(l.url) || l.url.endsWith('.pdf');
-      if (external) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+    function renderLinks(links) {
+      const container = document.getElementById('links');
+      container.innerHTML = '';
+      links.forEach((l, i) => {
+        const a = document.createElement('a');
+        a.className = 'link' + (l.featured ? ' featured' : '');
+        a.href = l.url;
+        a.style.animationDelay = (0.06 * i + 0.1) + 's';
+        const external = /^https?:/.test(l.url) || l.url.endsWith('.pdf');
+        if (external) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
 
-      a.innerHTML =
-        '<span class="icon">' + (ICONS[l.icon] || ICONS.link) + '</span>' +
-        '<span class="link-text"><span class="link-label"></span>' +
-          (l.sublabel ? '<span class="link-sub"></span>' : '') + '</span>' +
-        '<span class="arrow">' + ARROW + '</span>';
-      a.querySelector('.link-label').textContent = l.label || '';
-      if (l.sublabel) a.querySelector('.link-sub').textContent = l.sublabel;
+        a.innerHTML =
+          '<span class="icon">' + (ICONS[l.icon] || ICONS.link) + '</span>' +
+          '<span class="link-text"><span class="link-label"></span>' +
+            (l.sublabel ? '<span class="link-sub"></span>' : '') + '</span>' +
+          '<span class="arrow">' + ARROW + '</span>';
+        a.querySelector('.link-label').textContent = l.label || '';
+        if (l.sublabel) a.querySelector('.link-sub').textContent = l.sublabel;
 
-      // Vercel Analytics custom event per click → per-link stats
-      a.addEventListener('click', () => {
-        try { window.va && window.va('event', { name: 'link_click', data: { link: l.label, url: l.url } }); } catch (e) {}
+        a.addEventListener('click', () => {
+          try { window.va && window.va('event', { name: 'link_click', data: { link: l.label, slug: slug || '', url: l.url } }); } catch (e) {}
+        });
+        container.appendChild(a);
       });
+    }
 
-      container.appendChild(a);
-    });
+    // Build the link list for a given poster from posters.json
+    function buildFromData(data) {
+      const wanted = slug || data.default;
+      const poster = (data.posters || {})[wanted] || (data.posters || {})[data.default] || {};
+      const site = data.site || {};
+
+      renderMasthead(
+        site.eyebrow || fallback.eyebrow,
+        poster.title || fallback.title,
+        poster.deck || fallback.deck,
+        site.footer || fallback.footer
+      );
+
+      const links = [];
+      if (poster.posterUrl) {
+        links.push({
+          label: poster.posterLabel || 'This Poster',
+          sublabel: poster.posterSublabel || 'Download the PDF',
+          url: poster.posterUrl, icon: 'poster', featured: true
+        });
+      }
+      if (poster.bib) {
+        // References page carries the same slug so it loads this poster's .bib
+        links.push({
+          label: 'References', sublabel: 'Citations for this poster',
+          url: '/references.html' + (wanted ? '?p=' + encodeURIComponent(wanted) : ''),
+          icon: 'paper'
+        });
+      }
+      (poster.extraLinks || []).forEach(l => links.push(l));
+      (data.commonLinks || []).forEach(l => links.push(l));
+      renderLinks(links);
+    }
+
+    fetch('/posters.json', { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(buildFromData)
+      .catch(() => {
+        // posters.json unavailable → show the minimal fallback baked into this file
+        renderMasthead(fallback.eyebrow, fallback.title, fallback.deck, fallback.footer);
+        renderLinks(fallback.links || []);
+      });
 
     // ---------- Pulsar background field ----------
     (function buildPulsars() {

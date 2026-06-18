@@ -91,7 +91,7 @@
     }
 
     /* ---------- Pulsar field (recolored to the observatory palette) ---------- */
-    #pulsars { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    #pulsars { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
     .pulsar { position: absolute; transform: translate(-50%, -50%); }
     .star {
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -450,7 +450,10 @@
       function render() {
         host.innerHTML = '';
         const W = window.innerWidth;
-        const H = Math.max(document.body.scrollHeight, window.innerHeight);
+        // The field is a fixed, viewport-anchored backdrop, so size it to the
+        // viewport — not the scrollable page height. This keeps the sprites
+        // still while content scrolls over them (no jumping / reshuffle).
+        const H = window.innerHeight;
         const isMobile = W < 768;
         const count = Math.max(4, Math.min(isMobile ? 5 : 9, Math.round((W * H) / 180000)));
 
@@ -553,9 +556,15 @@
       }
 
       render();
-      let t;
-      window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 250); });
-      window.addEventListener('load', () => setTimeout(render, 100));
+      // Only re-render on a real width change. Mobile browsers fire 'resize'
+      // when the URL bar shows/hides during scroll — that changes height only,
+      // and re-rendering there is what made the pulsars jump.
+      let t, lastW = window.innerWidth;
+      window.addEventListener('resize', () => {
+        if (window.innerWidth === lastW) return;
+        lastW = window.innerWidth;
+        clearTimeout(t); t = setTimeout(render, 250);
+      });
     })();
   </script>
 </body>

@@ -16,9 +16,21 @@
       "icon": "globe"
     },
     {
+      "label": "Binary Pulsar Geometry",
+      "sublabel": "Interactive 3D tool",
+      "url": "/pulsar_geometry_course.html",
+      "icon": "sparkle"
+    },
+    {
       "label": "Globular Cluster Explorer",
       "sublabel": "Interactive 3D tool",
       "url": "/globular-cluster-explorer",
+      "icon": "sparkle"
+    },
+    {
+      "label": "Binary Pulsar Timing Lab",
+      "sublabel": "Interactive 3D tool",
+      "url": "/binary-pulsar-lab",
       "icon": "sparkle"
     },
     {

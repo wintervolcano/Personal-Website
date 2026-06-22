@@ -447,20 +447,88 @@
   .cval{font-family:var(--mono);font-size:11px;color:var(--gold);text-align:right;
     font-variant-numeric:tabular-nums}
 
+  /* the controls sheet trigger + handle are desktop-hidden by default */
+  .tune-fab,.sheet-handle{display:none}
+
   @media (max-width:920px){
-    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-    .read{height:auto;max-height:54vh}
-    .obs{grid-template-rows:1fr 190px}
-    .masthead{padding:22px 26px 14px}
-    .scroll{padding:6px 26px 24px}
-    .progress,.nav{padding-left:26px;padding-right:26px}
+    /* Mobile: the screen is the instrument. Only the 3D geometry and the two
+       full-width plot panels are visible; every control lives in a slide-up
+       sheet, opened with the ⚙ Tune button. Chapter prose is desktop-only. */
+    .app{grid-template-columns:1fr;grid-template-rows:1fr;height:100dvh}
+    .obs{grid-template-rows:1fr auto;height:100dvh;min-height:0}
+
+    /* panels: full width, stacked, for a clearer read of each plot */
+    .panels{grid-template-columns:1fr}
+    .pane{border-right:none;padding:11px 18px}
+    .pane:first-child{border-bottom:1px solid var(--rule)}
+    .pane .ph{margin-bottom:5px}
+
+    /* ---- the controls become a bottom sheet ---- */
+    /* Capped so the model always stays visible above it; tall chapters (e.g. the
+       full freeplay console) scroll inside the sheet rather than growing over the scene. */
+    .read{
+      position:fixed;left:0;right:0;bottom:0;z-index:600;
+      display:flex;flex-direction:column;
+      height:auto;max-height:62dvh;border-right:none;
+      border-top:1px solid var(--gold-soft);border-radius:14px 14px 0 0;
+      box-shadow:0 -16px 40px rgba(0,0,0,.55);
+      transform:translateY(102%);transition:transform .32s cubic-bezier(.2,.8,.2,1);
+    }
+    .read::before{display:none}
+    .app.sheet-open .read{transform:translateY(0)}
+    /* the lesson list is the only growable region — it scrolls; nav stays pinned */
+    .scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
+    .masthead,.progress,.nav,.sheet-handle{flex:0 0 auto}
+
+    /* grab handle / collapse bar at the top of the sheet */
+    .sheet-handle{
+      display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+      padding:12px 0 8px;cursor:pointer;background:none;border:none;
+      font-family:var(--mono);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);
+    }
+    .sheet-handle span{display:block;width:38px;height:4px;border-radius:99px;background:var(--rule);
+      position:absolute;top:7px;left:50%;transform:translateX(-50%)}
+    .sheet-handle{position:relative}
+
+    /* floating opener anchored to the lower scene; hidden once the sheet is up */
+    .tune-fab{
+      display:block;position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:550;
+      padding:11px 22px;border-radius:99px;cursor:pointer;
+      font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+      color:#0e1218;background:var(--gold);border:1px solid var(--gold);
+      box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 0 4px rgba(201,168,106,.12);
+    }
+    .app.sheet-open .tune-fab{display:none}
+
+    /* slim header inside the sheet: chapter label + Equations only */
+    .masthead{padding:4px 20px 4px}
+    .masthead h1,.masthead .standfirst{display:none}
+    .eyebrow{margin-bottom:0;font-size:9px}
+    .progress{padding:8px 20px 8px}
+    .scroll{padding:2px 20px 14px}
+    .nav{padding-left:20px;padding-right:20px}
+
+    /* hide the editorial body; the sheet shows only the live controls */
+    .lesson h2,.lesson .deck,.lesson .chapter,
+    .lesson p,.lesson .eq,.lesson .note{display:none}
+    .instrument{margin:10px 0;padding:13px 15px}
+    .ghostbtn{margin-top:10px}
+
+    /* declutter scene overlays — keep view buttons + time-lapse HUD only */
+    .legend{display:none}
+    .stamp{display:none}
+    .grab-hint{bottom:64px}
+    .tlapse{top:10px;left:10px;right:120px;font-size:9px;padding:6px 9px}
+    .viewctl{top:10px;right:10px}
+    .viewctl button{width:34px;height:34px}
   }
 </style>
 </head>
 <body>
 <div class="app">
   <!-- ============ READING COLUMN ============ -->
-  <aside class="read">
+  <aside class="read" id="read">
+    <button class="sheet-handle" id="sheetHandle" aria-label="Collapse controls"><span></span>Controls</button>
     <div class="masthead">
       <div class="eyebrow">A Field Guide<button class="helpbtn" id="helpBtn" title="Open the equations &amp; derivations reference">✦ Equations</button></div>
       <h1>The <em>Lighthouse</em><br>Problem</h1>
@@ -489,6 +557,7 @@
         <button data-v="los" title="Look down the line of sight">◎</button>
         <button data-v="side" title="Sky plane edge-on">▭</button>
       </div>
+      <button class="tune-fab" id="tuneFab" aria-label="Open controls">⚙ Tune</button>
     </div>
     <div class="panels">
       <div class="pane" id="paneI">
@@ -856,9 +925,11 @@ function draw(){
 
 /* ====================== profile ====================== */
 const pc=document.getElementById('pulseCanvas'),pctx=pc.getContext('2d');
+/* readout panels are shorter on phones so the 3D scene keeps most of the screen */
+function panelH(){return window.innerWidth<=920?72:104;}
 function drawProfile(g){
   const cssW=pc.clientWidth;if(cssW<=0)return;
-  const H0=104,W=cssW*DPR(),H=H0*DPR();
+  const H0=panelH(),W=cssW*DPR(),H=H0*DPR();
   if(pc.width!==W)pc.width=W; if(pc.height!==H)pc.height=H;
   pc.style.height=H0+'px'; pctx.clearRect(0,0,W,H);
   const los=v(0,0,1),N=361,sep=[];
@@ -895,7 +966,7 @@ function drawProfile(g){
 const pac=document.getElementById('paCanvas'),patx=pac.getContext('2d');
 function drawPA(g){
   const cssW=pac.clientWidth;if(cssW<=0)return;
-  const H0=104,W=cssW*DPR(),H=H0*DPR();
+  const H0=panelH(),W=cssW*DPR(),H=H0*DPR();
   if(pac.width!==W)pac.width=W; if(pac.height!==H)pac.height=H;
   pac.style.height=H0+'px'; patx.clearRect(0,0,W,H);
   const {zeta,beta}=viewAngles(g),a=R.alpha*D2R,z=zeta*D2R,N=361,PA=[];
@@ -1205,6 +1276,17 @@ document.getElementById('helpBtn').onclick=()=>setHelp(true);
 document.getElementById('helpClose').onclick=()=>setHelp(false);
 helpOverlay.addEventListener('click',e=>{if(e.target===helpOverlay)setHelp(false);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&helpOverlay.classList.contains('open'))setHelp(false);});
+
+/* ====================== mobile controls sheet ====================== */
+const appEl=document.querySelector('.app');
+function setSheet(open){
+  appEl.classList.toggle('sheet-open',open);
+  // the scene gains/loses room when the sheet (panels stay put) — keep it crisp
+  resize();ensureLoop();
+}
+document.getElementById('tuneFab').onclick=()=>setSheet(true);
+document.getElementById('sheetHandle').onclick=()=>setSheet(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&appEl.classList.contains('sheet-open'))setSheet(false);});
 
 /* ====================== loop ====================== */
 let raf=null;
